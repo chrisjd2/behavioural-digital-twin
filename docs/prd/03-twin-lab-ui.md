@@ -1,0 +1,62 @@
+# PRD-03: Twin Lab UI
+
+- **Timebox:** Day 3 → Day 5
+- **ADRs:** 0001, 0003, 0005, 0006, 0007, 0008
+
+## Problem Statement
+
+The experiment has to be **taught and shown** in about 10 minutes to a Salesforce panel, on a projector or screen share, with no dependence on venue network. The audience needs to see what each agent "knows", watch predictions meet reality, and read an honest result, including calibration, without auto-generated conclusions.
+
+## Solution
+
+A FastAPI backend serving a React app with a MiroFish-style stepper: **Step 0 Hook → 1 Seed → 2 Population → 3 Simulation → 4 Report → 5 Interview**. The simulation is replayed from the frozen run; everything except the live interview works offline.
+
+## User Stories
+
+### Step 0 — Hook
+1. As the presenter, I open on "Can an AI impersonate a customer?", show two headlines with no context, then toggle "Show what this reader clicked before", then reveal the real click, optionally with arm A and D predictions. The view is labelled *illustrative example (dev set)*.
+
+### Step 1 — Seed
+2. As the presenter, I see data source status (real MIND vs synthetic), N, candidates per agent and seed, and plain-language cards for arms A–D and the baselines (E shown as a small "control" tag).
+
+### Step 2 — Population
+3. As the presenter, I see a force graph of agents linked to the categories they read.
+4. As the presenter, clicking an agent opens a side panel with their click history and **tabs per arm** showing what that agent knows: nothing / invented persona ("made up — not from this user's data") / memories with retrieval reasons / profile with evidence + memories / wrong twin.
+
+### Step 3 — Simulation
+5. As the presenter, I choose a saved run and replay it at selectable speed (~2 min default): live feed of reaction cards (arm colour, headline, reaction, `p_click`) followed by the real click reveal, with per-arm progress.
+6. As a developer, I can start a live run (SSE) from the UI.
+
+### Step 4 — Report
+7. As the presenter, I see per-metric bars per arm with 95% CIs, popularity and random as grey/dashed reference lines, and the **primary D − A** result called out by its pre-registered rule (stated, not interpreted).
+8. As the presenter, I see a calibration chart: mean `p_click` per arm with feed CTR and sample CTR reference lines; reliability diagram collapsible.
+9. As the presenter, I see the median user's rankings for all arms side by side against reality, and outcome buckets with counts that I can click into to show users from any bucket.
+10. As the presenter, I see parse-failure rate, tie share and identity-screen hits per arm.
+
+### Step 5 — Interview
+11. As the presenter, I pick an agent and arm and chat in character under the trust guardrails; if the live call fails, a recorded exchange is shown labelled "recorded".
+
+### Everywhere
+12. As the audience, every agent view carries "Simulated from anonymised research data (MIND). Not a real person's voice." Mock mode shows `MOCK` on every screen.
+
+## Implementation Decisions
+
+- **API:** `GET /api/status`; `POST /api/experiment`; `GET /api/population`; `GET /api/agent/{user_id}?arm=`; `POST /api/run` → `{run_id}`; `GET /api/run/{id}/events` (SSE); `GET /api/run/{id}`; `GET /api/runs`; `GET /api/run/{id}/replay?speed=` (or client-side replay of events); `POST /api/interview`; `GET /api/hook`. Built frontend served from `/`.
+- Typed API client in `frontend/src/api/` with TS types mirroring pydantic models.
+- **Design:** light theme, projector-legible type, arm colours A slate, B amber, C blue, D violet, E muted teal with "control" tag; baselines grey/dashed. Fonts bundled locally.
+- No auto-generated conclusions anywhere; Report shows numbers and the pre-registered rule's outcome only.
+
+## Testing Decisions
+
+- Backend: API tests via `build_app()` with mock LLM and synthetic sample; SSE event order; replay works with network calls disabled.
+- Frontend: Vitest for data transforms (bucket counts, CI bar geometry, replay timing); a smoke test per step rendering from a fixture run.
+- Manual: full rehearsal with Wi-Fi off before the panel.
+
+## Out of Scope
+
+- Auth, deployment, dark theme, Salesforce integration, auto-written insights, multi-agent interaction.
+
+## Further Notes
+
+- If time runs short, cut in this order: live SSE run path → force graph (replace with agent grid) → reliability diagram.
+- Record 2–3 interview exchanges and pick the Step 0 example on Day 5.

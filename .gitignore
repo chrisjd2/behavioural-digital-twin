@@ -1,0 +1,25 @@
+# Data, cache and runs — never committed (ADR-0010)
+data/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Frontend
+node_modules/
+dist/
+
+# Agent review output
+.reviews/
+
+# Talk prep (ADR-0010)
+talk/
