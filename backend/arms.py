@@ -13,8 +13,10 @@ from datetime import datetime
 
 from backend.data import CandidateSet, NewsItem
 from backend.llm import LLMClient
+from backend.personas import invent_persona
 from backend.profiles import (
     PROFILE_SCHEMA,
+    PROFILE_WORD_LIMIT,
     Profile,
     parse_profile,
     profile_block,
@@ -51,9 +53,15 @@ ARM_A_SYSTEM = (
     "Answer as that reader would, honestly and briefly."
 )
 
+ARM_B_SYSTEM = (
+    "You are {name}, a {age}-year-old {job} living in {location}. "
+    "Your personality: {big_five}. What you value most: {values}. {news_habit} "
+    "Answer as yourself, honestly and briefly."
+)
 
 PROFILE_RETRY_INSTRUCTION = (
-    "That profile was not usable. Return valid JSON only, at most 120 words in total, where "
+    f"That profile was not usable. Return valid JSON only, at most {PROFILE_WORD_LIMIT} words "
+    "in total, where "
     "every item cites one or more click ids from the history above."
 )
 
@@ -192,6 +200,31 @@ def parse_reactions(content: str, ids: Sequence[str]) -> ParsedReactions:
 Knowledge = dict[str, object]  # what one agent knows; shown in the UI and saved per user
 
 
+def arm_b_messages(
+    candidates: CandidateSet,
+    news: Mapping[str, NewsItem],
+    knowledge: Knowledge,
+    *,
+    base_rate_hint: bool,
+) -> list[dict[str, str]]:
+    big_five, values = knowledge["big_five"], knowledge["values"]
+    assert isinstance(big_five, dict)
+    assert isinstance(values, list)
+    system = ARM_B_SYSTEM.format(
+        name=knowledge["name"],
+        age=knowledge["age"],
+        job=knowledge["job"],
+        location=knowledge["location"],
+        big_five=", ".join(f"{level} {trait}" for trait, level in big_five.items()),
+        values=" and ".join(values),
+        news_habit=knowledge["news_habit"],
+    )
+    return [
+        {"role": "system", "content": system},
+        {"role": "user", "content": feed_message(candidates, news, base_rate_hint=base_rate_hint)},
+    ]
+
+
 def memories_block(memories: Sequence[Mapping[str, object]]) -> str:
     return "\n".join(f"- [{m['category']}] {m['headline']}" for m in memories)
 
@@ -279,6 +312,10 @@ async def _knows_nothing(_: CandidateSet, __: ArmResources) -> Knowledge:
     return {}
 
 
+async def _invent_persona(candidates: CandidateSet, _: ArmResources) -> Knowledge:
+    return invent_persona(candidates.user_id)  # the user ID only: never history or labels
+
+
 async def _retrieve_memories(candidates: CandidateSet, resources: ArmResources) -> Knowledge:
     assert resources.retriever is not None, "This arm needs a retriever"
     memories = resources.retriever.memories(candidates.history, candidates.items)
@@ -300,6 +337,7 @@ class ArmSpec:
 
 ARM_SPECS: dict[str, ArmSpec] = {
     "A": ArmSpec(_knows_nothing, lambda c, n, _k, **kw: arm_a_messages(c, n, **kw)),
+    "B": ArmSpec(_invent_persona, arm_b_messages),
     "C": ArmSpec(_retrieve_memories, arm_c_messages),
     "D": ArmSpec(_profile_and_memories, arm_d_messages),
 }
@@ -323,6 +361,7 @@ _CANONICAL_NEWS = {
 }
 _CANONICAL_KNOWLEDGE: dict[str, Knowledge] = {
     "A": {},
+    "B": invent_persona(_CANONICAL.user_id),
     "C": {"memories": [{"news_id": "H1", "headline": "Headline H1", "category": "news"}]},
     "D": {
         "profile": {

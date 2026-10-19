@@ -152,3 +152,14 @@ def test_prompt_hashes_are_stable_and_cover_the_whole_request(
     monkeypatch.undo()
     monkeypatch.setitem(arms.OUTPUT_SCHEMA, "description", "changed")
     assert prompt_hashes(OPTIONS) != base
+
+
+def test_arm_b_has_a_prompt_hash_that_tracks_its_template(monkeypatch: pytest.MonkeyPatch) -> None:
+    base = prompt_hashes(OPTIONS)
+    assert {"A", "B"} <= set(base)
+
+    monkeypatch.setattr(arms, "ARM_B_SYSTEM", arms.ARM_B_SYSTEM + " Changed.")
+    changed = prompt_hashes(OPTIONS)
+
+    assert changed["B"] != base["B"]
+    assert changed["A"] == base["A"]
