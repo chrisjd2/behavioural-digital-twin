@@ -10,6 +10,10 @@ Twin Lab tests this on real click data from the Microsoft News Dataset (MIND). I
 
 *Pending the frozen test run.*
 
+## Hosted demo (temporary)
+
+*Placeholder, written in #24: the link, its read-only `DEMO_MODE`, and that it was switched off after the panel. Deploy and teardown: [`docs/deploy.md`](docs/deploy.md).*
+
 ## What it looks like
 
 *Screenshots of each step, to follow.*

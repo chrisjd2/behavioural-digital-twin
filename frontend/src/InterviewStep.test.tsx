@@ -279,14 +279,16 @@ describe('InterviewStep: recorded fallback', () => {
   it('on a failed live call, shows the recorded exchanges', async () => {
     stub({
       ...readersReady,
-      '/api/interview': [fail(502, 'The live interview failed: 503')],
+      '/api/interview': [fail(502, 'The live interview is unavailable right now.')],
       '/api/interview/recorded': [ok({ ...recorded, mock: true })],
     })
     const user = renderStep()
 
     await user.click(await screen.findByRole('button', { name: STARTERS[0] }))
 
-    expect(await screen.findByText(/the live interview failed: 503/i)).toBeInTheDocument()
+    expect(
+      await screen.findByText(/the live interview is unavailable right now/i),
+    ).toBeInTheDocument()
     expect(await screen.findAllByText('recorded')).toHaveLength(2)
     expect(screen.getAllByText('MOCK')).toHaveLength(2)
   })

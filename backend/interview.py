@@ -11,6 +11,7 @@ the recorded exchanges from `config/interview_recorded.json` (ADR-0008).
 import asyncio
 import hashlib
 import json
+import logging
 import re
 import secrets
 import time
@@ -31,6 +32,11 @@ from backend.profiles import PROFILE_FIELDS
 from backend.rate_limit import RateLimiter, client_address
 from backend.run_views import Headline, IdentityHit, by_user, headlines, open_run, run_news
 from backend.runner import LLM_ARMS, Run, UserResult
+
+log = logging.getLogger(__name__)
+# Provider errors can carry model, quota or billing detail: logged, never sent to the hosted
+# demo's anonymous visitors (ADR-0011).
+UNAVAILABLE = "The live interview is unavailable right now."
 
 MAX_QUESTION_CHARS = 1000
 MAX_QUESTIONS = 10  # per conversation; then the interviewer starts a new one
@@ -386,7 +392,8 @@ class Interviewer:
             try:
                 self._clients[model, base_url] = interview_client(self.settings, model, base_url)
             except openai.OpenAIError as exc:
-                raise AppError(502, "interview_unavailable", f"No live LLM: {exc}") from exc
+                log.warning("No live LLM for the interview: %s", exc)
+                raise AppError(502, "interview_unavailable", UNAVAILABLE) from exc
         return self._clients[model, base_url]
 
     async def ask(self, request: InterviewRequest) -> InterviewReply:
@@ -406,9 +413,8 @@ class Interviewer:
         try:
             completion = await self._client(model, base_url).complete(payload)
         except (TransientError, openai.OpenAIError) as exc:
-            raise AppError(
-                502, "interview_unavailable", f"The live interview failed: {exc}"
-            ) from exc
+            log.warning("The live interview failed: %s", exc)
+            raise AppError(502, "interview_unavailable", UNAVAILABLE) from exc
         text = completion.content.strip()
         if not text:
             raise AppError(502, "interview_unavailable", "The live interview returned no reply.")

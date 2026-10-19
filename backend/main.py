@@ -8,6 +8,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from backend.config import Settings, get_settings
 from backend.data import (
@@ -104,8 +105,43 @@ def summarise_population(settings: Settings, request: ExperimentRequest) -> Popu
     )
 
 
+SECURITY_HEADERS = [
+    (b"x-content-type-options", b"nosniff"),
+    (b"referrer-policy", b"no-referrer"),
+]
+# The built frontend loads only its own bundle and fonts; React sets inline styles.
+DEMO_CSP = (
+    b"default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+    b"font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'self'; "
+    b"frame-ancestors 'none'"
+)
+
+
+class SecurityHeaders:
+    """Plain ASGI, so streamed responses (SSE) pass through untouched."""
+
+    def __init__(self, app: ASGIApp, headers: list[tuple[bytes, bytes]]) -> None:
+        self.app, self.headers = app, headers
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        async def with_headers(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                message["headers"] = [*message.get("headers", []), *self.headers]
+            await send(message)
+
+        await self.app(scope, receive, with_headers if scope["type"] == "http" else send)
+
+
 def build_app(settings: Settings) -> FastAPI:
-    app = FastAPI(title="Twin Lab")
+    # The hosted demo publishes no API map, and the docs pages would load assets from a CDN.
+    headers = list(SECURITY_HEADERS)
+    if settings.demo_mode:
+        app = FastAPI(title="Twin Lab", docs_url=None, redoc_url=None, openapi_url=None)
+        # Only here: /docs, on outside the demo, loads Swagger UI from a CDN.
+        headers.append((b"content-security-policy", DEMO_CSP))
+    else:
+        app = FastAPI(title="Twin Lab")
+    app.add_middleware(SecurityHeaders, headers=headers)
     # A replay's events are ~3.7 MB of JSON at N=300; gzip makes them ~0.8 MB. SSE is exempt.
     app.add_middleware(GZipMiddleware, minimum_size=1024)
 
