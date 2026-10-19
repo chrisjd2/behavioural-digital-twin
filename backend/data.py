@@ -75,11 +75,13 @@ def resolve_data_source(data_dir: Path) -> DataSource:
 class CandidateSet:
     user_id: str
     impression_id: str
+    time: datetime  # when the impression was shown; popularity counts only earlier shows
     items: tuple[str, ...]  # display order, shared by every arm
     labels: dict[str, int]
     tie_rank: dict[str, int]  # tie-break order, independent of display order
     feed_ctr: float  # click rate over the whole real impression
     sample_ctr: float  # click rate within the candidate set (inflated by design)
+    history: tuple[str, ...] = ()  # clicks before this impression, oldest first (twin memory)
 
 
 def load_news(path: Path) -> dict[str, NewsItem]:
@@ -175,9 +177,11 @@ def build_candidate_set(
     return CandidateSet(
         user_id=impression.user_id,
         impression_id=impression.impression_id,
+        time=impression.time,
         items=tuple(items),
         labels=labels,
         tie_rank={news_id: rank for rank, news_id in enumerate(tie_order)},
         feed_ctr=len(clicked) / len(impression.shown),
         sample_ctr=len(chosen_clicked) / len(items),
+        history=impression.history,
     )

@@ -33,3 +33,7 @@ The brief specifies an OpenAI-compatible client and suggests `gpt-4.1-mini` only
 - **OpenAI `gpt-4.1-mini`:** no particular advantage; costs money.
 - **Fine-tuning a model on MIND:** changes the research question, needs a train/test split by user and time, and does not fit one week.
 - **Second-model robustness run:** deferred to spare time.
+
+## Amendment (2026-10-19)
+
+Embeddings (ADR-0006) are cached per news item, not per request: the key is `(base URL, embed model, dimensions, sha256 of the item's text)`. A request is a batch of up to 100 items, and caching per item means a batch that overlaps an earlier one only embeds the new items. The embed model and dimensions are part of `LLMOptions`, so they are in the frozen fingerprint (ADR-0001).
