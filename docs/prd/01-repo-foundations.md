@@ -1,7 +1,7 @@
 # PRD-01: Repo foundations
 
 - **Timebox:** Day 1 morning
-- **ADRs:** 0009, 0010
+- **ADRs:** 0009, 0010, 0011
 
 ## Problem Statement
 
@@ -14,7 +14,8 @@ A minimal but complete skeleton: Python and frontend toolchains, quality gates, 
 ## User Stories
 
 ### Developer (Chris + agent)
-1. As the developer, I can run `just install`, `just lint`, `just typecheck`, `just test`, `just dev` so every task has one command.
+1. As the developer, I can run `just install`, `just lint`, `just typecheck`, `just test`, `just dev` so every task has one command. `just dev` runs `docker compose up` with hot reload.
+1a. As the developer, one multi-stage `Dockerfile` builds the frontend and serves it from FastAPI, identical locally and on Cloud Run (ADR-0011).
 2. As the agent, I can run `run-lint`, `run-typecheck`, `run-tests` and `coverage-delta` gates that return the Kleisi JSON shape, so I know when a ticket is done.
 3. As the agent, I can follow `fastapi-implement` / `react-implement` with the Kleisi implementer protocol (Kleisi-specific checks removed).
 4. As the reviewer, I can run `review-implementation`, `review-quality`, `review-architecture` (against this repo's ADRs) and `review-experiment`.
@@ -30,7 +31,8 @@ A minimal but complete skeleton: Python and frontend toolchains, quality gates, 
 - `.gitignore`: `data/`, `.env`, `.venv/`, `node_modules/`, `dist/`, `.reviews/`.
 - `.env.example`: `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `EMBED_MODEL`, `CONCURRENCY`, `MOCK_LLM`, `BASE_RATE_HINT`.
 - pre-commit: ruff format, ruff check, gitleaks, basedpyright.
-- CI (`.github/workflows/ci.yml`): uv sync, ruff, basedpyright, pytest (mock + synthetic sample), frontend lint/typecheck/test/build. Never uses real MIND or a key.
+- CI (`.github/workflows/ci.yml`): uv sync, ruff, basedpyright, pytest (mock + synthetic sample), frontend lint/typecheck/test/build, `docker build` (no data, no push). Never uses real MIND or a key.
+- `docker-compose.yml`: one `app` service, source and `data/` mounted, uvicorn `--reload` plus Vite dev server (or a `web` service) for hot reload.
 - `review-experiment` skill checklist: test-set leakage; prompt/config change after `prompts-frozen`; cache key includes model ID and base URL; shared order and tie-break across arms; popularity strictly earlier and excluding sampled users; dev/test disjointness.
 - GitHub labels: `ready-for-agent`, `in-review`, `done`.
 - `AI_USAGE.md` entry format: *Date · What AI did · What I decided · What I verified by hand · Surprise / what broke*. Seeded with 2026-10-19.
@@ -42,7 +44,7 @@ A minimal but complete skeleton: Python and frontend toolchains, quality gates, 
 
 ## Out of Scope
 
-- Docker, deployment, auth, Postgres, import-linter, mutation testing, bandit, six-state triage labels.
+- Cloud Run deployment (PRD-03), auth, Postgres, import-linter, mutation testing, bandit, six-state triage labels.
 
 ## Further Notes
 

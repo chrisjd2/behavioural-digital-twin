@@ -1,6 +1,6 @@
 # ADR-0010: Public repository, no data committed
 
-- **Status:** Accepted
+- **Status:** Accepted — amended by ADR-0011 (data baked into a private demo image)
 - **Date:** 2026-10-19
 - **Deciders:** Chris Davies
 - **Related:** ADR-0001, ADR-0002, ADR-0009

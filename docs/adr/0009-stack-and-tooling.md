@@ -1,6 +1,6 @@
 # ADR-0009: Stack, tooling and agent workflow
 
-- **Status:** Accepted
+- **Status:** Accepted — Docker and deployment scope superseded by ADR-0011
 - **Date:** 2026-10-19
 - **Deciders:** Chris Davies
 - **Related:** ADR-0010

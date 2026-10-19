@@ -1,7 +1,7 @@
 # PRD-03: Twin Lab UI
 
 - **Timebox:** Day 3 → Day 5
-- **ADRs:** 0001, 0003, 0005, 0006, 0007, 0008
+- **ADRs:** 0001, 0003, 0005, 0006, 0007, 0008, 0011
 
 ## Problem Statement
 
@@ -39,6 +39,11 @@ A FastAPI backend serving a React app with a MiroFish-style stepper: **Step 0 Ho
 ### Everywhere
 12. As the audience, every agent view carries "Simulated from anonymised research data (MIND). Not a real person's voice." Mock mode shows `MOCK` on every screen.
 
+### Hosted demo (ADR-0011)
+13. As a panel member, I open a public Cloud Run URL for a few days after the panel and explore Hook, Seed, Population, Simulation replay and Report with no setup.
+14. As the owner, in `DEMO_MODE` nobody can start runs or build populations; the interview is rate-limited (30 messages per IP per hour, 500 per day) and falls back to the recorded exchanges.
+15. As the owner, `just deploy` builds a demo image (frozen run, needed MIND items, cache) into private Artifact Registry and deploys it with the key from Secret Manager; `just teardown` deletes the service and image.
+
 ## Implementation Decisions
 
 - **API:** `GET /api/status`; `POST /api/experiment`; `GET /api/population`; `GET /api/agent/{user_id}?arm=`; `POST /api/run` → `{run_id}`; `GET /api/run/{id}/events` (SSE); `GET /api/run/{id}`; `GET /api/runs`; `GET /api/run/{id}/replay?speed=` (or client-side replay of events); `POST /api/interview`; `GET /api/hook`. Built frontend served from `/`.
@@ -54,7 +59,7 @@ A FastAPI backend serving a React app with a MiroFish-style stepper: **Step 0 Ho
 
 ## Out of Scope
 
-- Auth, deployment, dark theme, Salesforce integration, auto-written insights, multi-agent interaction.
+- Auth, permanent hosting, dark theme, Salesforce integration, auto-written insights, multi-agent interaction.
 
 ## Further Notes
 

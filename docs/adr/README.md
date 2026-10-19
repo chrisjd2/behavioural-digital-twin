@@ -15,3 +15,4 @@ Format: Michael Nygard short form — Status / Context / Decision / Consequences
 - [ADR-0008](0008-demo-strategy-replay-first.md) — Replay-first demo, interview as a bonus
 - [ADR-0009](0009-stack-and-tooling.md) — Stack, tooling and lightweight agent workflow
 - [ADR-0010](0010-public-repo-no-data-committed.md) — Public repo, no data committed
+- [ADR-0011](0011-docker-and-cloud-run-demo.md) — Docker everywhere and a temporary public Cloud Run demo
