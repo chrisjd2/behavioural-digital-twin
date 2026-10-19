@@ -67,6 +67,34 @@ describe('Run picker', () => {
     expect(fetchMock).toHaveBeenCalledWith(populationUrl(RESULT.run_id), undefined)
   })
 
+  it('names the kind of run first', async () => {
+    const unfrozen = { ...runFixture, run_id: 'unfrozen', population: 'test' }
+    const list: RunList = { runs: [NEWER_MOCK, RESULT, unfrozen, runFixture], problems: [] }
+    await openPopulation(list, { [populationUrl(RESULT.run_id)]: runPopulationFixture })
+
+    const options = within(await screen.findByRole('combobox', { name: /run/i })).getAllByRole(
+      'option',
+    )
+    expect(options.map((o) => o.textContent?.split(' · ')[0])).toEqual([
+      'MOCK',
+      'Result',
+      'Unfrozen test',
+      'Dev',
+    ])
+  })
+
+  it('refreshes the run list and keeps the chosen run', async () => {
+    const first: RunList = { runs: [runFixture], problems: [] }
+    const { user, fetchMock } = await openPopulation(first)
+    await screen.findByRole('combobox', { name: /run/i })
+
+    fetchMock.mockClear()
+    await user.click(screen.getByRole('button', { name: /refresh runs/i }))
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/runs', undefined)
+    expect(await screen.findByRole('combobox', { name: /run/i })).toHaveValue(runFixture.run_id)
+  })
+
   it('switches run and keeps the choice for the other run steps', async () => {
     const list: RunList = { runs: [NEWER_MOCK, runFixture], problems: [] }
     const { user, fetchMock } = await openPopulation(list, {
@@ -84,11 +112,15 @@ describe('Run picker', () => {
     expect(screen.getByRole('combobox', { name: /run/i })).toHaveValue(runFixture.run_id)
   })
 
-  it('shows an error, not an empty list, when the runs fail to load', async () => {
-    await openPopulation(500)
+  it('shows an error, not an empty list, when the runs fail to load, and retries', async () => {
+    const { user, fetchMock } = await openPopulation(500)
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/could not load the saved runs/i)
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent(/could not load the saved runs/i)
     expect(screen.queryByText(/no saved runs/i)).not.toBeInTheDocument()
+    fetchMock.mockClear()
+    await user.click(within(alert).getByRole('button', { name: /try again/i }))
+    expect(fetchMock).toHaveBeenCalledWith('/api/runs', undefined)
   })
 
   it('says when there are no saved runs', async () => {
@@ -110,15 +142,29 @@ describe('Run picker', () => {
 })
 
 describe('Population step', () => {
-  it('draws one focusable node per reader', async () => {
+  it('draws one node per reader behind a single Tab stop', async () => {
     await openPopulation()
 
     const readers = await screen.findAllByRole('button', { name: /^reader U\d:/i })
     expect(readers).toHaveLength(2)
     expect(readers[0]).toHaveAccessibleName('Reader U1: 4 past clicks in health, news')
-    expect(
-      screen.getByRole('group', { name: /2 readers linked to the 3 categories/i }),
-    ).toBeVisible()
+    expect(readers.map((r) => r.getAttribute('tabindex'))).toEqual(['0', '-1'])
+    expect(screen.getByRole('group', { name: /2 readers around the 3 categories/i })).toBeVisible()
+  })
+
+  it('moves between readers with the arrow keys', async () => {
+    const { user } = await openPopulation()
+
+    const first = await screen.findByRole('button', { name: /^reader U1:/i })
+    first.focus()
+    await user.keyboard('{ArrowRight}')
+
+    const second = screen.getByRole('button', { name: /^reader U2:/i })
+    expect(second).toHaveFocus()
+    expect(second).toHaveAttribute('tabindex', '0')
+    expect(first).toHaveAttribute('tabindex', '-1')
+    await user.keyboard('{ArrowRight}')
+    expect(first).toHaveFocus()
   })
 
   it('opens the reader panel on click and closes it again', async () => {

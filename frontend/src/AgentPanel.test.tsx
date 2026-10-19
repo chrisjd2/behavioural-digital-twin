@@ -29,6 +29,20 @@ describe('AgentPanel', () => {
     ).toBeInTheDocument()
   })
 
+  it('marks a mock run in the panel', async () => {
+    open({ ...agentFixture, mock: true })
+
+    expect(await screen.findByText('MOCK')).toBeVisible()
+    expect(screen.getByText(/fake LLM output/i)).toBeVisible()
+  })
+
+  it('has no MOCK mark for a real run', async () => {
+    open()
+
+    await screen.findByRole('tablist')
+    expect(screen.queryByText('MOCK')).not.toBeInTheDocument()
+  })
+
   it('shows the click history and the feed headlines without revealing clicks', async () => {
     open()
 

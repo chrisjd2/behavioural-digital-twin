@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import os
 from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
@@ -155,25 +156,27 @@ def test_population_links_every_agent_to_the_categories_they_read(
     assert body["data_source"] == "synthetic"
 
 
-def test_population_summarises_what_each_llm_arm_knew(
-    lab: tuple[Path, Run], client: TestClient
-) -> None:
+def test_run_summary_by_id(lab: tuple[Path, Run], client: TestClient) -> None:
     _, run = lab
-    agent = client.get(f"/api/run/{run.run_id}/population").json()["agents"][0]
+    listed = client.get("/api/runs").json()["runs"][0]
 
-    knows = {k["arm"]: k for k in agent["knowledge"]}
-    assert list(knows) == ["A", "B", "C", "D", "E"]  # baselines know nothing to show
-    assert knows["A"] == {
-        "arm": "A",
-        "memories": 0,
-        "profile_items": 0,
-        "invented": False,
-        "donor": None,
-    }
-    assert knows["B"]["invented"] is True
-    assert knows["C"]["memories"] > 0
-    assert knows["D"]["profile_items"] > 0
-    assert knows["E"]["donor"] not in (None, agent["user_id"])
+    response = client.get(f"/api/run/{run.run_id}")
+
+    assert response.status_code == 200
+    assert response.json() == listed
+
+
+def test_run_list_sees_a_changed_run_file(lab: tuple[Path, Run], tmp_path: Path) -> None:
+    _, run = lab
+    path = save_run(run, tmp_path / RUNS_SUBDIR)
+    client = make_client(data_dir=str(tmp_path))
+    assert client.get("/api/runs").json()["runs"][0]["model"] == "mock"
+
+    save_run(replace(run, model="mock-2"), tmp_path / RUNS_SUBDIR)
+    stat = path.stat()
+    os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns + 10**9))
+
+    assert client.get("/api/runs").json()["runs"][0]["model"] == "mock-2"
 
 
 def test_population_never_reveals_labels(lab: tuple[Path, Run], client: TestClient) -> None:

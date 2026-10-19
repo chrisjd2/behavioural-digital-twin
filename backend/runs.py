@@ -61,16 +61,3 @@ def run_path(runs_dir: Path, run_id: str) -> Path | None:
     """The file for `run_id`, or None if there is no such run (or the id is not a run id)."""
     path = runs_dir / f"{run_id}.json"
     return path if RUN_ID.fullmatch(run_id) and path.is_file() else None
-
-
-def list_runs(runs_dir: Path) -> tuple[list[Run], list[RunFileError]]:
-    """Every run, newest first, and every run file that could not be loaded."""
-    runs: list[Run] = []
-    problems: list[RunFileError] = []
-    for path in sorted(runs_dir.glob("*.json"), reverse=True):
-        try:
-            runs.append(load_run(path))
-        except RunFileError as exc:
-            problems.append(exc)
-    runs.sort(key=lambda r: r.created, reverse=True)
-    return runs, problems

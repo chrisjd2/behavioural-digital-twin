@@ -56,13 +56,11 @@ export const runPopulationFixture: RunPopulation = {
         { category: 'health', clicks: 3 },
         { category: 'news', clicks: 1 },
       ],
-      knowledge: [],
     },
     {
       user_id: 'U2',
       n_history: 2,
       categories: [{ category: 'sports', clicks: 2 }],
-      knowledge: [],
     },
   ],
   categories: [

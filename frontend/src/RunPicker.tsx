@@ -1,4 +1,4 @@
-import type { RunList, RunSummary } from './api/runs'
+import { runKind, type RunList, type RunSummary } from './api/runs'
 
 export type Runs =
   | { state: 'idle' }
@@ -10,53 +10,72 @@ type Props = {
   runs: Runs
   runId: string | undefined
   onRunChange: (runId: string) => void
+  onRefresh: () => void
+}
+
+const KIND_NOTES: Record<string, string> = {
+  MOCK: 'MOCK run: fake LLM output. Not a reported result.',
+  'Unfrozen test': 'Test run made without the freeze. Not a reported result.',
+  Dev: 'Dev run. Not a reported result.',
 }
 
 function describe(run: RunSummary): string {
-  const kind = run.mock ? 'MOCK' : run.is_result ? 'Result' : 'Dev run, not a result'
   const created = new Date(run.created).toLocaleString(undefined, {
     dateStyle: 'medium',
     timeStyle: 'short',
   })
-  return `${created}, ${run.population}, arms ${run.arms.join(' ')}, ${run.n_users} readers (${kind})`
+  return `${runKind(run)} · ${created} · ${run.n_users} readers · arms ${run.arms.join(' ')}`
 }
 
 /** The saved run Steps 2-4 show. Its selection lives in App so every run step shares it. */
-export default function RunPicker({ runs, runId, onRunChange }: Props) {
+export default function RunPicker({ runs, runId, onRunChange, onRefresh }: Props) {
   if (runs.state === 'idle' || runs.state === 'loading') {
     return <p className="muted">Loading saved runs…</p>
   }
   if (runs.state === 'error') {
     return (
-      <p role="alert" className="result-error">
-        Could not load the saved runs: {runs.message}. Check the API is running, then reload.
-      </p>
+      <div role="alert" className="result-error">
+        <p>Could not load the saved runs: {runs.message}. Check the API is running.</p>
+        <button type="button" className="secondary" onClick={onRefresh}>
+          Try again
+        </button>
+      </div>
     )
   }
   const { runs: list, problems } = runs.list
   const selected = list.find((r) => r.run_id === runId)
+  const refresh = (
+    <button type="button" className="secondary" onClick={onRefresh}>
+      Refresh runs
+    </button>
+  )
   return (
     <div className="run-picker">
       {list.length === 0 ? (
-        <p className="result-empty">
-          No saved runs yet. Make one with <code>uv run python scripts/run_headless.py</code>, then
-          reload.
-        </p>
+        <div className="result-empty">
+          <p>
+            No saved runs yet. Make one with <code>uv run python scripts/run_headless.py</code>.
+          </p>
+          {refresh}
+        </div>
       ) : (
-        <label>
-          <span className="field-label">Run</span>
-          <select value={runId} onChange={(e) => onRunChange(e.target.value)}>
-            {list.map((r) => (
-              <option key={r.run_id} value={r.run_id}>
-                {describe(r)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="run-select">
+          <label>
+            <span className="field-label">Run</span>
+            <select value={runId} onChange={(e) => onRunChange(e.target.value)}>
+              {list.map((r) => (
+                <option key={r.run_id} value={r.run_id}>
+                  {describe(r)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {refresh}
+        </div>
       )}
       {selected && !selected.is_result && (
         <p className="run-kind">
-          {selected.mock ? 'MOCK run: fake LLM output.' : 'Dev run.'} Not a reported result.
+          {KIND_NOTES[runKind(selected)]}
           {selected.data_source === 'synthetic' && ' Synthetic sample: fake readers.'}
         </p>
       )}

@@ -1,7 +1,7 @@
 import { requestJson } from './client'
 import type { CategoryCount } from './experiment'
 
-/** Mirrors `backend.main.RunSummary`. */
+/** Mirrors `backend.run_views.RunSummary`. */
 export type RunSummary = {
   run_id: string
   created: string
@@ -14,40 +14,30 @@ export type RunSummary = {
   n_users: number
 }
 
-/** Mirrors `backend.main.RunProblem`. */
+/** Mirrors `backend.run_views.RunProblem`. */
 export type RunProblem = {
   run_id: string
   problem: 'unreadable' | 'incompatible'
   detail: string
 }
 
-/** Mirrors `backend.main.RunList`. */
+/** Mirrors `backend.run_views.RunList`. */
 export type RunList = {
   runs: RunSummary[] // newest first
   problems: RunProblem[]
 }
 
-/** Mirrors `backend.main.CategoryLink`. */
+/** Mirrors `backend.run_views.CategoryLink`. */
 export type CategoryLink = { category: string; clicks: number }
 
-/** Mirrors `backend.main.ArmSummary`. */
-export type ArmSummary = {
-  arm: string
-  memories: number
-  profile_items: number
-  invented: boolean
-  donor: string | null
-}
-
-/** Mirrors `backend.main.AgentNode`. */
+/** Mirrors `backend.run_views.AgentNode`. */
 export type AgentNode = {
   user_id: string
   n_history: number
-  categories: CategoryLink[]
-  knowledge: ArmSummary[]
+  categories: CategoryLink[] // most-clicked first
 }
 
-/** Mirrors `backend.main.RunPopulation`. */
+/** Mirrors `backend.run_views.RunPopulation`. */
 export type RunPopulation = {
   run_id: string
   population: string
@@ -58,7 +48,7 @@ export type RunPopulation = {
   categories: CategoryCount[]
 }
 
-/** Mirrors `backend.main.Headline`. `null` fields: the item is not in the run's news.tsv. */
+/** Mirrors `backend.run_views.Headline`. `null` fields: the item is not in the run's news.tsv. */
 export type Headline = {
   news_id: string
   category: string | null
@@ -66,7 +56,7 @@ export type Headline = {
   title: string | null
 }
 
-/** Mirrors `backend.main.Persona`. */
+/** Mirrors `backend.run_views.Persona`. */
 export type Persona = {
   name: string
   life_stage: string
@@ -78,7 +68,7 @@ export type Persona = {
   news_habit: string
 }
 
-/** Mirrors `backend.main.MemoryView`. */
+/** Mirrors `backend.run_views.MemoryView`. */
 export type Memory = {
   news_id: string
   headline: string
@@ -86,10 +76,10 @@ export type Memory = {
   reason: string
 }
 
-/** Mirrors `backend.main.IdentityHit`. */
+/** Mirrors `backend.run_views.IdentityHit`. */
 export type IdentityHit = { kind: string; term: string; text: string }
 
-/** Mirrors `backend.main.ProfileView` (with `ProfileField` and `ProfileItem`). */
+/** Mirrors `backend.run_views.ProfileView` (with `ProfileField` and `ProfileItem`). */
 export type Profile = {
   ok: boolean
   fields: { field: string; items: { text: string; evidence: Headline[] }[] }[]
@@ -98,10 +88,10 @@ export type Profile = {
   word_count: number
 }
 
-/** Mirrors `backend.main.WrongTwin`. */
+/** Mirrors `backend.run_views.WrongTwin`. */
 export type WrongTwin = { control: true; donor: string; shared_history: number | null }
 
-/** Mirrors `backend.main.ArmKnowledge`: KnowsNothing | KnowsPersona | KnowsMemories | KnowsProfile. */
+/** Mirrors `backend.run_views.ArmKnowledge`: KnowsNothing | KnowsPersona | KnowsMemories | KnowsProfile. */
 export type ArmKnowledge =
   | { arm: string; kind: 'nothing' }
   | { arm: string; kind: 'persona'; invented: true; persona: Persona }
@@ -114,7 +104,7 @@ export type ArmKnowledge =
       wrong_twin: WrongTwin | null
     }
 
-/** Mirrors `backend.main.AgentDetail`. No labels: the reveal belongs to Simulation and Report. */
+/** Mirrors `backend.run_views.AgentDetail`. No labels: the reveal belongs to Simulation and Report. */
 export type AgentDetail = {
   run_id: string
   user_id: string
@@ -129,6 +119,10 @@ export function fetchRuns(): Promise<RunList> {
   return requestJson<RunList>('/api/runs')
 }
 
+export function fetchRun(runId: string): Promise<RunSummary> {
+  return requestJson<RunSummary>(`/api/run/${encodeURIComponent(runId)}`)
+}
+
 export function fetchPopulation(runId: string): Promise<RunPopulation> {
   return requestJson<RunPopulation>(`/api/run/${encodeURIComponent(runId)}/population`)
 }
@@ -137,6 +131,13 @@ export function fetchAgent(runId: string, userId: string): Promise<AgentDetail> 
   return requestJson<AgentDetail>(
     `/api/run/${encodeURIComponent(runId)}/agent/${encodeURIComponent(userId)}`,
   )
+}
+
+/** What a run may be read as (ADR-0001): only a frozen test run on real data is a result. */
+export function runKind(run: RunSummary): 'Result' | 'MOCK' | 'Unfrozen test' | 'Dev' {
+  if (run.is_result) return 'Result'
+  if (run.mock) return 'MOCK'
+  return run.population === 'test' ? 'Unfrozen test' : 'Dev'
 }
 
 /** Steps 2-4 open on the newest result run, otherwise the newest run (PRD-03). */

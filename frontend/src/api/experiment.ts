@@ -8,7 +8,7 @@ export type ExperimentRequest = {
   max_candidates: number
 }
 
-/** Mirrors `backend.main.CategoryCount`. */
+/** Mirrors `backend.run_views.CategoryCount`. */
 export type CategoryCount = {
   category: string
   users: number

@@ -61,13 +61,13 @@ export default function PopulationStep({ runId }: { runId: string }) {
         <ul className="graph-legend">
           <li>
             <span className="legend-agent" aria-hidden="true" />
-            {population.agents.length} readers
+            {population.agents.length} readers, coloured by the category they click most
           </li>
           <li>
             <span className="legend-category" aria-hidden="true" />
             {population.categories.length} news categories, sized by readers
           </li>
-          <li>Lines join each reader to the categories they clicked</li>
+          <li>Point at a reader to see the categories they clicked</li>
         </ul>
         {population.data_source === 'synthetic' && (
           <p className="notice">Synthetic sample: these readers are fake.</p>

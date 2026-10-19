@@ -76,6 +76,12 @@ export default function AgentPanel({ runId, userId, onClose }: Props) {
           Could not load reader {userId}: {load.message}
         </p>
       )}
+      {load.state === 'ready' && load.agent.mock && (
+        <p className="mock-note">
+          <span className="badge-mock">MOCK</span> This run used fake LLM output: its profiles are
+          not real model output.
+        </p>
+      )}
       {load.state === 'ready' && <AgentBody agent={load.agent} />}
     </aside>
   )
@@ -105,8 +111,8 @@ function AgentBody({ agent }: { agent: AgentDetail }) {
 function HeadlineList({ items }: { items: Headline[] }) {
   return (
     <ul className="headlines">
-      {items.map((h) => (
-        <li key={h.news_id}>
+      {items.map((h, i) => (
+        <li key={`${h.news_id}-${i}`}>
           <span className="headline-category">
             {h.category ? `${h.category} / ${h.subcategory}` : h.news_id}
           </span>
@@ -250,12 +256,12 @@ function ProfileView({ profile }: { profile: Profile }) {
         <div key={field} className="profile-field">
           <p className="profile-field-name">{FIELD_NAMES[field] ?? field}</p>
           <ul>
-            {items.map((item) => (
-              <li key={item.text}>
+            {items.map((item, i) => (
+              <li key={i}>
                 <p>{item.text}</p>
                 <ul className="evidence" aria-label="Evidence">
-                  {item.evidence.map((e) => (
-                    <li key={e.news_id}>{e.title ?? e.news_id}</li>
+                  {item.evidence.map((e, j) => (
+                    <li key={`${e.news_id}-${j}`}>{e.title ?? e.news_id}</li>
                   ))}
                 </ul>
               </li>
@@ -289,8 +295,8 @@ function Memories({ memories }: { memories: Memory[] }) {
     <section className="memories" aria-label="Memories">
       <h5>Memories ({memories.length})</h5>
       <ul className="headlines">
-        {memories.map((m) => (
-          <li key={m.news_id}>
+        {memories.map((m, i) => (
+          <li key={`${m.news_id}-${i}`}>
             <span className="headline-category">{m.category}</span>
             <span>{m.headline}</span>
             <span className="reason">{reason(m.reason)}</span>

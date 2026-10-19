@@ -78,7 +78,10 @@ export default function App() {
     fetchRuns()
       .then((list) => {
         setRuns({ state: 'ready', list })
-        setRunId(defaultRunId(list.runs))
+        // A refresh keeps the chosen run while it still exists.
+        setRunId((chosen) =>
+          list.runs.some((r) => r.run_id === chosen) ? chosen : defaultRunId(list.runs),
+        )
       })
       .catch((error: unknown) =>
         setRuns({
@@ -146,7 +149,7 @@ export default function App() {
                 </h2>
                 <p className="lede">{current.blurb}</p>
               </div>
-              <RunPicker runs={runs} runId={runId} onRunChange={setRunId} />
+              <RunPicker runs={runs} runId={runId} onRunChange={setRunId} onRefresh={loadRuns} />
             </div>
             {runId && step === POPULATION_STEP && <PopulationStep key={runId} runId={runId} />}
             {step !== POPULATION_STEP && <p className="muted">This step is not built yet.</p>}

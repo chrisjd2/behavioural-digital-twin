@@ -46,7 +46,7 @@ A FastAPI backend serving a React app with a MiroFish-style stepper: **Step 0 Ho
 
 ## Implementation Decisions
 
-- **API:** `GET /api/status`; `POST /api/experiment`; `GET /api/population`; `GET /api/agent/{user_id}?arm=`; `POST /api/run` → `{run_id}`; `GET /api/run/{id}/events` (SSE); `GET /api/run/{id}`; `GET /api/runs`; `GET /api/run/{id}/replay?speed=` (or client-side replay of events); `POST /api/interview`; `GET /api/hook`. Built frontend served from `/`.
+- **API:** `GET /api/status`; `POST /api/experiment`; `GET /api/run/{id}/population`; `GET /api/run/{id}/agent/{user_id}?arm=` (no labels: the reveal belongs to Simulation and Report); `POST /api/run` → `{run_id}`; `GET /api/run/{id}/events` (SSE); `GET /api/run/{id}` (run summary); `GET /api/runs` (summaries plus run files that could not be opened); `GET /api/run/{id}/replay?speed=` (or client-side replay of events); `POST /api/interview`; `GET /api/hook`. Built frontend served from `/`.
 - Typed API client in `frontend/src/api/` with TS types mirroring pydantic models.
 - **Design:** light theme, projector-legible type, arm colours A slate, B amber, C blue, D violet, E muted teal with "control" tag; baselines grey/dashed. Fonts bundled locally.
 - No auto-generated conclusions anywhere; Report shows numbers and the pre-registered rule's outcome only.
