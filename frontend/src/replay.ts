@@ -107,3 +107,14 @@ export function armProgress(
     return { arm, done: p?.done ?? 0, total: p?.total ?? total }
   })
 }
+
+export type Order = 'reader' | 'arm'
+
+export const SPEED_OPTIONS = SPEEDS.map((s) => ({ value: s as number, label: `${s}×` }))
+export const ORDER_OPTIONS: { value: Order; label: string }[] = [
+  { value: 'reader', label: 'By reader' },
+  { value: 'arm', label: 'By arm' },
+]
+
+export const duration = (seconds: number) =>
+  seconds < 90 ? `${Math.round(seconds)} s` : `${Math.round(seconds / 60)} min`

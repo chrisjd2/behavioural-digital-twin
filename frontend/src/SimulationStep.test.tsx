@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RunEvent } from './api/simulation'
 import { SIMULATED_LABEL } from './labels'
+import { ARM_BEAT_MS } from './byReader'
 import { REVEAL_MS } from './replay'
 import App from './App'
 import SimulationStep from './SimulationStep'
@@ -12,7 +13,11 @@ const eventsUrl = `/api/run/${RUN_ID}/events`
 
 const advance = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms))
 
-async function openReplay(reply: Reply = runEventsFixture, liveRuns = false) {
+async function openReplay(
+  reply: Reply = runEventsFixture,
+  liveRuns = false,
+  order: 'By arm' | 'By reader' = 'By arm',
+) {
   const fetchMock = stubApi({ status: statusFixture, urls: { [eventsUrl]: reply } })
   const onLiveRunSaved = vi.fn()
   render(
@@ -24,6 +29,8 @@ async function openReplay(reply: Reply = runEventsFixture, liveRuns = false) {
     />,
   )
   await advance(0)
+  const radio = screen.queryByRole('radio', { name: order })
+  if (radio) fireEvent.click(radio)
   return { fetchMock, onLiveRunSaved }
 }
 
@@ -40,7 +47,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('Simulation replay', () => {
+describe('Simulation replay, by arm', () => {
   it('says openly that it is a recorded run, sped up, simulated from research data', async () => {
     await openReplay()
 
@@ -144,6 +151,74 @@ describe('Simulation replay', () => {
     for (const arm of ['A', 'B', 'random'])
       expect(armBar(arm)).toHaveAttribute('aria-valuenow', '2')
     expect(screen.getByText(/replay finished/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Play' })).toBeDisabled()
+  })
+})
+
+describe('Simulation replay, by reader', () => {
+  const reader = (id: string) => screen.getByRole('article', { name: `Reader ${id}` })
+  const armRows = () =>
+    within(screen.getByRole('list', { name: "Each arm's prediction" })).getAllByRole('listitem')
+
+  it('is the default, labelled as reordered in a seeded order', async () => {
+    stubApi({ status: statusFixture, urls: { [eventsUrl]: runEventsFixture } })
+    render(
+      <SimulationStep runId={RUN_ID} liveRuns={false} mockLlm={false} onLiveRunSaved={vi.fn()} />,
+    )
+    await advance(0)
+
+    expect(screen.getByRole('radio', { name: 'By reader' })).toBeChecked()
+    expect(
+      screen.getByText(/recorded run, sped up and reordered by reader/i).parentElement,
+    ).toHaveTextContent('(seeded order, not cherry-picked)')
+    // The fixture shows each reader two headlines, one clicked: half, from the data.
+    expect(screen.getByText(/half are clicks by design/i)).toHaveTextContent(
+      'across this run 50% of shown headlines were clicked',
+    )
+    expect(screen.getByText(/seeded sampling order/i)).toBeInTheDocument()
+    expect(screen.getByText(SIMULATED_LABEL)).toBeInTheDocument()
+  })
+
+  it('shows one reader’s headline through each arm in turn, then the real click', async () => {
+    await openReplay(runEventsFixture, false, 'By reader')
+
+    expect(within(reader('U1')).getByText('How to get a six-pack in 30 days')).toBeInTheDocument()
+    expect(armRows()).toHaveLength(1)
+    expect(armRows()[0]).toHaveClass('arm-a')
+    expect(armRows()[0]).toHaveTextContent('Plain LLM')
+    expect(armRows()[0]).toHaveTextContent('70%')
+    expect(within(reader('U1')).getByText('Did the real reader click?')).toBeInTheDocument()
+
+    await advance(ARM_BEAT_MS)
+    expect(armRows()).toHaveLength(2)
+    expect(armRows()[1]).toHaveClass('arm-b')
+
+    await advance(ARM_BEAT_MS)
+    expect(within(reader('U1')).getByText('Real reader clicked')).toBeInTheDocument()
+  })
+
+  it('moves on to the next reader, keeping the earlier ones below', async () => {
+    await openReplay(runEventsFixture, false, 'By reader')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next reader' }))
+    await advance(0)
+
+    expect(within(reader('U2')).getByText(/stocks slip/i)).toBeInTheDocument()
+    const earlier = screen.getByRole('list', { name: 'Earlier readers' })
+    expect(earlier).toHaveTextContent('How to get a six-pack in 30 days')
+    expect(earlier).toHaveTextContent('Real reader clicked')
+  })
+
+  it('pauses, and skips to the end', async () => {
+    await openReplay(runEventsFixture, false, 'By reader')
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }))
+    await advance(5000)
+    expect(armRows()).toHaveLength(1)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip to end' }))
+    await advance(0)
+
+    expect(screen.getByText('Replay finished: 2 readers compared.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Play' })).toBeDisabled()
   })
 })

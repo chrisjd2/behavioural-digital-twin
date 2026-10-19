@@ -363,3 +363,139 @@
     width: 80px;
   }
 }
+
+/* By reader: one headline, every arm's guess in turn, then the real click. */
+.comparison {
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+
+.comparison-reader {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.comparison-headline {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.15;
+  max-width: 40ch;
+}
+
+.comparison-arms {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: grid;
+  gap: 8px;
+}
+
+.comparison-arm {
+  display: grid;
+  grid-template-columns: auto 10.5em minmax(0, 1fr) 3.4em 110px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-left: 8px solid var(--arm);
+  border-radius: 4px 8px 8px 4px;
+  background: var(--wash);
+  animation: card-in 220ms ease-out;
+}
+
+.comparison-arm .arm-letter {
+  width: 1.6em;
+  height: 1.6em;
+  font-size: 0.95rem;
+  border-radius: 6px;
+}
+
+.comparison-arm-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.comparison-reaction {
+  font-style: italic;
+  font-size: 0.95rem;
+}
+
+.comparison-arm .p-click-value {
+  min-width: 0;
+  font-size: 1.3rem;
+  text-align: right;
+}
+
+.comparison-arm .p-click-bar {
+  width: 100%;
+}
+
+.earlier-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  opacity: 0.7;
+}
+
+.earlier {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 8px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.earlier-headline {
+  font-weight: 700;
+}
+
+.earlier-arms {
+  display: flex;
+  gap: 10px;
+}
+
+.earlier-arms strong {
+  color: var(--arm);
+}
+
+.earlier .reveal {
+  font-size: 0.8rem;
+  padding: 2px 10px;
+  animation: none;
+}
+
+.order-rule {
+  margin-top: -8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .comparison-arm {
+    animation: none;
+  }
+}
+
+@media (max-width: 1100px) {
+  .comparison-arm {
+    grid-template-columns: auto minmax(0, 1fr) 3.2em;
+  }
+  .comparison-reaction {
+    grid-column: 1 / -1;
+    order: 1;
+  }
+  .comparison-arm .p-click-bar {
+    display: none;
+  }
+  .earlier {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

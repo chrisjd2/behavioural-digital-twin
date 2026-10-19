@@ -1,7 +1,9 @@
 """Step 3 Simulation: saved-run events for replay, and live dev runs over SSE."""
 
+import asyncio
 import json
-from collections.abc import Iterator
+import threading
+from collections.abc import Callable, Iterator
 from dataclasses import replace
 from pathlib import Path
 
@@ -12,9 +14,9 @@ from backend.experiment import ARMS as BASELINES
 from backend.runner import LLM_ARMS, Run, RunEvent
 from backend.runs import RUNS_SUBDIR, save_run
 from backend.sample import write_synthetic_sample
-from backend.simulation import ALL_ARMS
+from backend.simulation import ALL_ARMS, LiveRun, LiveRunRequest, execute
 from tests.test_api_runs import ARMS, make_run
-from tests.test_status import make_client
+from tests.test_status import make_client, make_settings
 
 EVENT_KEYS = {
     "call_started": {"seq", "kind", "user_id", "arm"},
@@ -70,6 +72,16 @@ def test_events_come_in_seq_order_with_the_run_summary(
         "run_id": run.run_id,
     }
     assert body["recorded_seconds"] >= 0
+
+
+def test_events_name_the_readers_in_the_runs_sampling_order(
+    client: TestClient, lab: tuple[Path, Run]
+) -> None:
+    _, run = lab
+    body = client.get(f"/api/run/{run.run_id}/events").json()
+
+    sampled = list(dict.fromkeys(u.user_id for u in run.users))
+    assert body["readers"] == sampled
 
 
 def test_events_are_sorted_by_seq_even_if_the_file_is_not(
@@ -217,6 +229,7 @@ def test_unknown_arms_and_sizes_are_refused(client: TestClient) -> None:
     assert client.post("/api/run", json={"arms": ["Z"]}).status_code == 422
     assert client.post("/api/run", json={"arms": []}).status_code == 422
     assert client.post("/api/run", json={"n_users": 0}).status_code == 422
+    assert client.post("/api/run", json={"n_users": 101}).status_code == 422
 
 
 def test_the_stream_of_an_unknown_live_run_is_404(client: TestClient) -> None:
@@ -258,3 +271,124 @@ def test_live_run_defaults_cover_every_arm(client: TestClient) -> None:
         "random",
     ]
     assert "population" not in schema["properties"]  # always dev: the test set ran once
+
+
+@pytest.fixture
+def held_run(monkeypatch: pytest.MonkeyPatch) -> Iterator[threading.Event]:
+    """Live runs emit one event, then wait until the returned event is set, then fail."""
+    release = threading.Event()
+
+    async def held(*_: object, on_event: Callable[[RunEvent], None], **__: object) -> Run:
+        on_event(RunEvent(0, "2026-10-19T00:00:00", "call_started", {"user_id": "U1", "arm": "A"}))
+        await asyncio.to_thread(release.wait)
+        raise RuntimeError("released")
+
+    monkeypatch.setattr("backend.simulation.run_experiment", held)
+    yield release
+    release.set()
+
+
+def test_only_one_live_run_at_a_time(client: TestClient, held_run: threading.Event) -> None:
+    first = client.post("/api/run", json={"arms": ["A"], "n_users": 2}).json()["live_id"]
+
+    second = client.post("/api/run", json={"arms": ["A"], "n_users": 2})
+
+    assert second.status_code == 409
+    assert second.json()["code"] == "live_run_in_progress"
+    held_run.set()
+    assert sse_messages(client, first)[-1] == ("run_failed", {"detail": "released"})
+    assert client.post("/api/run", json={"arms": ["A"], "n_users": 2}).status_code == 200
+
+
+def test_a_finished_live_run_is_dropped_when_the_next_starts(client: TestClient) -> None:
+    first = client.post("/api/run", json={"arms": ["random"], "n_users": 2}).json()["live_id"]
+    assert sse_messages(client, first)[-1][0] == "run_saved"
+
+    client.post("/api/run", json={"arms": ["random"], "n_users": 2})
+
+    assert client.get(f"/api/run/{first}/stream").status_code == 404
+
+
+async def test_the_last_viewer_leaving_cancels_the_run() -> None:
+    live = LiveRun()
+    stays, leaves = live.stream(), live.stream()
+    live.publish({"event": "run_event", "data": "{}"})
+    await anext(stays)
+    await anext(leaves)
+
+    await leaves.aclose()
+    assert not live.cancelled  # someone is still watching
+    await stays.aclose()
+    assert live.cancelled
+
+
+async def test_a_finished_run_is_never_cancelled() -> None:
+    live = LiveRun()
+    viewer = live.stream()
+    live.publish({"event": "run_saved", "data": "{}"}, last=True)
+    await anext(viewer)
+
+    await viewer.aclose()
+
+    assert not live.cancelled
+
+
+async def test_a_cancelled_run_stops_at_its_next_event_and_says_why(
+    lab: tuple[Path, Run], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    emitted: list[int] = []
+
+    async def endless(*_: object, on_event: Callable[[RunEvent], None], **__: object) -> Run:
+        for seq in range(1000):
+            emitted.append(seq)
+            on_event(
+                RunEvent(seq, "2026-10-19T00:00:00", "call_started", {"user_id": "U", "arm": "A"})
+            )
+            await asyncio.sleep(0)
+        raise AssertionError("not cancelled")
+
+    monkeypatch.setattr("backend.simulation.run_experiment", endless)
+    live = LiveRun(cancelled=True)
+    live.watched.set()
+
+    await execute(make_settings(data_dir=str(lab[0])), LiveRunRequest(), live)
+
+    assert emitted == [0]
+    assert live.finished
+    assert live.messages[-1]["event"] == "run_failed"
+    assert "Cancelled" in live.messages[-1]["data"]
+
+
+async def test_a_live_run_nobody_watches_never_starts(
+    lab: tuple[Path, Run], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    started: list[bool] = []
+
+    async def record(*_: object, **__: object) -> Run:
+        started.append(True)
+        raise AssertionError("should not run")
+
+    monkeypatch.setattr("backend.simulation.run_experiment", record)
+    monkeypatch.setattr("backend.simulation.VIEWER_TIMEOUT_S", 0.01)
+    live = LiveRun()
+
+    await execute(make_settings(data_dir=str(lab[0])), LiveRunRequest(), live)
+
+    assert started == []
+    assert live.messages[-1]["event"] == "run_failed"
+    assert "nobody opened" in live.messages[-1]["data"]
+
+
+async def test_shutdown_mid_run_tells_the_worker_thread_to_stop(
+    lab: tuple[Path, Run], held_run: threading.Event
+) -> None:
+    live = LiveRun()
+    live.watched.set()
+    task = asyncio.create_task(execute(make_settings(data_dir=str(lab[0])), LiveRunRequest(), live))
+    await asyncio.sleep(0.2)
+
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert live.cancelled
