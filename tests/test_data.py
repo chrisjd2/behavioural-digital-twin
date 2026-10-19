@@ -109,6 +109,12 @@ def test_candidate_set_composition() -> None:
     assert candidates.sample_ctr == pytest.approx(2 / 8)
 
 
+def test_candidate_set_carries_the_impression_time() -> None:
+    impression = make_impression()
+
+    assert build_candidate_set(impression, **CANDIDATES).time == impression.time
+
+
 def test_candidate_set_with_one_click_fills_with_non_clicks() -> None:
     candidates = build_candidate_set(make_impression(clicks=1, non_clicks=4), **CANDIDATES)
 

@@ -4,8 +4,8 @@ from pathlib import Path
 import pytest
 
 from backend.arms import LLMOptions
-from backend.baselines import random_scores
-from backend.data import CandidateSet, DataSource, build_candidate_set
+from backend.baselines import BaselineContext, random_scores
+from backend.data import CandidateSet, DataSource, Populations, build_candidate_set
 from backend.experiment import ARMS, ExperimentConfig
 from backend.llm import Cache, LLMClient, mock_backend
 from backend.metrics import auc
@@ -17,13 +17,11 @@ from tests.factories import make_impression
 CONFIG = ExperimentConfig(n_dev=30, n_test=100)
 
 
-def clicked_first(candidates: CandidateSet, *, seed: int) -> dict[str, float]:
-    del seed
+def clicked_first(candidates: CandidateSet, **_: object) -> dict[str, float]:
     return {i: 90.0 * candidates.labels[i] for i in candidates.items}
 
 
-def all_tied(candidates: CandidateSet, *, seed: int) -> dict[str, float]:
-    del seed
+def all_tied(candidates: CandidateSet, **_: object) -> dict[str, float]:
     return dict.fromkeys(candidates.items, 50.0)
 
 
@@ -49,14 +47,15 @@ async def by_arm(
     return {arm: [u for u in run.users if u.arm == arm] for arm in arms}
 
 
-def test_random_scores_cover_every_candidate_and_are_seeded() -> None:
+def test_random_scores_cover_every_candidate_and_are_seeded(sample_source: DataSource) -> None:
     candidates = build_candidate_set(make_impression(), seed=1, max_candidates=8, max_clicked=2)
+    context = BaselineContext(sample_source, Populations(dev=(), test=()))
 
-    scores = random_scores(candidates, seed=3)
+    scores = random_scores(candidates, seed=3, context=context)
 
     assert set(scores) == set(candidates.items)
-    assert scores == random_scores(candidates, seed=3)
-    assert scores != random_scores(candidates, seed=4)
+    assert scores == random_scores(candidates, seed=3, context=context)
+    assert scores != random_scores(candidates, seed=4, context=context)
 
 
 async def test_random_is_near_chance(sample_source: DataSource, tmp_path: Path) -> None:
@@ -65,6 +64,17 @@ async def test_random_is_near_chance(sample_source: DataSource, tmp_path: Path) 
     aucs = [auc(u.scores, u.labels) for u in result["random"]]
     assert len(aucs) == 100
     assert 0.35 < sum(aucs) / len(aucs) < 0.65
+
+
+async def test_popularity_scores_every_candidate_as_a_smoothed_ctr(
+    sample_source: DataSource, tmp_path: Path
+) -> None:
+    users = (await by_arm(sample_source, ["popularity"], tmp_path))["popularity"]
+
+    assert len(users) == 30
+    assert all(set(u.scores) == set(u.items) for u in users)
+    assert all(0 < s < 1 for u in users for s in u.scores.values())
+    assert len({s for u in users for s in u.scores.values()}) > 30  # not just the prior
 
 
 async def test_arms_share_users_labels_and_tie_order(
@@ -122,7 +132,7 @@ def test_headless_prints_synthetic_banner_and_metrics_with_cis(
         assert name in out
     hit1 = summary.metrics["hit1"]
     assert f"{hit1.mean:.3f} [{hit1.low:.3f}, {hit1.high:.3f}]" in out
-    assert "random   n/a (baseline scores are not probabilities)" in out
+    assert "random     n/a (baseline scores are not probabilities)" in out
     assert "Primary outcome" not in out
     assert "MOCK" not in out  # no LLM arm ran
     assert "NOT A RESULT" in out
@@ -140,10 +150,25 @@ def test_headless_prints_comparisons_and_primary_outcome_when_a_and_d_run(
     main(["--data-dir", str(data_dir), "--arms", "A,D", "--n-test", "100"])
 
     out = capsys.readouterr().out
-    assert "A          30  0.500 [0.500, 0.500]" in out
+    assert "A            30  0.500 [0.500, 0.500]" in out
     assert "100.0%" in out  # A ties every prediction
-    assert "A        0.500 | " in out  # mean p_click 50/100
+    assert "A          0.500 | " in out  # mean p_click 50/100
     assert "D - A      +0.500 [+0.500, +0.500]" in out
     assert "Primary outcome, D - A AUC +0.500 [+0.500, +0.500]: twins beat plain LLM" in out
     assert "Outcome buckets: Twin better: 30 | About the same: 0 | Plain LLM better: 0" in out
     assert "Median user: " in out
+
+
+@pytest.mark.usefixtures("isolated_outputs")
+def test_headless_prints_popularity_alongside_random(
+    data_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    exit_code = main(
+        ["--data-dir", str(data_dir), "--arms", "popularity,random", "--n-test", "100"]
+    )
+
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert "popularity   30  " in out
+    assert "random       30  " in out
+    assert "popularity n/a (baseline scores are not probabilities)" in out
