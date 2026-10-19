@@ -37,3 +37,7 @@ The brief specifies an OpenAI-compatible client and suggests `gpt-4.1-mini` only
 ## Amendment (2026-10-19)
 
 Embeddings (ADR-0006) are cached per news item, not per request: the key is `(base URL, embed model, dimensions, sha256 of the item's text)`. A request is a batch of up to 100 items, and caching per item means a batch that overlaps an earlier one only embeds the new items. The embed model and dimensions are part of `LLMOptions`, so they are in the frozen fingerprint (ADR-0001).
+
+## Amendment (2026-10-19, before the freeze): thinking level
+
+Chosen in dev tuning (#15): **`reasoning_effort = medium`**, `max_tokens = 4096`, model `gemini-3.7-flash`, embeddings `gemini-embedding-001` at 768 dimensions. All four levels (none, low, medium, high) were run on the same 30 dev users with all five arms. AUC differences between levels were within noise at N = 30 (CI about ±0.11), so the level was **not** chosen on dev AUC. It was chosen on ties (9–11% at none/low, 4–6% at medium/high), run time (about 47 minutes for the 300-user test run at medium, 70 at high) and continuity with every earlier check. Parse failures were 0% at every level.
