@@ -13,7 +13,7 @@ from pydantic import BaseModel, ValidationError
 from backend.config import Settings
 from backend.errors import AppError
 from backend.metrics import auc, rank
-from backend.report import PROBABILITY_ARMS, Bucket, Verdict, outcome_bucket
+from backend.report import BUCKET_THRESHOLD, PROBABILITY_ARMS, Bucket, Verdict, outcome_bucket
 from backend.run_views import Headline, by_user, headlines, open_run, run_news
 from backend.runner import Run, UserResult
 
@@ -91,6 +91,7 @@ class PrimaryOutcome(BaseModel):
     difference: Estimate
     verdict: Verdict  # stored by the run, never re-derived here
     buckets: list[OutcomeBucket]
+    bucket_threshold: float  # |D - A| above this leaves "About the same" (ADR-0001)
     median_user: str
 
 
@@ -205,6 +206,7 @@ def _primary(stored: _StoredPrimary, per_user: dict[str, float]) -> PrimaryOutco
             )
             for bucket in BUCKETS
         ],
+        bucket_threshold=BUCKET_THRESHOLD,
         median_user=stored.median_user,
     )
 

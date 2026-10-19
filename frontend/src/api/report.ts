@@ -43,6 +43,7 @@ export type PrimaryOutcome = {
   difference: Estimate
   verdict: Verdict
   buckets: OutcomeBucket[]
+  bucket_threshold: number // |D − A| above this leaves “About the same”
   median_user: string
 }
 

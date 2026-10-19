@@ -86,7 +86,7 @@
 
 .bar-values li {
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 1.125rem;
   justify-content: flex-end;
 }
 
@@ -110,7 +110,7 @@
 }
 
 .arm-name {
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 600;
 }
 
@@ -125,7 +125,7 @@
 }
 
 .bar-track text {
-  font-size: 13px;
+  font-size: 16px;
   fill: var(--muted);
 }
 
@@ -215,7 +215,7 @@
 
 .difference-label .arm-name {
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: 1rem;
 }
 
 /* Calibration */
@@ -259,7 +259,7 @@
 
 .reliability {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 16px;
   margin-top: 12px;
 }
@@ -276,8 +276,8 @@
 }
 
 .reliability-panel svg {
-  width: 100%;
-  max-width: 240px;
+  width: 260px; /* 1 viewBox unit = 1px, so 15-unit text renders at 15px */
+  max-width: 100%;
   display: block;
 }
 
@@ -303,7 +303,7 @@
 }
 
 .reliability-panel text {
-  font-size: 10px;
+  font-size: 15px;
   fill: var(--muted);
 }
 
@@ -421,7 +421,7 @@
 
 .rankings-table thead th,
 .diagnostics thead th {
-  font-size: 0.8rem;
+  font-size: 1rem;
   color: var(--muted);
   border-bottom: 2px solid var(--ink);
   white-space: nowrap;
@@ -493,7 +493,7 @@ tr.clicked .reality::before {
 
 .rank-cell .p-click {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   color: var(--muted);
 }
 
@@ -547,7 +547,7 @@ tr.clicked .reality::before {
     min-width: 0;
   }
   .bar-values li {
-    font-size: 0.75rem;
+    font-size: 0.85rem;
   }
   /* Narrow tracks: label every other tick so labels never collide. */
   .bar-track .tick:nth-child(even) text {

@@ -62,6 +62,7 @@ const primary: PrimaryOutcome = {
     bucket('About the same', ['U4']),
     bucket('Plain LLM better', []),
   ],
+  bucket_threshold: 0.1,
   median_user: 'U4',
 }
 

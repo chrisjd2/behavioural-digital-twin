@@ -170,13 +170,17 @@ export function ArmLabel({ arm }: { arm: string }) {
   )
 }
 
-const SIZE = 160
-const PAD = 26
+// Reliability panels are drawn at 1 viewBox unit = 1px (CSS width 260px).
+const WIDTH = 260
+const HEIGHT = 262
+const LEFT = 56 // room for the rotated y-axis label and the 100% tick
+const TOP = 10
+const PLOT = 196
 
 /** Predicted p_click (x) against the share really clicked (y), one small chart per arm. */
 export function ReliabilityDiagrams({ reliability }: { reliability: Reliability[] }) {
-  const scale = (v: number) => PAD + v * (SIZE - PAD - 8)
-  const flip = (v: number) => SIZE - scale(v)
+  const x = (v: number) => LEFT + v * PLOT
+  const y = (v: number) => TOP + (1 - v) * PLOT
   return (
     <div className="reliability">
       {reliability.map(({ arm, bins }) => {
@@ -191,42 +195,42 @@ export function ReliabilityDiagrams({ reliability }: { reliability: Reliability[
               <ArmLabel arm={arm} />
             </figcaption>
             <svg
-              viewBox={`0 0 ${SIZE} ${SIZE}`}
+              viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
               role="img"
               aria-label={`Arm ${arm} reliability: ${points
                 .map((p) => `predicted ${percent(p.x, 0)}, clicked ${percent(p.y, 0)} of ${p.n}`)
                 .join('; ')}`}
             >
-              <rect
-                className="frame"
-                x={scale(0)}
-                y={flip(1)}
-                width={scale(1) - scale(0)}
-                height={scale(1) - scale(0)}
-              />
-              <line className="diagonal" x1={scale(0)} y1={flip(0)} x2={scale(1)} y2={flip(1)} />
+              <rect className="frame" x={x(0)} y={y(1)} width={PLOT} height={PLOT} />
+              <line className="diagonal" x1={x(0)} y1={y(0)} x2={x(1)} y2={y(1)} />
               <polyline
                 className="curve"
-                points={points.map((p) => `${scale(p.x)},${flip(p.y)}`).join(' ')}
+                points={points.map((p) => `${x(p.x)},${y(p.y)}`).join(' ')}
               />
               {points.map((p) => (
-                <circle key={p.low} className="point" cx={scale(p.x)} cy={flip(p.y)} r="4">
+                <circle key={p.low} className="point" cx={x(p.x)} cy={y(p.y)} r="5">
                   <title>
                     {`Predicted ${percent(p.low, 0)}–${percent(p.high, 0)}: ${p.n} predictions, ${percent(p.y, 0)} clicked`}
                   </title>
                 </circle>
               ))}
-              <text x={scale(0)} y={SIZE - 4}>
+              <text x={x(0)} y={y(0) + 20} textAnchor="middle">
                 0
               </text>
-              <text x={scale(1)} y={SIZE - 4} textAnchor="end">
-                100% predicted
-              </text>
-              <text x={4} y={flip(1) + 4}>
+              <text x={x(1)} y={y(0) + 20} textAnchor="end">
                 100%
               </text>
-              <text x={4} y={flip(0)}>
+              <text x={x(0.5)} y={HEIGHT - 6} textAnchor="middle">
+                predicted p_click
+              </text>
+              <text x={x(0) - 6} y={y(1) + 12} textAnchor="end">
+                100%
+              </text>
+              <text x={x(0) - 6} y={y(0)} textAnchor="end">
                 0
+              </text>
+              <text x={14} y={y(0.5)} textAnchor="middle" transform={`rotate(-90 14 ${y(0.5)})`}>
+                clicked, in sample
               </text>
             </svg>
           </figure>

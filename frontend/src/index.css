@@ -934,6 +934,13 @@ h2 {
   font-size: 0.9rem;
 }
 
+/* Projector screens: use the width rather than a narrow column. */
+@media (min-width: 1600px) {
+  .shell {
+    max-width: 1760px;
+  }
+}
+
 @media (max-width: 1100px) {
   .cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));

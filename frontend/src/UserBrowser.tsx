@@ -56,7 +56,7 @@ export default function UserBrowser({
           >
             <span className="bucket-count">{counts[bucket]}</span>{' '}
             <span className="bucket-name">{bucket}</span>{' '}
-            <span className="bucket-note">{BUCKET_RULES[bucket]}</span>
+            <span className="bucket-note">{bucketRule(bucket, primary.bucket_threshold)}</span>
           </button>
         ))}
       </div>
@@ -92,11 +92,12 @@ export default function UserBrowser({
   )
 }
 
-// backend.report.BUCKET_THRESHOLD (ADR-0001).
-const BUCKET_RULES: Record<Bucket, string> = {
-  'Twin better': 'D − A AUC above +0.1',
-  'About the same': 'D − A AUC within ±0.1',
-  'Plain LLM better': 'D − A AUC below −0.1',
+/** Each bucket's rule, from the threshold the report serves (ADR-0001). */
+function bucketRule(bucket: Bucket, threshold: number): string {
+  const t = String(threshold)
+  if (bucket === 'Twin better') return `D − A AUC above +${t}`
+  if (bucket === 'Plain LLM better') return `D − A AUC below −${t}`
+  return `D − A AUC within ±${t}`
 }
 
 /** Every arm's ranking of one user's headlines, side by side against the real clicks. */

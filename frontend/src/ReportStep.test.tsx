@@ -55,6 +55,7 @@ const reportFixture: RunReport = {
       { bucket: 'About the same', users: [{ user_id: 'U3', d_minus_a: 0 }] },
       { bucket: 'Plain LLM better', users: [] },
     ],
+    bucket_threshold: 0.1,
     median_user: 'U3',
   },
   reliability: [
@@ -235,7 +236,8 @@ describe('Report step', () => {
     expect(details).not.toHaveAttribute('open')
     await user.click(summary)
     expect(details).toHaveAttribute('open')
-    expect(screen.getByRole('img', { name: /arm a reliability/i })).toBeInTheDocument()
+    const diagram = screen.getByRole('img', { name: /arm a reliability/i })
+    expect(within(diagram as unknown as HTMLElement).getByText('clicked, in sample')).toBeVisible()
   })
 
   it('shows diagnostics per arm', async () => {
@@ -276,6 +278,17 @@ describe('Users by outcome', () => {
 
     await user.click(screen.getByRole('button', { name: /next user/i }))
     expect(await screen.findByRole('heading', { name: /user U1/i })).toBeVisible()
+  })
+
+  it('states each bucket’s rule from the threshold the report serves', async () => {
+    renderReport({
+      ...reportFixture,
+      primary: { ...reportFixture.primary!, bucket_threshold: 0.15 },
+    })
+
+    expect(await screen.findByText('D − A AUC above +0.15')).toBeVisible()
+    expect(screen.getByText('D − A AUC within ±0.15')).toBeVisible()
+    expect(screen.getByText('D − A AUC below −0.15')).toBeVisible()
   })
 
   it('says when a bucket is empty', async () => {

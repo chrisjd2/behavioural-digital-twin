@@ -91,6 +91,7 @@ def test_buckets_hold_the_stored_counts_and_their_users(
 
     buckets = {b["bucket"]: b["users"] for b in primary["buckets"]}
     assert list(buckets) == ["Twin better", "About the same", "Plain LLM better"]
+    assert primary["bucket_threshold"] == 0.1
     assert {k: len(v) for k, v in buckets.items()} == stored
     for name, users in buckets.items():
         differences = [u["d_minus_a"] for u in users]
