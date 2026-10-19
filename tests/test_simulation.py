@@ -74,6 +74,16 @@ def test_events_come_in_seq_order_with_the_run_summary(
     assert body["recorded_seconds"] >= 0
 
 
+def test_events_name_the_readers_in_the_runs_sampling_order(
+    client: TestClient, lab: tuple[Path, Run]
+) -> None:
+    _, run = lab
+    body = client.get(f"/api/run/{run.run_id}/events").json()
+
+    sampled = list(dict.fromkeys(u.user_id for u in run.users))
+    assert body["readers"] == sampled
+
+
 def test_events_are_sorted_by_seq_even_if_the_file_is_not(
     lab: tuple[Path, Run], tmp_path: Path
 ) -> None:

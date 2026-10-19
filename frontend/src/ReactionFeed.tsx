@@ -1,13 +1,6 @@
-import { ARMS, BASELINES, CONTROL } from './arms'
+import { armClass, armName } from './arms'
 import type { Reaction } from './api/simulation'
 import type { Progress } from './replay'
-
-const ARM_NAMES = new Map(
-  [...ARMS, CONTROL, ...BASELINES].map((a) => [a.id, a.name] as [string, string]),
-)
-
-const armName = (arm: string) => ARM_NAMES.get(arm.toLowerCase()) ?? arm
-const armClass = (arm: string) => (arm.length === 1 ? `arm-${arm.toLowerCase()}` : 'baseline')
 
 /** One agent's reaction to one headline; the real click shows once `revealed`. */
 export function ReactionCard({ event, revealed }: { event: Reaction; revealed: boolean }) {

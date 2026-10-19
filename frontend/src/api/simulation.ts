@@ -37,6 +37,7 @@ export type RunEvents = {
   run: RunSummary
   recorded_seconds: number
   events: RunEvent[] // by seq
+  readers: string[] // the run's seeded sampling order (events arrive in completion order)
 }
 
 /** Mirrors `backend.simulation.ArmName`. */

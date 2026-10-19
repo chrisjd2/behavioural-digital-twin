@@ -23,7 +23,7 @@ from backend.config import Settings
 from backend.data import resolve_data_source
 from backend.errors import AppError
 from backend.experiment import ExperimentConfig
-from backend.run_views import RunSummary, open_run, run_summary
+from backend.run_views import RunSummary, by_user, open_run, run_summary
 from backend.runner import Run, RunEvent, run_experiment
 from backend.runs import RUNS_SUBDIR, save_run
 
@@ -80,6 +80,9 @@ class RunEvents(BaseModel):
     run: RunSummary
     recorded_seconds: float  # how long the run really took, for the "sped up" label
     events: list[EventView]  # by seq
+    # Users in the run's seeded sampling order. Events come in completion order, so the
+    # "by reader" replay takes its order from here, never from outcomes.
+    readers: list[str]
 
 
 class LiveRunRequest(BaseModel):
@@ -109,7 +112,9 @@ def run_events(run: Run) -> RunEvents:
         ) from exc
     times = [datetime.fromisoformat(e.at) for e in run.events]
     recorded = (max(times) - min(times)).total_seconds() if times else 0.0
-    return RunEvents(run=run_summary(run), recorded_seconds=recorded, events=events)
+    return RunEvents(
+        run=run_summary(run), recorded_seconds=recorded, events=events, readers=list(by_user(run))
+    )
 
 
 class RunSaved(BaseModel):
