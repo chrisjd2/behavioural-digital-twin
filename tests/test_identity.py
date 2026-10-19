@@ -33,6 +33,7 @@ SHOULD_FLAG = {
         "Single mother",
         "Is married",
         "Married",
+        "Married and retired",
         "Is likely a grandmother",
         "Grandmother interested in recipes",
     ],
@@ -135,6 +136,9 @@ TOPICS = [
     "a star who has cancer",
     "Tiny-house living in Alaska",
     "From recipes to travel guides",
+    # Round 3: topic lists joined by "and"
+    "Republican and Democratic primary coverage",
+    "Nurse and teacher strikes, labor disputes",
 ]
 
 

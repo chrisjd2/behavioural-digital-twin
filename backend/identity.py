@@ -30,7 +30,9 @@ _CLAIM = (
 )
 _START = r"^\s*(?:(?:likely|probably|possibly|presumably|apparently)\s+)?(?:an?\s+)?"
 _END = (
-    r"(?=\s*(?:$|[,.;:!?]|\b(?:and|with|interested|reader|person)\b"
+    # "and" ends a claim only when one word then the clause follows ("Married and retired"),
+    # not in a topic list ("Republican and Democratic primary coverage").
+    r"(?=\s*(?:$|[,.;:!?]|\band\s+[\w-]+\s*(?:$|[,.;:!?])|\b(?:with|interested|reader|person)\b"
     r"|household\s*(?:$|[,.;:!?])))"
 )
 _WORD_END = r"(?![\w-])"  # "single" is not "single-game"; "white" is not "white-collar"
