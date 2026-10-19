@@ -31,6 +31,7 @@ EXPERIMENT_PATHS = (
             "data",
             "experiment",
             "freeze",
+            "identity",
             "llm",
             "metrics",
             "personas",

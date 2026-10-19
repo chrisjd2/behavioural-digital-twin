@@ -75,4 +75,4 @@ Twin Lab asks: **can an LLM agent impersonate a real news reader and predict whi
 | **Step 0 — Hook** | "You be the twin": guess without context, toggle the reader's history, guess again, reveal. Dev-set example, labelled illustrative. |
 | **Steps 1–5** | Seed · Population · Simulation · Report · Interview. |
 | **Interview** | Chat with one agent in one arm, under trust guardrails. Live, with a recorded fallback. |
-| **Identity screen** | Keyword check on distilled profiles for identity inference; hits are flagged and counted. |
+| **Identity screen** | Rule-based check (`backend/identity.py`) for claims about who the reader *is* (age, gender, family, occupation, location, politics, religion, health, sexuality, ethnicity, income, personality) in distilled profiles: after claim words, as item-opening fragments, or as verbs about the reader. Topics are not flagged. Hits are flagged and counted, never blocking; a person reviews every flag. |

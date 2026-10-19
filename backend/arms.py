@@ -353,11 +353,13 @@ _CANONICAL = CandidateSet(
     tie_rank={"N1": 1, "N2": 0},
     feed_ctr=0.5,
     sample_ctr=0.5,
-    history=("H1",),
+    # 51 clicks including a candidate, so the 50-click cut and the exclusion of the
+    # headlines being predicted both shape the profile hash.
+    history=("N1", *(f"H{i}" for i in range(1, 51))),
 )
 _CANONICAL_NEWS = {
     i: NewsItem(i, "news", "world", f"Headline {i}", "x" * (ABSTRACT_CHARS + 10))
-    for i in ("N1", "N2", "H1")
+    for i in ("N1", "N2", *(f"H{i}" for i in range(1, 51)))
 }
 _CANONICAL_KNOWLEDGE: dict[str, Knowledge] = {
     "A": {},
@@ -371,6 +373,9 @@ _CANONICAL_KNOWLEDGE: dict[str, Knowledge] = {
         "memories": [{"news_id": "H1", "headline": "Headline H1", "category": "news"}],
     },
 }
+
+
+_PROFILE_HISTORY = profile_history(_CANONICAL.history, _CANONICAL.items)
 
 
 def prompt_hashes(options: LLMOptions) -> dict[str, str]:
@@ -390,8 +395,8 @@ def prompt_hashes(options: LLMOptions) -> dict[str, str]:
         blob = json.dumps(rendered, sort_keys=True).encode("utf-8")
         hashes[arm] = hashlib.sha256(blob).hexdigest()[:12]
     profile_requests = [
-        profile_payload(_CANONICAL.history, _CANONICAL_NEWS, options),
-        profile_payload(_CANONICAL.history, _CANONICAL_NEWS, options, retry_of="<previous>"),
+        profile_payload(_PROFILE_HISTORY, _CANONICAL_NEWS, options),
+        profile_payload(_PROFILE_HISTORY, _CANONICAL_NEWS, options, retry_of="<previous>"),
     ]
     blob = json.dumps(profile_requests, sort_keys=True).encode("utf-8")
     hashes["profile"] = hashlib.sha256(blob).hexdigest()[:12]

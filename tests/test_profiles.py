@@ -2,8 +2,6 @@ import json
 from collections.abc import Mapping
 from pathlib import Path
 
-import pytest
-
 from backend.arms import (
     ARM_C_SYSTEM,
     ARM_SPECS,
@@ -18,7 +16,6 @@ from backend.llm import Cache, LLMClient, RawResponse, mock_backend
 from backend.profiles import (
     PROFILE_CLICKS,
     PROFILE_SYSTEM,
-    identity_screen,
     parse_profile,
     profile_block,
     profile_history,
@@ -83,79 +80,6 @@ def test_over_120_words_is_not_ok() -> None:
 
     assert profile.word_count == 121
     assert not profile.ok
-
-
-# Phrasings from the PR #37 experiment review (74 adversarial cases, condensed): claims,
-# fragments, verbs and age forms, in the style real profiles are written.
-SHOULD_FLAG = {
-    "politics": [
-        "The reader is a conservative who follows politics",
-        "Conservative-leaning reader",
-        "Politically liberal",
-        "Leans left",
-        "Votes Republican",
-        "Supports Democrats",
-        "Likely a progressive voter",
-    ],
-    "religion": ["Is a devout Christian", "Religious reader", "Probably a practising Catholic"],
-    "gender": ["Likely a mother of young children", "Presumably female", "Female reader"],
-    "family": ["Has young kids", "Single mother", "Is married", "Is likely a grandmother"],
-    "age": [
-        "Probably retired, reads in the morning",
-        "in their 30s, follows markets",
-        "in his early 40s",
-        "Over 60",
-        "65+",
-        "Gen Z",
-        "Approaching retirement",
-        "Is a college student",
-    ],
-    "health": [
-        "Possibly pregnant given baby stories",
-        "living with diabetes",
-        "Diabetic reader",
-        "Struggles with weight",
-        "Suffers from anxiety",
-        "Recovering alcoholic",
-    ],
-    "location": ["Likely lives in Minnesota", "Based in California", "Probably from Minneapolis"],
-    "occupation": ["Is a nurse", "Works as a teacher", "Likely a veteran", "Works in finance"],
-    "personality": ["Introverted", "Neurotic reader", "Anxious personality", "Outgoing person"],
-    "income": ["Affluent household", "Is probably wealthy", "Working-class reader"],
-    "ethnicity": ["Is likely Hispanic", "Asian American reader"],
-    "sexuality": ["Probably gay", "LGBTQ reader"],
-}
-
-
-@pytest.mark.parametrize(
-    ("text", "kind"), [(text, kind) for kind, texts in SHOULD_FLAG.items() for text in texts]
-)
-def test_identity_screen_flags_claims_about_the_person(text: str, kind: str) -> None:
-    assert kind in {hit["kind"] for hit in identity_screen(text)}
-
-
-@pytest.mark.parametrize(
-    "text",
-    [
-        "Follows Black Friday deals and White House coverage",
-        "Reads about the Republican primary and Democratic debates",
-        "Clicks women's soccer and health news",
-        "Interested in retirement planning and religion stories",
-        "Follows stories as a father and son reunite",
-        "Clicks deals being Black Friday",
-        "Prefers straight news and explainers",
-        "A 40-year-old record broken in athletics",
-        "Follows royal family updates",
-        "Clicks celebrity weddings and divorces",
-        "Reads news from Washington and Minnesota",
-        "Clicks diabetes research and cancer breakthroughs",
-        "Follows teenager sports results",
-        "Personal finance and markets",
-        "Nurses' strike coverage",
-    ],
-)
-def test_identity_screen_ignores_news_topics(text: str) -> None:
-    assert identity_screen(text) == []
 
 
 def test_planted_identity_hit_is_flagged_not_blocked() -> None:

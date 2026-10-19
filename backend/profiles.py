@@ -8,11 +8,11 @@ never blocking, so the Report can show how often the guardrail was needed.
 """
 
 import json
-import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
 from backend.data import NewsItem
+from backend.identity import identity_screen
 
 PROFILE_CLICKS = 50
 PROFILE_WORD_LIMIT = 120
@@ -50,71 +50,6 @@ PROFILE_SYSTEM = (
     "sexuality. 'Follows election coverage' is fine; 'is a conservative' is not."
 )
 
-# The screen looks for claims about who the PERSON is, in the forms profiles use: claims
-# ("is a devout Christian"), fragments ("Conservative-leaning reader", "Politically
-# liberal"), verbs ("Votes Republican", "Lives in Ohio", "Has young kids") and age forms
-# ("early 40s", "Gen Z"). Topic words stay unflagged: "Black Friday", "White House",
-# "Republican primary" and "women's soccer" are news, not inferences. It measures, it
-# never blocks (ADR-0007); a person reviews every flag.
-_CLAIM = (
-    r"\b(?:is|are|was|seems|appears|likely|probably|possibly|perhaps|presumably|apparently)"
-    r"\s+(?:to\s+be\s+)?(?:an?\s+)?(?:[\w-]+\s+){0,2}?"
-)
-_PERSON = r"\s+(?:reader|person|user|individual|man|woman|parent|household)\b"
-IDENTITY_TERMS = {
-    "age": r"(?:teenager|teen|retiree|retired|elderly|senior|millennial|boomer|student|young adult)",
-    "gender": r"(?:man|woman|male|female|mother|father|mom|dad|wife|husband|guy|girl)",
-    "family": r"(?:parent|married|divorced|widow\w*|single|grandmother|grandfather|grandparent)",
-    "occupation": r"(?:nurse|teacher|doctor|engineer|lawyer|farmer|veteran|homemaker|executive)",
-    "politics": r"(?:liberal|conservative|democrat|republican|progressive|left[- ]wing|right[- ]wing)",
-    "religion": r"(?:christian|muslim|jewish|catholic|protestant|hindu|buddhist|atheist|religious|devout)",
-    "health": r"(?:diabetic|pregnant|disabled|depressed|anxious|sick|overweight|obese|alcoholic)",
-    "sexuality": r"(?:gay|lesbian|bisexual|queer|transgender|lgbt\w*)",
-    "ethnicity": r"(?:african[- ]american|asian[- ]american|black|white|hispanic|latino|latina|asian)",
-    "income": r"(?:wealthy|rich|affluent|low[- ]income|poor|working[- ]class|middle[- ]class)",
-    "personality": r"(?:introvert\w*|extrovert\w*|neurotic|impulsive|shy|outgoing)",
-}
-_DIRECT = {  # forms that are inferences on their own
-    "age": (
-        r"\b(?:in\s+(?:their|his|her)\s+(?:early\s+|mid[- ]?|late\s+)?(?:teens|\d0s)"
-        r"|(?:early|mid|late)[- ]\d0s|(?:aged?|over|under)\s+\d{2}\b(?!\s+(?:stories|years))"
-        r"|\d{2}\+|gen\s?[xyz]\b|(?:nearing|approaching)\s+retirement"
-        r"|(?:they|he|she)\s+(?:are|is)\s+\d{1,2}(?:\s+years?\s+old)?)"
-    ),
-    "politics": (
-        r"\b(?:leans?\s+(?:left|right|liberal|conservative)|votes?\s+(?:democrat\w*|republican\w*)"
-        r"|supports?\s+(?:democrats|republicans|trump|biden)|(?:liberal|conservative|left|right)"
-        r"[- ]leaning|politically\s+(?:liberal|conservative|left|right|progressive|moderate))\b"
-    ),
-    "health": (
-        r"\b(?:(?:has|have|living\s+with|struggles?\s+with|suffers?\s+from|battling)\s+"
-        r"(?:diabetes|cancer|depression|anxiety|a\s+disability|weight|addiction|illness)"
-        r"|recovering\s+(?:alcoholic|addict))\b"
-    ),
-    "family": (
-        r"\b(?:has|have)\s+(?:(?:young|grown|small|teenage)\s+)?(?:kids|children|grandchildren)\b"
-        r"|\bsingle\s+(?:mother|father|parent|mom|dad)\b"
-    ),
-    "location": (
-        r"\b(?:lives?|living|based|located|resides?)\s+in\b"
-        r"|\b(?:likely|probably|possibly|presumably)\s+(?:from|in)\s+(?!the\b)\w+"
-    ),
-    "occupation": r"\b(?:works?|employed)\s+(?:as|in)\b",
-    "personality": r"\b(?:\w+\s+personality|introvert\w*|extrovert\w*|neurotic)\b",
-}
-_IDENTITY = {
-    kind: re.compile(
-        "|".join(
-            [
-                *([_CLAIM + term + r"\b", r"\b" + term + _PERSON] if term else []),
-                *([_DIRECT[kind]] if kind in _DIRECT else []),
-            ]
-        ),
-        re.IGNORECASE,
-    )
-    for kind, term in {**dict.fromkeys(_DIRECT, ""), **IDENTITY_TERMS}.items()
-}
-
 
 @dataclass(frozen=True)
 class Profile:
@@ -127,7 +62,7 @@ class Profile:
 
 def profile_history(history: Sequence[str], exclude: Iterable[str]) -> list[str]:
     """The clicks a profile is built from: the last 50, never the headlines being predicted
-    (the same rule as memories, ADR-0006 amendment)."""
+    (the same rule as memories: ADR-0006 and ADR-0007 amendments)."""
     skip = set(exclude)
     return [h for h in history if h not in skip][-PROFILE_CLICKS:]
 
@@ -145,14 +80,6 @@ def profile_messages(history: Sequence[str], news: Mapping[str, NewsItem]) -> li
     return [
         {"role": "system", "content": PROFILE_SYSTEM},
         {"role": "user", "content": f"Click history, oldest first:\n{listing}"},
-    ]
-
-
-def identity_screen(text: str) -> list[dict[str, str]]:
-    return [
-        {"kind": kind, "term": match.group(0), "text": text}
-        for kind, pattern in _IDENTITY.items()
-        for match in pattern.finditer(text)
     ]
 
 
