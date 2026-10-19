@@ -39,14 +39,19 @@ export type RunEvents = {
   events: RunEvent[] // by seq
 }
 
+/** Mirrors `backend.simulation.ArmName`. */
+export type ArmName = 'A' | 'B' | 'C' | 'D' | 'E' | 'popularity' | 'random'
+
 /** Mirrors `backend.simulation.LiveRunRequest`. Always the dev population. */
-export type LiveRunRequest = { arms?: string[]; n_users?: number }
+export type LiveRunRequest = { arms?: ArmName[]; n_users?: number }
 
 /** Mirrors `backend.simulation.LiveRunStarted`. */
 export type LiveRunStarted = { live_id: string }
 
-/** Mirrors `backend.simulation.RunSaved` and `backend.simulation.RunFailed`. */
+/** Mirrors `backend.simulation.RunSaved`. */
 export type RunSaved = { run_id: string }
+
+/** Mirrors `backend.simulation.RunFailed`. */
 export type RunFailed = { detail: string }
 
 /** Every event of a saved run, fetched once: the replay then needs no network (ADR-0008). */

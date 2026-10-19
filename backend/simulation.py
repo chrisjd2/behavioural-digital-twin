@@ -131,7 +131,7 @@ class LiveRun:
     messages: list[dict[str, str]] = field(default_factory=list)
     finished: bool = False
     subscribers: list[asyncio.Queue[dict[str, str] | None]] = field(default_factory=list)
-    task: asyncio.Task[None] | None = None
+    task: asyncio.Task[None] | None = None  # asyncio keeps only a weak reference to tasks
 
     def publish(self, message: dict[str, str], *, last: bool = False) -> None:
         self.messages.append(message)

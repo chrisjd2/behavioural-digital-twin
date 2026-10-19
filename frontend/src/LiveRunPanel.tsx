@@ -3,7 +3,7 @@ import { followLiveRun, startLiveRun, type Reaction, type RunEvent } from './api
 import { ArmProgressBars, ReactionCard } from './ReactionFeed'
 import { armProgress } from './replay'
 
-export const LIVE_USERS = 10
+const LIVE_USERS = 10
 const SHOWN = 3
 
 type Live =

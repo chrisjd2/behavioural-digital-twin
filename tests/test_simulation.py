@@ -1,4 +1,4 @@
-"""Step 3 Simulation: saved-run events for replay, and live dev runs over SSE (#19)."""
+"""Step 3 Simulation: saved-run events for replay, and live dev runs over SSE."""
 
 import json
 from collections.abc import Iterator
