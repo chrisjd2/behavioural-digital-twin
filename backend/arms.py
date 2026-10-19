@@ -198,7 +198,7 @@ async def _knows_nothing(_: CandidateSet, __: ArmResources) -> Knowledge:
 async def _retrieve_memories(candidates: CandidateSet, resources: ArmResources) -> Knowledge:
     assert resources.retriever is not None, "Arm C needs a retriever"
     memories = resources.retriever.memories(candidates.history, candidates.items)
-    return {"memories": [asdict(m) for m in memories], "retrieval": resources.retriever.method}
+    return {"memories": [asdict(m) for m in memories]}
 
 
 @dataclass(frozen=True)

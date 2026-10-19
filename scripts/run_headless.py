@@ -100,6 +100,7 @@ def main(argv: list[str] | None = None) -> int:
     if not settings.mock_llm and options.embed_model:
         embeddings = EmbeddingStore(
             data_dir / CACHE_FILE,
+            base_url=settings.llm_base_url,
             model=options.embed_model,
             dimensions=options.embed_dimensions,
             embed=openai_embedder(
