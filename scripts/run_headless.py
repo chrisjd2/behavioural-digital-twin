@@ -11,8 +11,9 @@ from pathlib import Path
 from backend.config import get_settings
 from backend.data import resolve_data_source
 from backend.experiment import ExperimentConfig
-from backend.llm import Cache, LLMClient, mock_backend, openai_backend
+from backend.llm import Cache, LLMClient, mock_backend, openai_backend, openai_embedder
 from backend.report import Estimate, Report, build_report
+from backend.retrieval import EmbeddingStore
 from backend.runner import LLM_ARMS, FreezeError, Run, RunEvent, run_experiment
 from backend.runs import save_run
 
@@ -94,6 +95,20 @@ def main(argv: list[str] | None = None) -> int:
         backend=backend,
         concurrency=settings.concurrency,
     )
+    options = settings.llm_options()
+    embeddings = None
+    if not settings.mock_llm and options.embed_model:
+        embeddings = EmbeddingStore(
+            data_dir / CACHE_FILE,
+            model=options.embed_model,
+            dimensions=options.embed_dimensions,
+            embed=openai_embedder(
+                settings.llm_base_url,
+                settings.llm_api_key,
+                model=options.embed_model,
+                dimensions=options.embed_dimensions,
+            ),
+        )
 
     def progress(event: RunEvent) -> None:
         if event.kind == "arm_progress":
@@ -109,7 +124,8 @@ def main(argv: list[str] | None = None) -> int:
                 population=args.population,
                 arms=arms,
                 client=client,
-                options=settings.llm_options(),
+                options=options,
+                embeddings=embeddings,
                 allow_unfrozen=args.allow_unfrozen,
                 on_event=progress,
             )
@@ -130,6 +146,7 @@ def print_run(run: Run, *, uses_llm: bool) -> None:
         print("NOT A RESULT: only the frozen test run on real MIND with a real model counts.")
     label = "SYNTHETIC SAMPLE (fake data)" if run.data_source == "synthetic" else "MIND-small"
     print(f"Data: {label} | population: {run.population} | model: {run.model}")
+    print(f"  retrieval: {run.retrieval} | thinking: {run.options['reasoning_effort']}")
     for split, (start, end) in run.date_ranges.items():
         print(f"  {split} impressions: {start[:16]} to {end[:16]}")
     by_arm = {arm: [u for u in run.users if u.arm == arm] for arm in run.arms}

@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     llm_reasoning_effort: Literal["none", "low", "medium", "high"] = "medium"
     llm_max_output_tokens: int = 4096
     embed_model: str = ""
+    embed_dimensions: int = 768  # Gemini embeddings accept a reduced output size
     concurrency: int = 8
     mock_llm: bool = True
     base_rate_hint: bool = False
@@ -31,6 +32,8 @@ class Settings(BaseSettings):
             reasoning_effort=self.llm_reasoning_effort,
             max_output_tokens=self.llm_max_output_tokens,
             base_rate_hint=self.base_rate_hint,
+            embed_model=self.embed_model,
+            embed_dimensions=self.embed_dimensions,
         )
 
 
