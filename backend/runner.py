@@ -79,6 +79,8 @@ class Run:
     events: list[RunEvent] = field(default_factory=list)
     counters: dict[str, int] = field(default_factory=dict)
     metrics: dict[str, object] = field(default_factory=dict)  # asdict(report.Report)
+    # Per arm with profiles: how often the identity screen fired (ADR-0007).
+    identity_screen: dict[str, dict[str, int]] = field(default_factory=dict)
 
 
 def git_sha() -> str:
@@ -158,7 +160,7 @@ async def run_experiment(  # noqa: PLR0913 — keyword-only run options
         # Mock runs never call the embedding API: TF-IDF instead (ADR-0006).
         retriever = Retriever(news, None if mock else embeddings)
         await retriever.prepare([i for c in sets for i in (*c.history, *c.items)])
-    resources = ArmResources(retriever=retriever)
+    resources = ArmResources(retriever=retriever, client=client, options=options, news=news)
     digest = hashlib.sha256(f"{created.isoformat()}{arms}".encode()).hexdigest()[:6]
     run = Run(
         run_id=f"{created:%Y%m%d-%H%M%S}-{population}-{digest}",
@@ -254,7 +256,25 @@ async def run_experiment(  # noqa: PLR0913 — keyword-only run options
         run.users.extend(task.result() for task in tasks)
 
     run.counters = asdict(client.counters)
+    run.identity_screen = identity_summary(run.users)
     by_arm = {arm: [u for u in run.users if u.arm == arm] for arm in arms}
     run.metrics = asdict(build_report(by_arm, seed=config.bootstrap_seed))
     emit("run_complete", run_id=run.run_id)
     return run
+
+
+def identity_summary(users: list[UserResult]) -> dict[str, dict[str, int]]:
+    summary: dict[str, dict[str, int]] = {}
+    for u in users:
+        profile = u.knowledge.get("profile")
+        if not isinstance(profile, dict):
+            continue
+        hits = profile.get("identity_hits", [])
+        counts = summary.setdefault(
+            u.arm, {"profiles": 0, "flagged_profiles": 0, "hits": 0, "unusable_profiles": 0}
+        )
+        counts["profiles"] += 1
+        counts["hits"] += len(hits) if isinstance(hits, list) else 0
+        counts["flagged_profiles"] += bool(hits)
+        counts["unusable_profiles"] += not profile.get("ok", False)
+    return summary
