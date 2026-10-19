@@ -7,6 +7,7 @@ import {
   buildComparisons,
   frameAt,
   nextReaderStart,
+  shownClickRate,
   startTimes,
   type Comparison,
 } from './byReader'
@@ -44,10 +45,29 @@ describe('buildComparisons', () => {
     )
   })
 
+  it('skips a reader with no headline of the kind their turn needs', () => {
+    const noClicks: RunEvent[] = replayEvents.map((e) =>
+      e.kind === 'reaction' && e.user_id === 'U1' ? { ...e, clicked: false } : e,
+    )
+    const [first] = buildComparisons(noClicks, ['U1', 'U2'], ARMS)
+    expect([first.user_id, first.clicked]).toEqual(['U2', true])
+  })
+
   it('stops at the limit and skips readers with no reactions', () => {
     expect(
       buildComparisons(replayEvents, ['U9', 'U1', 'U2'], ARMS, 1).map((c) => c.user_id),
     ).toEqual(['U1'])
+  })
+})
+
+describe('shownClickRate', () => {
+  it('is the share of shown headlines the real readers clicked, counted once per reader', () => {
+    expect(shownClickRate(replayEvents)).toBe(0.5) // A and B both react to each headline
+    const fewer = replayEvents.filter(
+      (e) => !(e.kind === 'reaction' && e.news_id === 'N9' && e.user_id === 'U2'),
+    )
+    expect(shownClickRate(fewer)).toBeCloseTo(1 / 3)
+    expect(shownClickRate([])).toBe(0)
   })
 })
 

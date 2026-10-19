@@ -39,7 +39,8 @@ export function buildComparisons(
     if (!feed) continue
     const items = [...feed.values()]
     const wantClicked = comparisons.length % 2 === 0
-    const chosen = items.find((rs) => rs[0].clicked === wantClicked) ?? items[0]
+    const chosen = items.find((rs) => rs[0].clicked === wantClicked)
+    if (!chosen) continue // keep the declared rule true rather than substitute a headline
     const { news_id, headline, clicked } = chosen[0]
     comparisons.push({
       user_id,
@@ -51,6 +52,15 @@ export function buildComparisons(
     if (comparisons.length === limit) break
   }
   return comparisons
+}
+
+/** Share of shown headlines (reader x headline) the real readers clicked, across the run. */
+export function shownClickRate(events: RunEvent[]): number {
+  const shown = new Map<string, boolean>()
+  for (const e of events)
+    if (e.kind === 'reaction') shown.set(`${e.user_id}/${e.news_id}`, e.clicked)
+  const clicks = [...shown.values()].filter(Boolean).length
+  return shown.size ? clicks / shown.size : 0
 }
 
 export function comparisonMs(c: Comparison): number {

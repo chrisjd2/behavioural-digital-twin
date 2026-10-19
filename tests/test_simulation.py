@@ -349,6 +349,7 @@ async def test_a_cancelled_run_stops_at_its_next_event_and_says_why(
 
     monkeypatch.setattr("backend.simulation.run_experiment", endless)
     live = LiveRun(cancelled=True)
+    live.watched.set()
 
     await execute(make_settings(data_dir=str(lab[0])), LiveRunRequest(), live)
 
@@ -356,3 +357,38 @@ async def test_a_cancelled_run_stops_at_its_next_event_and_says_why(
     assert live.finished
     assert live.messages[-1]["event"] == "run_failed"
     assert "Cancelled" in live.messages[-1]["data"]
+
+
+async def test_a_live_run_nobody_watches_never_starts(
+    lab: tuple[Path, Run], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    started: list[bool] = []
+
+    async def record(*_: object, **__: object) -> Run:
+        started.append(True)
+        raise AssertionError("should not run")
+
+    monkeypatch.setattr("backend.simulation.run_experiment", record)
+    monkeypatch.setattr("backend.simulation.VIEWER_TIMEOUT_S", 0.01)
+    live = LiveRun()
+
+    await execute(make_settings(data_dir=str(lab[0])), LiveRunRequest(), live)
+
+    assert started == []
+    assert live.messages[-1]["event"] == "run_failed"
+    assert "nobody opened" in live.messages[-1]["data"]
+
+
+async def test_shutdown_mid_run_tells_the_worker_thread_to_stop(
+    lab: tuple[Path, Run], held_run: threading.Event
+) -> None:
+    live = LiveRun()
+    live.watched.set()
+    task = asyncio.create_task(execute(make_settings(data_dir=str(lab[0])), LiveRunRequest(), live))
+    await asyncio.sleep(0.2)
+
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert live.cancelled

@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { fetchRunEvents, type Reaction, type RunEvents } from './api/simulation'
 import ByReaderReplay from './ByReaderReplay'
+import { shownClickRate } from './byReader'
 import { SIMULATED_LABEL } from './labels'
 import LiveRunPanel from './LiveRunPanel'
 import { ArmProgressBars, ReactionCard } from './ReactionFeed'
@@ -113,7 +114,9 @@ function Replay({ recording }: { recording: RunEvents }) {
         {order === 'reader' ? (
           <p className="recorded-label">
             <strong>Recorded run, sped up and reordered by reader</strong> (seeded order, not
-            cherry-picked).
+            cherry-picked), alternating a headline they clicked with one they skipped. Half are
+            clicks by design; across this run {Math.round(100 * shownClickRate(recording.events))}%
+            of shown headlines were clicked.
           </p>
         ) : (
           <p className="recorded-label">

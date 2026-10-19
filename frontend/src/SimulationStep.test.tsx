@@ -162,13 +162,19 @@ describe('Simulation replay, by reader', () => {
 
   it('is the default, labelled as reordered in a seeded order', async () => {
     stubApi({ status: statusFixture, urls: { [eventsUrl]: runEventsFixture } })
-    render(<SimulationStep runId={RUN_ID} liveRuns={false} onLiveRunSaved={vi.fn()} />)
+    render(
+      <SimulationStep runId={RUN_ID} liveRuns={false} mockLlm={false} onLiveRunSaved={vi.fn()} />,
+    )
     await advance(0)
 
     expect(screen.getByRole('radio', { name: 'By reader' })).toBeChecked()
     expect(
       screen.getByText(/recorded run, sped up and reordered by reader/i).parentElement,
     ).toHaveTextContent('(seeded order, not cherry-picked)')
+    // The fixture shows each reader two headlines, one clicked: half, from the data.
+    expect(screen.getByText(/half are clicks by design/i)).toHaveTextContent(
+      'across this run 50% of shown headlines were clicked',
+    )
     expect(screen.getByText(/seeded sampling order/i)).toBeInTheDocument()
     expect(screen.getByText(SIMULATED_LABEL)).toBeInTheDocument()
   })

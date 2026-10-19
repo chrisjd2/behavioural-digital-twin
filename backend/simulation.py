@@ -7,6 +7,7 @@ in `DEMO_MODE` (ADR-0011) and always on the dev population, never the test set (
 
 import asyncio
 import logging
+import threading
 import uuid
 from collections.abc import AsyncGenerator, Callable
 from dataclasses import dataclass, field
@@ -30,6 +31,7 @@ from backend.runs import RUNS_SUBDIR, save_run
 log = logging.getLogger(__name__)
 
 CACHE_FILE = "cache.sqlite"
+VIEWER_TIMEOUT_S = 15.0
 ArmName = Literal["A", "B", "C", "D", "E", "popularity", "random"]
 ALL_ARMS: list[ArmName] = ["A", "B", "C", "D", "E", "popularity", "random"]
 
@@ -137,13 +139,15 @@ class LiveRunCancelledError(Exception):
 class LiveRun:
     """A run in progress. Subscribers get every event so far, then each new one, in order.
 
-    It runs in a worker thread with its own event loop, so loading data and sampling do not
-    block the API; events come back to the API's loop through `call_soon_threadsafe`.
+    It runs in a daemon thread with its own event loop, so loading data and sampling do not
+    block the API and a server shutdown does not wait for it; events come back to the API's
+    loop through `call_soon_threadsafe`. It starts only once someone opens its stream.
     """
 
     messages: list[dict[str, str]] = field(default_factory=list)
     finished: bool = False
     cancelled: bool = False  # set on the API's loop, read by the worker thread
+    watched: asyncio.Event = field(default_factory=asyncio.Event)  # a viewer subscribed
     subscribers: list[asyncio.Queue[dict[str, str] | None]] = field(default_factory=list)
     task: asyncio.Task[None] | None = None  # asyncio keeps only a weak reference to tasks
 
@@ -164,6 +168,7 @@ class LiveRun:
             return
         queue: asyncio.Queue[dict[str, str] | None] = asyncio.Queue()
         self.subscribers.append(queue)
+        self.watched.set()
         try:
             for message in backlog:
                 yield message
@@ -201,6 +206,23 @@ def run_live(
     return run
 
 
+async def in_daemon_thread(work: Callable[[], Run]) -> Run:
+    """`asyncio.to_thread`, but on a daemon thread, so shutdown never waits for a run."""
+    loop = asyncio.get_running_loop()
+    future: asyncio.Future[Run] = loop.create_future()
+
+    def target() -> None:
+        try:
+            result = work()
+        except BaseException as exc:  # handed to the awaiting coroutine, not lost
+            loop.call_soon_threadsafe(future.set_exception, exc)
+        else:
+            loop.call_soon_threadsafe(future.set_result, result)
+
+    threading.Thread(target=target, daemon=True, name="live-run").start()
+    return await future
+
+
 async def execute(settings: Settings, request: LiveRunRequest, live: LiveRun) -> None:
     loop = asyncio.get_running_loop()
 
@@ -210,16 +232,27 @@ async def execute(settings: Settings, request: LiveRunRequest, live: LiveRun) ->
         message = {"event": "run_event", "data": event_views([event])[0].model_dump_json()}
         loop.call_soon_threadsafe(live.publish, message)
 
-    try:
-        run = await asyncio.to_thread(run_live, settings, request, on_event)
-    except Exception as exc:  # the failure is reported to every subscriber, not swallowed
-        if live.cancelled:
-            detail = "Cancelled: every viewer left the live run."
-        else:
-            log.exception("Live run failed")
-            detail = str(exc) or type(exc).__name__
+    def fail(detail: str) -> None:
         failed = RunFailed(detail=detail)
         live.publish({"event": "run_failed", "data": failed.model_dump_json()}, last=True)
+
+    try:
+        # A viewer who drops before the stream starts never subscribes: don't run for nobody.
+        await asyncio.wait_for(live.watched.wait(), VIEWER_TIMEOUT_S)
+    except TimeoutError:
+        fail("Cancelled: nobody opened the live run's stream.")
+        return
+    try:
+        run = await in_daemon_thread(lambda: run_live(settings, request, on_event))
+    except asyncio.CancelledError:  # server shutdown: stop the thread at its next event
+        live.cancelled = True
+        raise
+    except Exception as exc:  # the failure is reported to every subscriber, not swallowed
+        if live.cancelled:
+            fail("Cancelled: every viewer left the live run.")
+        else:
+            log.exception("Live run failed")
+            fail(str(exc) or type(exc).__name__)
         return
     saved = RunSaved(run_id=run.run_id)
     live.publish({"event": "run_saved", "data": saved.model_dump_json()}, last=True)
