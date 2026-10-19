@@ -9,9 +9,12 @@ from backend.sample import write_synthetic_sample
 
 @pytest.fixture(autouse=True)
 def force_mock_llm(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Tests never call a real LLM, whatever a local .env says (env vars beat .env)."""
+    """Tests see the same settings as CI, whatever a local .env says (env vars beat .env)."""
     monkeypatch.setenv("MOCK_LLM", "true")
-    monkeypatch.setenv("LLM_API_KEY", "")
+    for name in ("LLM_API_KEY", "LLM_MODEL", "EMBED_MODEL", "HF_TOKEN"):
+        monkeypatch.setenv(name, "")
+    for name in ("LLM_REASONING_EFFORT", "LLM_MAX_OUTPUT_TOKENS", "EMBED_DIMENSIONS", "DEMO_MODE"):
+        monkeypatch.delenv(name, raising=False)
     get_settings.cache_clear()
 
 
