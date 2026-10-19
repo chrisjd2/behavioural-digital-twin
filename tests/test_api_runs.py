@@ -13,7 +13,7 @@ from backend.data import load_news, resolve_data_source
 from backend.experiment import ExperimentConfig
 from backend.llm import Cache, LLMClient, mock_backend
 from backend.runner import Run, UserResult, run_experiment
-from backend.runs import RUNS_SUBDIR, load_run, save_run
+from backend.runs import RUNS_SUBDIR, save_run
 from backend.sample import write_synthetic_sample
 from tests.test_runner import OPTIONS
 from tests.test_status import make_client
@@ -60,7 +60,7 @@ def labels_leak(body: object) -> bool:
 
 
 def test_lists_runs_newest_first_with_their_summary(lab: tuple[Path, Run], tmp_path: Path) -> None:
-    directory, run = lab
+    _, run = lab
     runs = tmp_path / RUNS_SUBDIR
     save_run(run, runs)
     older = replace(run, run_id="20200101-000000-dev-aaaaaa", created="2020-01-01T00:00:00+00:00")
@@ -81,7 +81,6 @@ def test_lists_runs_newest_first_with_their_summary(lab: tuple[Path, Run], tmp_p
         "n_users": CONFIG.n_dev,
     }
     assert body["problems"] == []
-    assert directory  # the shared lab dir is untouched
 
 
 def test_no_runs_dir_is_an_empty_list_not_an_error(tmp_path: Path) -> None:
@@ -360,6 +359,19 @@ def test_agent_unknown_user_or_arm_is_404(lab: tuple[Path, Run], client: TestCli
     assert no_arm.json()["code"] == "arm_not_in_run"
 
 
-def test_run_files_round_trip_still(lab: tuple[Path, Run]) -> None:
-    directory, run = lab
-    assert load_run(directory / RUNS_SUBDIR / f"{run.run_id}.json") == run
+def test_a_headline_missing_from_news_is_shown_as_missing(
+    lab: tuple[Path, Run], tmp_path: Path
+) -> None:
+    _, run = lab
+    users = [replace(u, history=(*u.history, "N-gone")) for u in run.users]
+    save_run(replace(run, users=users), tmp_path / RUNS_SUBDIR)
+    write_synthetic_sample(tmp_path / "sample", n_users=400, n_news=300, seed=1)
+
+    body = agent(make_client(data_dir=str(tmp_path)), run)
+
+    assert body["history"][-1] == {  # type: ignore[index]
+        "news_id": "N-gone",
+        "category": None,
+        "subcategory": None,
+        "title": None,
+    }

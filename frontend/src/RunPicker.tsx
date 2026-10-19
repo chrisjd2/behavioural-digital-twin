@@ -29,7 +29,7 @@ export default function RunPicker({ runs, runId, onRunChange }: Props) {
   if (runs.state === 'error') {
     return (
       <p role="alert" className="result-error">
-        Could not load the saved runs: {runs.message}
+        Could not load the saved runs: {runs.message}. Check the API is running, then reload.
       </p>
     )
   }
