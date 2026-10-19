@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 import { buildPopulation, type ExperimentRequest } from './api/experiment'
+import { defaultRunId, fetchRuns } from './api/runs'
 import { fetchStatus, type Status } from './api/status'
+import { SIMULATED_LABEL } from './labels'
+import PopulationStep from './PopulationStep'
+import RunPicker, { type Runs } from './RunPicker'
 import SeedStep, { type Build } from './SeedStep'
 
 type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; status: Status }
@@ -24,8 +28,7 @@ const STEPS: Placeholder[] = [
   { name: 'Interview', blurb: 'Ask one agent about its news habits.' },
 ]
 const SEED_STEP = 1
-
-const SIMULATED_LABEL = "Simulated from anonymised research data (MIND). Not a real person's voice."
+const POPULATION_STEP = 2
 
 /** An emptied input is NaN; send the config default for it instead. */
 function withDefaults(request: ExperimentRequest, defaults: ExperimentRequest): ExperimentRequest {
@@ -39,6 +42,8 @@ export default function App() {
   const [step, setStep] = useState(SEED_STEP)
   const [request, setRequest] = useState<ExperimentRequest | null>(null)
   const [build, setBuild] = useState<Build>({ state: 'idle' })
+  const [runs, setRuns] = useState<Runs>({ state: 'idle' })
+  const [runId, setRunId] = useState<string>()
 
   useEffect(() => {
     fetchStatus()
@@ -62,6 +67,27 @@ export default function App() {
 
   const current = STEPS[step]
 
+  function goTo(index: number) {
+    setStep(index)
+    if (STEPS[index].runCentric && runs.state === 'idle') loadRuns()
+  }
+
+  // Steps 2-4 share one run list and one selected run, fetched when first needed.
+  function loadRuns() {
+    setRuns({ state: 'loading' })
+    fetchRuns()
+      .then((list) => {
+        setRuns({ state: 'ready', list })
+        setRunId(defaultRunId(list.runs))
+      })
+      .catch((error: unknown) =>
+        setRuns({
+          state: 'error',
+          message: error instanceof Error ? error.message : 'The request failed.',
+        }),
+      )
+  }
+
   return (
     <div className="shell">
       <header className="masthead">
@@ -81,7 +107,7 @@ export default function App() {
                 <button
                   type="button"
                   aria-current={i === step ? 'step' : undefined}
-                  onClick={() => setStep(i)}
+                  onClick={() => goTo(i)}
                 >
                   <span className="step-number">{i}</span>
                   <span className="step-name">{name}</span>
@@ -111,18 +137,26 @@ export default function App() {
               />
             )}
           </>
+        ) : current.runCentric ? (
+          <section className="run-step" aria-labelledby="step-title">
+            <div className="run-step-head">
+              <div>
+                <h2 id="step-title">
+                  <span className="step-kicker">Step {step}</span> {current.name}
+                </h2>
+                <p className="lede">{current.blurb}</p>
+              </div>
+              <RunPicker runs={runs} runId={runId} onRunChange={setRunId} />
+            </div>
+            {runId && step === POPULATION_STEP && <PopulationStep key={runId} runId={runId} />}
+            {step !== POPULATION_STEP && <p className="muted">This step is not built yet.</p>}
+          </section>
         ) : (
           <section className="placeholder" aria-labelledby="step-title">
             <h2 id="step-title">
               <span className="step-kicker">Step {step}</span> {current.name}
             </h2>
             <p>{current.blurb}</p>
-            {current.runCentric && (
-              <p className="run-note" data-testid="run-note">
-                Shows one saved run: the newest result run by default, otherwise the newest run. A
-                run picker goes here. The Seed preview does not change it.
-              </p>
-            )}
             <p className="muted">This step is not built yet.</p>
           </section>
         )}
