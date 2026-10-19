@@ -27,3 +27,6 @@ talk/
 # Local-only working files
 brief.md
 AI_USAGE.md
+
+# Agent worktrees
+.claude/worktrees/
