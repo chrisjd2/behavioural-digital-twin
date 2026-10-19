@@ -27,10 +27,11 @@ def test_persona_fields_come_from_the_fixed_lists() -> None:
         first_name, _, last_name = str(persona["name"]).partition(" ")
         assert first_name in personas.FIRST_NAMES
         assert last_name in personas.LAST_NAMES
-        assert persona["job"] in personas.JOBS
+        stage = personas.LIFE_STAGES[str(persona["life_stage"])]
+        assert persona["age"] in range(stage.min_age, stage.max_age + 1)
+        assert persona["job"] in stage.jobs
+        assert persona["news_habit"] in stage.news_habits
         assert persona["location"] in personas.LOCATIONS
-        assert persona["news_habit"] in personas.NEWS_HABITS
-        assert persona["age"] in range(personas.MIN_AGE, personas.MAX_AGE + 1)
         big_five = persona["big_five"]
         assert isinstance(big_five, dict)
         assert list(big_five) == list(personas.BIG_FIVE)
@@ -39,6 +40,20 @@ def test_persona_fields_come_from_the_fixed_lists() -> None:
         assert isinstance(values, list)
         assert len(set(values)) == 2
         assert set(values) <= set(personas.SCHWARTZ_VALUES)
+
+
+def test_personas_are_coherent_for_their_age() -> None:
+    people = [invent_persona(f"U{i}") for i in range(2000)]
+
+    assert {p["life_stage"] for p in people} == set(personas.LIFE_STAGES)
+    for p in people:
+        age, job = p["age"], str(p["job"])
+        assert isinstance(age, int)
+        assert (age >= 66) == job.startswith("retired "), p
+        if age < 25:
+            assert "student" in job, p
+        else:
+            assert "student" not in job, p
 
 
 async def test_arm_b_knowledge_ignores_the_users_data() -> None:
