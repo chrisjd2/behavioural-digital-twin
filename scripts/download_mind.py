@@ -34,6 +34,16 @@ def fetch(url: str, destination: Path, token: str) -> None:
     print()
 
 
+def flatten_single_folder(directory: Path) -> None:
+    """The Hugging Face zips wrap their files in one folder (e.g. MINDsmall_dev/); lift them up."""
+    entries = list(directory.iterdir())
+    if len(entries) == 1 and entries[0].is_dir():
+        inner = entries[0]
+        for item in inner.iterdir():
+            item.rename(directory / item.name)
+        inner.rmdir()
+
+
 def download(target: Path, *, token: str) -> None:
     for split, filename in SPLITS.items():
         split_dir = target / split
@@ -49,8 +59,9 @@ def download(target: Path, *, token: str) -> None:
         with zipfile.ZipFile(archive) as z:
             z.extractall(split_dir)
         archive.unlink()
+        flatten_single_folder(split_dir)
         if not (split_dir / "behaviors.tsv").exists():
-            sys.exit(f"{filename} did not contain behaviors.tsv at its top level")
+            sys.exit(f"{filename} did not contain behaviors.tsv")
         print(f"{split}: unpacked to {split_dir}")
 
 

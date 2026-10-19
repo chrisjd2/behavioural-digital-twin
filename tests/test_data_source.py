@@ -58,9 +58,11 @@ def test_status_reports_detected_data_source(tmp_path: Path) -> None:
 
 
 def fake_zip(path: Path) -> None:
+    # Mirrors the real Hugging Face zips, which wrap their files in one folder.
+    folder = path.stem
     with zipfile.ZipFile(path, "w") as archive:
-        archive.writestr("behaviors.tsv", BEHAVIORS)
-        archive.writestr("news.tsv", "N1\tnews\tworld\tT\tA\t\t[]\t[]\n")
+        archive.writestr(f"{folder}/behaviors.tsv", BEHAVIORS)
+        archive.writestr(f"{folder}/news.tsv", "N1\tnews\tworld\tT\tA\t\t[]\t[]\n")
 
 
 def test_download_unpacks_both_splits_and_is_idempotent(
@@ -81,6 +83,7 @@ def test_download_unpacks_both_splits_and_is_idempotent(
     assert sorted(fetched) == ["MINDsmall_dev.zip", "MINDsmall_train.zip"]
     for split in ("dev", "train"):
         assert (tmp_path / "mind" / split / "behaviors.tsv").exists()
+        assert not any(p.is_dir() for p in (tmp_path / "mind" / split).iterdir())
     assert resolve_data_source(tmp_path).kind == "mind"
 
 
