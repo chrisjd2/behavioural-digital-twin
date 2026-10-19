@@ -1,22 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { fetchRunEvents, type Reaction, type RunEvents } from './api/simulation'
+import ByReaderReplay from './ByReaderReplay'
+import { shownClickRate } from './byReader'
 import { SIMULATED_LABEL } from './labels'
 import LiveRunPanel from './LiveRunPanel'
 import { ArmProgressBars, ReactionCard } from './ReactionFeed'
 import {
-  SPEEDS,
+  ORDER_OPTIONS,
+  SPEED_OPTIONS,
   armProgress,
+  duration,
   isRevealed,
   nextArmStart,
   playbackSeconds,
   skipTo,
   start,
   tick,
+  type Order,
   type Playback,
 } from './replay'
+import { Choice, Timeline, Transport } from './ReplayControls'
 import './simulation.css'
-
-const FRAME_MS = 50
+import { useTicker } from './useTicker'
 
 type Load =
   | { state: 'loading' }
@@ -29,9 +34,6 @@ type Props = {
   mockLlm: boolean // the server's MOCK_LLM, for the live-run note
   onLiveRunSaved: (runId: string) => void
 }
-
-const minutes = (seconds: number) =>
-  seconds < 90 ? `${Math.round(seconds)} s` : `${Math.round(seconds / 60)} min`
 
 /**
  * Step 3: replay a saved run's reactions. Events are fetched once; playback needs no network
@@ -85,35 +87,44 @@ export default function SimulationStep({ runId, liveRuns, mockLlm, onLiveRunSave
 }
 
 function Replay({ recording }: { recording: RunEvents }) {
-  const { run, events } = recording
-  const [playback, setPlayback] = useState<Playback>(start)
-  const [playing, setPlaying] = useState(true)
+  const { run } = recording
+  const [order, setOrder] = useState<Order>('reader')
   const [speed, setSpeed] = useState(1)
-  const running = playing && !playback.finished
-
-  useEffect(() => {
-    if (!running) return
-    let last = Date.now()
-    const timer = setInterval(() => {
-      const now = Date.now()
-      const dt = now - last
-      last = now
-      setPlayback((state) => tick(state, dt, events, speed))
-    }, FRAME_MS)
-    return () => clearInterval(timer)
-  }, [running, events, speed])
-
-  const played = Math.floor(playback.position)
-  const left = playbackSeconds(events.length, speed, playback.position)
-  const total = playbackSeconds(events.length, speed)
-
+  const choices = (
+    <>
+      <Choice
+        legend="Order"
+        name="order"
+        options={ORDER_OPTIONS}
+        value={order}
+        onChange={setOrder}
+      />
+      <Choice
+        legend="Speed"
+        name="speed"
+        options={SPEED_OPTIONS}
+        value={speed}
+        onChange={setSpeed}
+      />
+    </>
+  )
   return (
     <div className="simulation">
       <div className="replay-labels">
-        <p className="recorded-label">
-          <strong>Recorded run, sped up.</strong> It took {minutes(recording.recorded_seconds)}; it
-          plays back in about {minutes(total)} at {speed}×.
-        </p>
+        {order === 'reader' ? (
+          <p className="recorded-label">
+            <strong>Recorded run, sped up and reordered by reader</strong> (seeded order, not
+            cherry-picked), alternating a headline they clicked with one they skipped. Half are
+            clicks by design; across this run {Math.round(100 * shownClickRate(recording.events))}%
+            of shown headlines were clicked.
+          </p>
+        ) : (
+          <p className="recorded-label">
+            <strong>Recorded run, sped up.</strong> It took {duration(recording.recorded_seconds)};
+            it plays back in about {duration(playbackSeconds(recording.events.length, speed))} at{' '}
+            {speed}×.
+          </p>
+        )}
         {run.mock && (
           <p className="mock-note">
             <span className="badge-mock">MOCK</span> Fake LLM output. Not results.
@@ -123,96 +134,69 @@ function Replay({ recording }: { recording: RunEvents }) {
           <p className="notice">Synthetic sample: these readers are fake.</p>
         )}
       </div>
+      {order === 'reader' ? (
+        <ByReaderReplay recording={recording} speed={speed} choices={choices} />
+      ) : (
+        <ByArmReplay recording={recording} speed={speed} choices={choices} />
+      )}
+    </div>
+  )
+}
 
-      <div className="replay-grid">
-        <section className="feed" aria-labelledby="feed-title">
-          <h3 id="feed-title" className="visually-hidden">
-            Reactions
-          </h3>
-          <p className="simulated-label">{SIMULATED_LABEL}</p>
-          {playback.cards.length === 0 ? (
-            <p className="muted feed-waiting">The first agent is reading its feed…</p>
-          ) : (
-            <ol className="reaction-feed" aria-label="Reactions">
-              {[...playback.cards].reverse().map((card) => (
-                <ReactionCard
-                  key={card.index}
-                  event={events[card.index] as Reaction}
-                  revealed={isRevealed(card, playback.clock)}
-                />
-              ))}
-            </ol>
-          )}
-        </section>
+type ModeProps = { recording: RunEvents; speed: number; choices: ReactNode }
 
-        <aside className="replay-panel" aria-label="Playback">
-          <div className="transport">
-            <button
-              type="button"
-              className="primary"
-              disabled={playback.finished}
-              onClick={() => setPlaying((p) => !p)}
-            >
-              {running ? 'Pause' : 'Play'}
-            </button>
-            <button
-              type="button"
-              className="secondary"
-              disabled={playback.finished}
-              onClick={() =>
-                setPlayback((s) => skipTo(s, nextArmStart(events, s.position), events))
-              }
-            >
-              Skip to next arm
-            </button>
-            <button
-              type="button"
-              className="secondary"
-              disabled={playback.finished}
-              onClick={() => setPlayback((s) => skipTo(s, events.length, events))}
-            >
-              Skip to end
-            </button>
-          </div>
+/** The recorded order: arm A for every reader, then B, and so on. */
+function ByArmReplay({ recording, speed, choices }: ModeProps) {
+  const { run, events } = recording
+  const [playback, setPlayback] = useState<Playback>(start)
+  const [playing, setPlaying] = useState(true)
+  const running = playing && !playback.finished
+  useTicker(running, (dt) => setPlayback((state) => tick(state, dt, events, speed)))
 
-          <fieldset className="speeds">
-            <legend className="field-label">Speed</legend>
-            {SPEEDS.map((s) => (
-              <label key={s} className={s === speed ? 'speed speed-on' : 'speed'}>
-                <input
-                  type="radio"
-                  name="speed"
-                  value={s}
-                  checked={s === speed}
-                  onChange={() => setSpeed(s)}
-                />
-                {s}×
-              </label>
+  const played = Math.floor(playback.position)
+  const left = playbackSeconds(events.length, speed, playback.position)
+
+  return (
+    <div className="replay-grid">
+      <section className="feed" aria-label="Reactions feed">
+        <p className="simulated-label">{SIMULATED_LABEL}</p>
+        {playback.cards.length === 0 ? (
+          <p className="muted feed-waiting">The first agent is reading its feed…</p>
+        ) : (
+          <ol className="reaction-feed" aria-label="Reactions">
+            {[...playback.cards].reverse().map((card) => (
+              <ReactionCard
+                key={card.index}
+                event={events[card.index] as Reaction}
+                revealed={isRevealed(card, playback.clock)}
+              />
             ))}
-          </fieldset>
+          </ol>
+        )}
+      </section>
 
-          <div className="timeline">
-            <span
-              className="timeline-bar"
-              role="progressbar"
-              aria-label="Replay"
-              aria-valuemin={0}
-              aria-valuemax={events.length}
-              aria-valuenow={played}
-            >
-              <span style={{ width: `${(100 * playback.position) / events.length}%` }} />
-            </span>
-            <p className="small muted">
-              {playback.finished
-                ? 'Replay finished: every recorded event played.'
-                : `${played.toLocaleString()} of ${events.length.toLocaleString()} events, ${minutes(left)} left`}
-            </p>
-          </div>
-
-          <h3 className="panel-title">Agents done, per arm</h3>
-          <ArmProgressBars progress={armProgress(events, played, run.arms, run.n_users)} />
-        </aside>
-      </div>
+      <aside className="replay-panel" aria-label="Playback">
+        <Transport
+          running={running}
+          finished={playback.finished}
+          onToggle={() => setPlaying((p) => !p)}
+          nextLabel="Skip to next arm"
+          onNext={() => setPlayback((s) => skipTo(s, nextArmStart(events, s.position), events))}
+          onEnd={() => setPlayback((s) => skipTo(s, events.length, events))}
+        />
+        {choices}
+        <Timeline
+          value={playback.position}
+          max={events.length}
+          label={
+            playback.finished
+              ? 'Replay finished: every recorded event played.'
+              : `${played.toLocaleString()} of ${events.length.toLocaleString()} events, ${duration(left)} left`
+          }
+        />
+        <h3 className="panel-title">Agents done, per arm</h3>
+        <ArmProgressBars progress={armProgress(events, played, run.arms, run.n_users)} />
+      </aside>
     </div>
   )
 }

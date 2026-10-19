@@ -202,6 +202,7 @@ export const runEventsFixture: RunEvents = {
   run: { ...runFixture, arms: ['A', 'B', 'random'] },
   recorded_seconds: 894,
   events: replayEvents,
+  readers: ['U1', 'U2'],
 }
 
 type ErrorReply = { errorStatus: number; body: object }

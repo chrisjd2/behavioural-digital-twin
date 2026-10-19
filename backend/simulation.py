@@ -7,8 +7,9 @@ in `DEMO_MODE` (ADR-0011) and always on the dev population, never the test set (
 
 import asyncio
 import logging
+import threading
 import uuid
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator, Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -23,13 +24,14 @@ from backend.config import Settings
 from backend.data import resolve_data_source
 from backend.errors import AppError
 from backend.experiment import ExperimentConfig
-from backend.run_views import RunSummary, open_run, run_summary
+from backend.run_views import RunSummary, by_user, open_run, run_summary
 from backend.runner import Run, RunEvent, run_experiment
 from backend.runs import RUNS_SUBDIR, save_run
 
 log = logging.getLogger(__name__)
 
 CACHE_FILE = "cache.sqlite"
+VIEWER_TIMEOUT_S = 15.0
 ArmName = Literal["A", "B", "C", "D", "E", "popularity", "random"]
 ALL_ARMS: list[ArmName] = ["A", "B", "C", "D", "E", "popularity", "random"]
 
@@ -80,6 +82,9 @@ class RunEvents(BaseModel):
     run: RunSummary
     recorded_seconds: float  # how long the run really took, for the "sped up" label
     events: list[EventView]  # by seq
+    # Users in the run's seeded sampling order. Events come in completion order, so the
+    # "by reader" replay takes its order from here, never from outcomes.
+    readers: list[str]
 
 
 class LiveRunRequest(BaseModel):
@@ -88,7 +93,7 @@ class LiveRunRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     arms: list[ArmName] = Field(default=list(ALL_ARMS), min_length=1)
-    n_users: int = Field(default=ExperimentConfig.n_dev, ge=1, le=300)
+    n_users: int = Field(default=ExperimentConfig.n_dev, ge=1, le=100)
 
 
 class LiveRunStarted(BaseModel):
@@ -109,7 +114,9 @@ def run_events(run: Run) -> RunEvents:
         ) from exc
     times = [datetime.fromisoformat(e.at) for e in run.events]
     recorded = (max(times) - min(times)).total_seconds() if times else 0.0
-    return RunEvents(run=run_summary(run), recorded_seconds=recorded, events=events)
+    return RunEvents(
+        run=run_summary(run), recorded_seconds=recorded, events=events, readers=list(by_user(run))
+    )
 
 
 class RunSaved(BaseModel):
@@ -124,12 +131,23 @@ class RunFailed(BaseModel):
     detail: str
 
 
+class LiveRunCancelledError(Exception):
+    """Every viewer of a live run left, so it stops instead of spending LLM calls."""
+
+
 @dataclass
 class LiveRun:
-    """A run in progress. Subscribers get every event so far, then each new one, in order."""
+    """A run in progress. Subscribers get every event so far, then each new one, in order.
+
+    It runs in a daemon thread with its own event loop, so loading data and sampling do not
+    block the API and a server shutdown does not wait for it; events come back to the API's
+    loop through `call_soon_threadsafe`. It starts only once someone opens its stream.
+    """
 
     messages: list[dict[str, str]] = field(default_factory=list)
     finished: bool = False
+    cancelled: bool = False  # set on the API's loop, read by the worker thread
+    watched: asyncio.Event = field(default_factory=asyncio.Event)  # a viewer subscribed
     subscribers: list[asyncio.Queue[dict[str, str] | None]] = field(default_factory=list)
     task: asyncio.Task[None] | None = None  # asyncio keeps only a weak reference to tasks
 
@@ -141,7 +159,7 @@ class LiveRun:
             if last:
                 queue.put_nowait(None)
 
-    async def stream(self) -> AsyncIterator[dict[str, str]]:
+    async def stream(self) -> AsyncGenerator[dict[str, str]]:
         # Snapshot and subscribe with no await in between, so no message is missed or repeated.
         backlog = list(self.messages)
         if self.finished:
@@ -150,6 +168,7 @@ class LiveRun:
             return
         queue: asyncio.Queue[dict[str, str] | None] = asyncio.Queue()
         self.subscribers.append(queue)
+        self.watched.set()
         try:
             for message in backlog:
                 yield message
@@ -157,20 +176,22 @@ class LiveRun:
                 yield message
         finally:
             self.subscribers.remove(queue)
+            # The last viewer disconnected mid-run (closed tab, left the step): stop the run.
+            if not self.finished and not self.subscribers:
+                self.cancelled = True
 
 
-async def execute(settings: Settings, request: LiveRunRequest, live: LiveRun) -> None:
-    def on_event(event: RunEvent) -> None:
-        view = event_views([event])[0]
-        live.publish({"event": "run_event", "data": view.model_dump_json()})
-
+def run_live(
+    settings: Settings, request: LiveRunRequest, on_event: Callable[[RunEvent], None]
+) -> Run:
+    """The whole live run, in a worker thread: setup, every arm, then the run file."""
     data_dir = Path(settings.data_dir)
-    try:
-        source = resolve_data_source(data_dir)
-        if source.kind == "none":
-            raise ValueError("No MIND data or synthetic sample found in DATA_DIR.")
-        client, embeddings = build_llm(settings, data_dir / CACHE_FILE)
-        run = await run_experiment(
+    source = resolve_data_source(data_dir)
+    if source.kind == "none":
+        raise ValueError("No MIND data or synthetic sample found in DATA_DIR.")
+    client, embeddings = build_llm(settings, data_dir / CACHE_FILE)
+    run = asyncio.run(
+        run_experiment(
             source,
             ExperimentConfig(n_dev=request.n_users),
             population="dev",
@@ -180,11 +201,58 @@ async def execute(settings: Settings, request: LiveRunRequest, live: LiveRun) ->
             embeddings=embeddings,
             on_event=on_event,
         )
-        save_run(run, data_dir / RUNS_SUBDIR)
-    except Exception as exc:  # the failure is reported to every subscriber, not swallowed
-        log.exception("Live run failed")
-        failed = RunFailed(detail=str(exc) or type(exc).__name__)
+    )
+    save_run(run, data_dir / RUNS_SUBDIR)
+    return run
+
+
+async def in_daemon_thread(work: Callable[[], Run]) -> Run:
+    """`asyncio.to_thread`, but on a daemon thread, so shutdown never waits for a run."""
+    loop = asyncio.get_running_loop()
+    future: asyncio.Future[Run] = loop.create_future()
+
+    def target() -> None:
+        try:
+            result = work()
+        except BaseException as exc:  # handed to the awaiting coroutine, not lost
+            loop.call_soon_threadsafe(future.set_exception, exc)
+        else:
+            loop.call_soon_threadsafe(future.set_result, result)
+
+    threading.Thread(target=target, daemon=True, name="live-run").start()
+    return await future
+
+
+async def execute(settings: Settings, request: LiveRunRequest, live: LiveRun) -> None:
+    loop = asyncio.get_running_loop()
+
+    def on_event(event: RunEvent) -> None:
+        if live.cancelled:
+            raise LiveRunCancelledError
+        message = {"event": "run_event", "data": event_views([event])[0].model_dump_json()}
+        loop.call_soon_threadsafe(live.publish, message)
+
+    def fail(detail: str) -> None:
+        failed = RunFailed(detail=detail)
         live.publish({"event": "run_failed", "data": failed.model_dump_json()}, last=True)
+
+    try:
+        # A viewer who drops before the stream starts never subscribes: don't run for nobody.
+        await asyncio.wait_for(live.watched.wait(), VIEWER_TIMEOUT_S)
+    except TimeoutError:
+        fail("Cancelled: nobody opened the live run's stream.")
+        return
+    try:
+        run = await in_daemon_thread(lambda: run_live(settings, request, on_event))
+    except asyncio.CancelledError:  # server shutdown: stop the thread at its next event
+        live.cancelled = True
+        raise
+    except Exception as exc:  # the failure is reported to every subscriber, not swallowed
+        if live.cancelled:
+            fail("Cancelled: every viewer left the live run.")
+        else:
+            log.exception("Live run failed")
+            fail(str(exc) or type(exc).__name__)
         return
     saved = RunSaved(run_id=run.run_id)
     live.publish({"event": "run_saved", "data": saved.model_dump_json()}, last=True)
@@ -204,6 +272,9 @@ def simulation_router(settings: Settings) -> APIRouter:
 
     @router.post("/api/run", dependencies=[Depends(dev_only)])
     async def start(request: LiveRunRequest) -> LiveRunStarted:  # pyright: ignore[reportUnusedFunction]
+        if any(not live.finished for live in live_runs.values()):
+            raise AppError(409, "live_run_in_progress", "A live run is already running.")
+        live_runs.clear()  # one at a time: a finished run's stream goes when the next starts
         live_id = f"live-{uuid.uuid4().hex[:12]}"
         live = live_runs[live_id] = LiveRun()
         live.task = asyncio.create_task(execute(settings, request, live))

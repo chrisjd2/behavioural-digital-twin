@@ -56,3 +56,14 @@ export const BASELINES: ArmCard[] = [
     description: 'A shuffle. The floor every method has to clear.',
   },
 ]
+
+const ARM_NAMES = new Map(
+  [...ARMS, CONTROL, ...BASELINES].map((a) => [a.id, a.name] as [string, string]),
+)
+
+/** An arm id from a run file ('A', 'random') in plain language. */
+export const armName = (arm: string) => ARM_NAMES.get(arm.toLowerCase()) ?? arm
+
+/** The CSS class carrying the arm's colour; baselines share the grey. */
+export const armClass = (arm: string) =>
+  arm.length === 1 ? `arm-${arm.toLowerCase()}` : 'baseline'
