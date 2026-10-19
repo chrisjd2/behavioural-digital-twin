@@ -4,13 +4,12 @@ Every arm shares the output format, the feed framing and the display order;
 only the system prompt (what the agent knows) differs.
 """
 
-import dataclasses
 import hashlib
 import json
 import math
 import random
 from collections.abc import Awaitable, Callable, Mapping, Sequence
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime
 
 from backend.data import CandidateSet, NewsItem
@@ -326,12 +325,15 @@ async def _retrieve_memories(candidates: CandidateSet, resources: ArmResources) 
 
 
 def wrong_twin_donors(user_ids: Sequence[str], *, seed: int) -> dict[str, str]:
-    """A seeded derangement: every user is assigned another user, never themselves."""
+    """A seeded derangement: every user is assigned another user, never themselves.
+
+    Rotating a shuffled order by one gives a single random cycle through all users rather
+    than a uniformly random derangement. That suits the control: each user's donor is equally
+    likely to be any other user, and everyone lends their data to exactly one user."""
     if len(user_ids) < 2:
         raise ValueError("Arm E needs at least two users")
     order = sorted(user_ids)
     shuffled = random.Random(f"wrong-twin:{seed}").sample(order, len(order))
-    # Rotating a random order by one gives a derangement with no fixed points.
     return {user: shuffled[(k + 1) % len(shuffled)] for k, user in enumerate(shuffled)}
 
 
@@ -341,9 +343,10 @@ async def _borrowed_profile_and_memories(
     """Arm E: D's knowledge built from another user's clicks, for this user's headlines."""
     assert resources.donors is not None, "Arm E needs donors"
     donor = resources.donors[candidates.user_id]
-    borrowed = dataclasses.replace(candidates, history=donor.history)
-    knowledge = await _profile_and_memories(borrowed, resources)
-    return {**knowledge, "donor": donor.user_id, "borrowed": True}
+    knowledge = await _profile_and_memories(replace(candidates, history=donor.history), resources)
+    # Random pairs can share real clicks; reported, not filtered (it biases D - E toward 0).
+    shared = len(set(donor.history) & set(candidates.history))
+    return {**knowledge, "donor": donor.user_id, "borrowed": True, "shared_history": shared}
 
 
 async def _profile_and_memories(candidates: CandidateSet, resources: ArmResources) -> Knowledge:

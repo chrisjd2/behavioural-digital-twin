@@ -14,12 +14,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource-variable/atkinson-hyperlegible-next": "5.2.6",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "14.6.1",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

@@ -71,9 +71,11 @@ async def test_arm_e_borrows_another_users_clicks_and_reports_d_minus_e(
         assert isinstance(memories, list)
         assert {m["news_id"] for m in memories} <= set(d[str(donor)].history)
         assert not {m["news_id"] for m in memories} & set(result.items)
+        assert result.knowledge["profile"] == d[str(donor)].knowledge["profile"]
+        assert isinstance(result.knowledge["shared_history"], int)
         assert result.items == d[user].items
         assert result.labels == d[user].labels
     differences = run.metrics["differences"]
     assert isinstance(differences, list)
     assert ("D", "E") in {(x["arm"], x["reference"]) for x in differences}
-    assert "E" not in run.identity_screen  # borrowed profiles are screened under D only
+    assert "E" not in run.identity_screen  # identical borrowed profiles are counted once, under D

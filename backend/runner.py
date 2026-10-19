@@ -2,6 +2,7 @@
 
 import asyncio
 import hashlib
+import json
 import subprocess
 from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass, field
@@ -25,6 +26,7 @@ from backend.data import (
     build_candidate_set,
     date_range,
     load_behaviors,
+    load_behaviors_cached,
     load_news,
     sample_populations,
 )
@@ -97,7 +99,7 @@ def git_sha() -> str:
 
 def sampled_populations(source: DataSource, config: ExperimentConfig) -> Populations:
     return sample_populations(
-        load_behaviors(source.dev_dir / "behaviors.tsv"),
+        load_behaviors_cached(source.dev_dir / "behaviors.tsv"),
         n_dev=config.n_dev,
         n_test=config.n_test,
         dev_seed=config.dev_seed,
@@ -333,10 +335,16 @@ def summarise_run(
 
 def identity_summary(users: list[UserResult]) -> dict[str, dict[str, int]]:
     summary: dict[str, dict[str, int]] = {}
-    for u in users:
+    seen: set[str] = set()
+    for u in sorted(users, key=lambda u: u.arm):  # D before E
         profile = u.knowledge.get("profile")
-        if not isinstance(profile, dict) or u.knowledge.get("borrowed"):
-            continue  # Arm E's profiles describe another user: screened under D only
+        if not isinstance(profile, dict):
+            continue
+        # Each distinct profile is screened once: E usually shows its donor's D profile.
+        key = json.dumps(profile.get("fields"), sort_keys=True)
+        if key in seen:
+            continue
+        seen.add(key)
         hits = profile.get("identity_hits", [])
         counts = summary.setdefault(
             u.arm,
