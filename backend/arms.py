@@ -4,9 +4,11 @@ Every arm shares the output format, the feed framing and the display order;
 only the system prompt (what the agent knows) differs.
 """
 
+import dataclasses
 import hashlib
 import json
 import math
+import random
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from datetime import datetime
@@ -277,6 +279,7 @@ class ArmResources:
     client: LLMClient | None = None  # for arms that need an LLM call to prepare (D's profile)
     options: LLMOptions | None = None
     news: Mapping[str, NewsItem] | None = None
+    donors: Mapping[str, CandidateSet] | None = None  # Arm E: whose data each user borrows
 
 
 def profile_payload(
@@ -322,6 +325,27 @@ async def _retrieve_memories(candidates: CandidateSet, resources: ArmResources) 
     return {"memories": [asdict(m) for m in memories]}
 
 
+def wrong_twin_donors(user_ids: Sequence[str], *, seed: int) -> dict[str, str]:
+    """A seeded derangement: every user is assigned another user, never themselves."""
+    if len(user_ids) < 2:
+        raise ValueError("Arm E needs at least two users")
+    order = sorted(user_ids)
+    shuffled = random.Random(f"wrong-twin:{seed}").sample(order, len(order))
+    # Rotating a random order by one gives a derangement with no fixed points.
+    return {user: shuffled[(k + 1) % len(shuffled)] for k, user in enumerate(shuffled)}
+
+
+async def _borrowed_profile_and_memories(
+    candidates: CandidateSet, resources: ArmResources
+) -> Knowledge:
+    """Arm E: D's knowledge built from another user's clicks, for this user's headlines."""
+    assert resources.donors is not None, "Arm E needs donors"
+    donor = resources.donors[candidates.user_id]
+    borrowed = dataclasses.replace(candidates, history=donor.history)
+    knowledge = await _profile_and_memories(borrowed, resources)
+    return {**knowledge, "donor": donor.user_id, "borrowed": True}
+
+
 async def _profile_and_memories(candidates: CandidateSet, resources: ArmResources) -> Knowledge:
     profile = await distil_profile(profile_history(candidates.history, candidates.items), resources)
     return {"profile": asdict(profile), **await _retrieve_memories(candidates, resources)}
@@ -340,6 +364,7 @@ ARM_SPECS: dict[str, ArmSpec] = {
     "B": ArmSpec(_invent_persona, arm_b_messages),
     "C": ArmSpec(_retrieve_memories, arm_c_messages),
     "D": ArmSpec(_profile_and_memories, arm_d_messages),
+    "E": ArmSpec(_borrowed_profile_and_memories, arm_d_messages),  # same prompt as D
 }
 
 # A fixed fake user, rendered through every arm, so the hash covers everything that shapes
@@ -373,6 +398,7 @@ _CANONICAL_KNOWLEDGE: dict[str, Knowledge] = {
         "memories": [{"news_id": "H1", "headline": "Headline H1", "category": "news"}],
     },
 }
+_CANONICAL_KNOWLEDGE["E"] = _CANONICAL_KNOWLEDGE["D"]  # E shares D's prompt; only the donor differs
 
 
 _PROFILE_HISTORY = profile_history(_CANONICAL.history, _CANONICAL.items)

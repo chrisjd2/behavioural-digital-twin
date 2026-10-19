@@ -26,3 +26,4 @@ class ExperimentConfig:
     max_candidates: int = 8
     max_clicked: int = 2
     bootstrap_seed: int = 20261019
+    wrong_twin_seed: int = 1  # Arm E's derangement (ADR-0003)
