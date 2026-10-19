@@ -6,6 +6,7 @@ import { SIMULATED_LABEL } from './labels'
 import PopulationStep from './PopulationStep'
 import RunPicker, { type Runs } from './RunPicker'
 import SeedStep, { type Build } from './SeedStep'
+import SimulationStep from './SimulationStep'
 
 type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; status: Status }
 
@@ -29,6 +30,7 @@ const STEPS: Placeholder[] = [
 ]
 const SEED_STEP = 1
 const POPULATION_STEP = 2
+const SIMULATION_STEP = 3
 
 /** An emptied input is NaN; send the config default for it instead. */
 function withDefaults(request: ExperimentRequest, defaults: ExperimentRequest): ExperimentRequest {
@@ -152,7 +154,20 @@ export default function App() {
               <RunPicker runs={runs} runId={runId} onRunChange={setRunId} onRefresh={loadRuns} />
             </div>
             {runId && step === POPULATION_STEP && <PopulationStep key={runId} runId={runId} />}
-            {step !== POPULATION_STEP && <p className="muted">This step is not built yet.</p>}
+            {step === SIMULATION_STEP && (
+              <SimulationStep
+                key={runId ?? 'none'}
+                runId={runId}
+                liveRuns={load.state === 'ready' && !load.status.demo_mode}
+                onLiveRunSaved={(saved) => {
+                  setRunId(saved)
+                  loadRuns()
+                }}
+              />
+            )}
+            {step !== POPULATION_STEP && step !== SIMULATION_STEP && (
+              <p className="muted">This step is not built yet.</p>
+            )}
           </section>
         ) : (
           <section className="placeholder" aria-labelledby="step-title">

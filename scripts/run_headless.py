@@ -8,12 +8,11 @@ import asyncio
 import sys
 from pathlib import Path
 
+from backend.clients import build_llm
 from backend.config import get_settings
 from backend.data import resolve_data_source
 from backend.experiment import ExperimentConfig
-from backend.llm import Cache, LLMClient, mock_backend, openai_backend, openai_embedder
 from backend.report import Estimate, Report, build_report
-from backend.retrieval import EmbeddingStore
 from backend.runner import LLM_ARMS, FreezeError, Run, RunEvent, run_experiment
 from backend.runs import save_run
 
@@ -80,36 +79,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"No data in {data_dir}: run scripts.download_mind or scripts.make_sample")
         return 2
 
-    if settings.mock_llm:
-        backend, model, base_url = mock_backend, "mock", "mock://"
-    else:
-        if uses_llm and not (settings.llm_model and settings.llm_api_key):
-            print("Set LLM_MODEL and LLM_API_KEY in .env, or MOCK_LLM=true.")
-            return 2
-        backend = openai_backend(settings.llm_base_url, settings.llm_api_key)
-        model, base_url = settings.llm_model, settings.llm_base_url
-    client = LLMClient(
-        model=model,
-        base_url=base_url,
-        cache=Cache(data_dir / CACHE_FILE),
-        backend=backend,
-        concurrency=settings.concurrency,
-    )
+    if not settings.mock_llm and uses_llm and not (settings.llm_model and settings.llm_api_key):
+        print("Set LLM_MODEL and LLM_API_KEY in .env, or MOCK_LLM=true.")
+        return 2
+    client, embeddings = build_llm(settings, data_dir / CACHE_FILE)
     options = settings.llm_options()
-    embeddings = None
-    if not settings.mock_llm and options.embed_model:
-        embeddings = EmbeddingStore(
-            data_dir / CACHE_FILE,
-            base_url=settings.llm_base_url,
-            model=options.embed_model,
-            dimensions=options.embed_dimensions,
-            embed=openai_embedder(
-                settings.llm_base_url,
-                settings.llm_api_key,
-                model=options.embed_model,
-                dimensions=options.embed_dimensions,
-            ),
-        )
 
     def progress(event: RunEvent) -> None:
         if event.kind == "arm_progress":
