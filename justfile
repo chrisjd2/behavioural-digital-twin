@@ -69,7 +69,7 @@ demo-image:
 
 # Rehearse the hosted demo on :8080: DEMO_MODE, the key from .env at run time, not in the image
 demo-serve: demo-image
-    env=(); if [ -f .env ]; then env=(--env-file .env); fi; docker run --rm -p 8080:8080 "${env[@]}" -e DEMO_MODE=1 -e MOCK_LLM=false -e DATA_DIR=data twin-lab-demo:local
+    env=(); if [ -f .env ]; then env=(--env-file .env); fi; docker run --rm -p 8080:8080 "${env[@]}" -e DEMO_MODE=1 -e MOCK_LLM=false twin-lab-demo:local
 
 # Deploy the demo to Cloud Run (docs/deploy.md); add --dry-run to print the commands only
 deploy PROJECT REGION REPO *args:

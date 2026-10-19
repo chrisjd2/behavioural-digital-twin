@@ -365,6 +365,23 @@ def test_a_failed_llm_call_is_an_error_and_the_question_is_not_kept(
     assert response.json()["code"] == "interview_unavailable"
 
 
+def test_provider_errors_are_logged_not_sent_to_the_visitor(
+    lab: tuple[Path, Run], monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    async def down(_: Mapping[str, object]) -> RawResponse:
+        raise TransientError("429 quota exceeded on billing account 0123")
+
+    async def no_wait(_: float) -> None:
+        return None
+
+    monkeypatch.setattr(interview, "mock_interview_backend", down)
+    monkeypatch.setattr(interview, "retry_sleep", no_wait)
+    response = ask(lab).post("/api/interview", json=body(lab[1]))
+
+    assert response.json() == {"code": "interview_unavailable", "detail": interview.UNAVAILABLE}
+    assert "billing account 0123" in caplog.text
+
+
 def test_an_empty_reply_is_an_error(lab: tuple[Path, Run], monkeypatch: pytest.MonkeyPatch) -> None:
     async def blank(_: Mapping[str, object]) -> RawResponse:
         return RawResponse("  ", 0, 0)

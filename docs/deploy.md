@@ -19,12 +19,15 @@ gcloud artifacts repositories create twin-lab --repository-format=docker --locat
 # The Gemini key: Secret Manager injects it at run time; it is never in the image
 printf '%s' "$LLM_API_KEY" | gcloud secrets create llm-api-key --data-file=-
 
-# Let Cloud Run's runtime service account (the default compute one) read it
-PROJECT_NUMBER=$(gcloud projects describe my-project --format='value(projectNumber)')
+# A dedicated runtime identity for the public service, not the default compute account (which
+# often holds project Editor). Its only grant is reading this one secret: no project-level roles.
+gcloud iam service-accounts create twin-lab-run --display-name="Twin Lab demo (Cloud Run)"
 gcloud secrets add-iam-policy-binding llm-api-key \
-  --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+  --member="serviceAccount:twin-lab-run@my-project.iam.gserviceaccount.com" \
   --role=roles/secretmanager.secretAccessor
 ```
+
+`just deploy` runs the service as `twin-lab-run@PROJECT.iam.gserviceaccount.com`. Deploying with `--service-account` needs `roles/iam.serviceAccountUser` on that account for whoever deploys; a project Owner already has it. The repo check covers repo-level IAM only: make sure no project-level binding grants `allUsers` Artifact Registry read either.
 
 Docker must be running locally; `just deploy` runs `gcloud auth configure-docker` for the registry.
 
@@ -46,13 +49,14 @@ just deploy my-project europe-west2 twin-lab             # run them
 
 This builds the `demo` image target (the runtime image plus `demo-data/`, owned by root so the app cannot write it), pushes it to `europe-west2-docker.pkg.dev/my-project/twin-lab/twin-lab-demo:demo` and deploys service `twin-lab` with:
 
+- `--service-account=twin-lab-run@PROJECT.iam.gserviceaccount.com`: can read the key's secret and nothing else
 - `--allow-unauthenticated`: a public URL, no sign-in
 - `--min-instances=0 --max-instances=1`: one instance at most, because the interview's rate limits are counted in memory (ADR-0011 amendment)
-- `--set-env-vars=DEMO_MODE=1,MOCK_LLM=false` (the image also sets `DEMO_MODE=1`)
+- `--set-env-vars=DEMO_MODE=1,MOCK_LLM=false,LLM_MODEL=<the result run's model>` (the image also sets `DEMO_MODE=1`)
 - `--set-secrets=LLM_API_KEY=llm-api-key:latest`
 - `--memory=1Gi`: about 200 MiB resident after serving the test run's replay, measured on the real demo data
 
-Options: `--service`, `--secret`, `--tag`, `--memory` (see `uv run python -m scripts.deploy --help`).
+Options: `--model`, `--service`, `--secret`, `--tag`, `--memory` (see `uv run python -m scripts.deploy --help`).
 
 ## Teardown
 
