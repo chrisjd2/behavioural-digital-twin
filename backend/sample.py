@@ -21,11 +21,21 @@ CATEGORIES = {
     "foodanddrink": ["recipes", "restaurants", "drinks"],
 }
 DAY = datetime(2019, 11, 15)
+MARKER_FILE = "SYNTHETIC"
+
+
+def is_synthetic(directory: Path) -> bool:
+    """True when `directory` holds generated fake data rather than real MIND."""
+    return (directory / MARKER_FILE).exists()
 
 
 def write_synthetic_sample(directory: Path, *, n_users: int, n_news: int, seed: int) -> None:
     rng = random.Random(f"sample:{seed}")
     directory.mkdir(parents=True, exist_ok=True)
+    (directory / MARKER_FILE).write_text(
+        "Synthetic MIND-format data for tests and development. Not real; never report results.\n",
+        encoding="utf-8",
+    )
 
     news: list[tuple[str, str, float]] = []  # (id, category, popularity)
     with (directory / "news.tsv").open("w", encoding="utf-8", newline="\n") as f:

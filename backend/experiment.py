@@ -1,15 +1,19 @@
 """Experiment configuration and evaluation (ADR-0001)."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
 from backend.baselines import random_scores
-from backend.data import build_candidate_set, load_behaviors, sample_populations
+from backend.data import CandidateSet, build_candidate_set, load_behaviors, sample_populations
 from backend.metrics import auc
 
 Population = Literal["dev", "test"]
-KNOWN_ARMS = ("random",)
+Scorer = Callable[..., dict[str, float]]
+
+# Arm name -> scorer(candidates, *, seed) returning a score per candidate news ID.
+ARMS: dict[str, Scorer] = {"random": random_scores}
 
 
 @dataclass(frozen=True)
@@ -23,13 +27,14 @@ class ExperimentConfig:
     candidate_seed: int = 1
     baseline_seed: int = 1
     max_candidates: int = 8
+    max_clicked: int = 2
 
 
 def evaluate(
     data_dir: Path, config: ExperimentConfig, *, population: Population, arms: list[str]
 ) -> dict[str, list[float]]:
     """Per-user AUC for each arm, in population order."""
-    unknown = sorted(set(arms) - set(KNOWN_ARMS))
+    unknown = sorted(set(arms) - set(ARMS))
     if unknown:
         raise ValueError(f"Unknown arm(s): {', '.join(unknown)}")
 
@@ -40,11 +45,16 @@ def evaluate(
         dev_seed=config.dev_seed,
         test_seed=config.test_seed,
     )
-    candidate_sets = [
-        build_candidate_set(imp, seed=config.candidate_seed, max_candidates=config.max_candidates)
+    candidate_sets: list[CandidateSet] = [
+        build_candidate_set(
+            imp,
+            seed=config.candidate_seed,
+            max_candidates=config.max_candidates,
+            max_clicked=config.max_clicked,
+        )
         for imp in (populations.dev if population == "dev" else populations.test)
     ]
     return {
-        arm: [auc(random_scores(c, seed=config.baseline_seed), c.labels) for c in candidate_sets]
+        arm: [auc(ARMS[arm](c, seed=config.baseline_seed), c.labels) for c in candidate_sets]
         for arm in arms
     }

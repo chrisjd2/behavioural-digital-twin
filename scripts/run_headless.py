@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from backend.experiment import ExperimentConfig, evaluate
+from backend.sample import is_synthetic
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -23,8 +24,7 @@ def main(argv: list[str] | None = None) -> int:
     config = ExperimentConfig(n_dev=args.n_dev, n_test=args.n_test)
     results = evaluate(args.data_dir, config, population=args.population, arms=args.arms.split(","))
 
-    titles = (args.data_dir / "news.tsv").read_text(encoding="utf-8")
-    source = "SYNTHETIC SAMPLE (fake data)" if "[SYNTHETIC]" in titles else str(args.data_dir)
+    source = "SYNTHETIC SAMPLE (fake data)" if is_synthetic(args.data_dir) else str(args.data_dir)
     print(f"Data: {source} | population: {args.population}")
     print(f"{'arm':<10} {'users':>6} {'mean AUC':>9}")
     for arm, aucs in results.items():

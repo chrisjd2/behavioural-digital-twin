@@ -15,7 +15,6 @@ MIND_TIME_FORMAT = "%m/%d/%Y %I:%M:%S %p"
 MIN_HISTORY = 10
 MIN_CLICKS = 1
 MIN_NON_CLICKS = 3
-MAX_CLICKED_CANDIDATES = 2
 
 
 @dataclass(frozen=True)
@@ -68,16 +67,21 @@ def load_behaviors(path: Path) -> list[Impression]:
         for impression_id, user_id, time, history, shown in csv.reader(
             f, delimiter="\t", quoting=csv.QUOTE_NONE
         ):
+            pairs = tuple(
+                (news_id, int(label))
+                for news_id, label in (token.rsplit("-", 1) for token in shown.split())
+            )
+            ids = [news_id for news_id, _ in pairs]
+            if len(set(ids)) != len(ids):
+                repeated = sorted({i for i in ids if ids.count(i) > 1})
+                raise ValueError(f"Impression {impression_id} shows {', '.join(repeated)} twice")
             impressions.append(
                 Impression(
                     impression_id=impression_id,
                     user_id=user_id,
                     time=datetime.strptime(time, MIND_TIME_FORMAT),
                     history=tuple(history.split()),
-                    shown=tuple(
-                        (news_id, int(label))
-                        for news_id, label in (token.rsplit("-", 1) for token in shown.split())
-                    ),
+                    shown=pairs,
                 )
             )
     return impressions
@@ -119,12 +123,14 @@ def sample_populations(
     )
 
 
-def build_candidate_set(impression: Impression, *, seed: int, max_candidates: int) -> CandidateSet:
+def build_candidate_set(
+    impression: Impression, *, seed: int, max_candidates: int, max_clicked: int
+) -> CandidateSet:
     rng = random.Random(f"candidates:{seed}:{impression.user_id}:{impression.impression_id}")
     clicked = [news_id for news_id, label in impression.shown if label == 1]
     non_clicked = [news_id for news_id, label in impression.shown if label == 0]
 
-    chosen_clicked = rng.sample(clicked, min(MAX_CLICKED_CANDIDATES, len(clicked)))
+    chosen_clicked = rng.sample(clicked, min(max_clicked, len(clicked)))
     n_fill = min(max_candidates - len(chosen_clicked), len(non_clicked))
     items = chosen_clicked + rng.sample(non_clicked, n_fill)
     rng.shuffle(items)

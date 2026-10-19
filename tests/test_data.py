@@ -1,39 +1,16 @@
-from datetime import datetime
 from pathlib import Path
 
 import pytest
 
 from backend.data import (
-    Impression,
     build_candidate_set,
     is_eligible,
     load_behaviors,
     load_news,
     sample_populations,
 )
-from backend.sample import write_synthetic_sample
-
-
-@pytest.fixture(scope="module")
-def sample_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    directory = tmp_path_factory.mktemp("sample")
-    write_synthetic_sample(directory, n_users=400, n_news=300, seed=1)
-    return directory
-
-
-def impression(
-    history: int = 12, clicks: int = 2, non_clicks: int = 10, user_id: str = "U1"
-) -> Impression:
-    shown = tuple((f"C{i}", 1) for i in range(clicks)) + tuple(
-        (f"N{i}", 0) for i in range(non_clicks)
-    )
-    return Impression(
-        impression_id="1",
-        user_id=user_id,
-        time=datetime(2019, 11, 15, 9, 0),
-        history=tuple(f"H{i}" for i in range(history)),
-        shown=shown,
-    )
+from backend.sample import is_synthetic
+from tests.factories import make_impression
 
 
 def test_synthetic_sample_loads_in_mind_format(sample_dir: Path) -> None:
@@ -46,6 +23,30 @@ def test_synthetic_sample_loads_in_mind_format(sample_dir: Path) -> None:
     first = behaviors[0]
     assert all(news_id in news for news_id in first.history)
     assert {label for _, label in first.shown} <= {0, 1}
+    assert is_synthetic(sample_dir)
+
+
+def test_real_data_dir_is_not_synthetic(tmp_path: Path) -> None:
+    assert not is_synthetic(tmp_path)
+
+
+def test_duplicate_news_in_one_impression_is_rejected(tmp_path: Path) -> None:
+    path = tmp_path / "behaviors.tsv"
+    path.write_text("1\tU1\t11/15/2019 9:00:00 AM\tN1 N2\tN3-1 N4-0 N3-0\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="N3"):
+        load_behaviors(path)
+
+
+def test_empty_history_and_crlf_are_parsed(tmp_path: Path) -> None:
+    path = tmp_path / "behaviors.tsv"
+    path.write_bytes(b"1\tU1\t11/15/2019 9:00:00 PM\t\tN3-1 N4-0\r\n")
+
+    (imp,) = load_behaviors(path)
+
+    assert imp.history == ()
+    assert imp.shown == (("N3", 1), ("N4", 0))
+    assert imp.time.hour == 21
 
 
 @pytest.mark.parametrize(
@@ -58,7 +59,7 @@ def test_synthetic_sample_loads_in_mind_format(sample_dir: Path) -> None:
     ],
 )
 def test_eligibility(history: int, clicks: int, non_clicks: int, eligible: bool) -> None:
-    assert is_eligible(impression(history, clicks, non_clicks)) is eligible
+    assert is_eligible(make_impression(history, clicks, non_clicks)) is eligible
 
 
 def test_populations_are_disjoint_deterministic_and_one_impression_per_user(
@@ -95,8 +96,11 @@ def test_population_too_small_raises(sample_dir: Path) -> None:
         sample_populations(behaviors, n_dev=30, n_test=10_000, dev_seed=1, test_seed=2)
 
 
+CANDIDATES = {"seed": 5, "max_candidates": 8, "max_clicked": 2}
+
+
 def test_candidate_set_composition() -> None:
-    candidates = build_candidate_set(impression(clicks=3, non_clicks=10), seed=5, max_candidates=8)
+    candidates = build_candidate_set(make_impression(clicks=3, non_clicks=10), **CANDIDATES)
 
     labels = [candidates.labels[i] for i in candidates.items]
     assert len(candidates.items) == 8
@@ -106,22 +110,42 @@ def test_candidate_set_composition() -> None:
 
 
 def test_candidate_set_with_one_click_fills_with_non_clicks() -> None:
-    candidates = build_candidate_set(impression(clicks=1, non_clicks=4), seed=5, max_candidates=8)
+    candidates = build_candidate_set(make_impression(clicks=1, non_clicks=4), **CANDIDATES)
 
     assert len(candidates.items) == 5
     assert sum(candidates.labels.values()) == 1
 
 
-def test_candidate_order_and_tie_break_are_seeded_and_independent() -> None:
-    imp = impression(clicks=2, non_clicks=10)
+def test_max_clicked_is_configurable() -> None:
+    candidates = build_candidate_set(
+        make_impression(clicks=5, non_clicks=10), seed=5, max_candidates=8, max_clicked=3
+    )
 
-    a = build_candidate_set(imp, seed=5, max_candidates=8)
-    b = build_candidate_set(imp, seed=5, max_candidates=8)
-    c = build_candidate_set(imp, seed=6, max_candidates=8)
+    assert sum(candidates.labels.values()) == 3
+
+
+def test_candidate_order_and_tie_break_are_seeded() -> None:
+    imp = make_impression(clicks=2, non_clicks=10)
+
+    a = build_candidate_set(imp, **CANDIDATES)
+    b = build_candidate_set(imp, **CANDIDATES)
+    c = build_candidate_set(imp, **{**CANDIDATES, "seed": 6})
 
     assert a == b
-    assert a.items != c.items or a.tie_rank != c.tie_rank
+    assert a.items != c.items
+    assert a.tie_rank != c.tie_rank
     assert sorted(a.tie_rank) == sorted(a.items)
     assert sorted(a.tie_rank.values()) == list(range(len(a.items)))
-    tie_order = sorted(a.items, key=lambda i: a.tie_rank[i])
-    assert tie_order != list(a.items) or len(a.items) < 3
+
+
+def test_tie_break_order_is_independent_of_display_order() -> None:
+    users = [make_impression(user_id=f"U{n}") for n in range(200)]
+    sets = [build_candidate_set(imp, **CANDIDATES) for imp in users]
+
+    # Ranking by tie-break order must not just reproduce the display order...
+    same = sum(sorted(c.items, key=c.tie_rank.__getitem__) == list(c.items) for c in sets)
+    assert same <= 2
+    # ...and each display slot's tie-rank should average near the middle (3.5 for 8 items).
+    for slot in range(8):
+        mean_rank = sum(c.tie_rank[c.items[slot]] for c in sets) / len(sets)
+        assert 2.8 < mean_rank < 4.2
