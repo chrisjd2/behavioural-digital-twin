@@ -95,7 +95,7 @@ def hook_example(settings: Settings, config: HookConfig) -> HookExample:
     arms = {r.arm: r for r in results}
     if missing := [a for a in HOOK_ARMS if a not in arms]:
         raise AppError(409, "hook_arm_missing", f"Run {run.run_id} has no arm {missing[0]}.")
-    first = arms[HOOK_ARMS[0]]
+    first = arms[HOOK_ARMS[0]]  # arm A: labels, items and history are the same in every arm
     if first.labels.get(config.clicked_id) != 1 or first.labels.get(config.other_id) != 0:
         raise AppError(
             422,
@@ -144,31 +144,40 @@ class HookCandidate:
     d_gap: float  # arm D's p_click for the clicked headline minus the other one (> 0: right)
     history_hits: int  # recent past clicks in the clicked headline's category
     history_misses: int  # recent past clicks in the other headline's category
+    subcategory_hits: int  # recent past clicks in the clicked headline's subcategory too
 
 
 def hook_candidates(run: Run, news: Mapping[str, NewsItem]) -> list[HookCandidate]:
     """ADR-0008's rule: arm A prefers the headline the reader skipped, arm D the one they
-    clicked, and the recent clicks the toggle shows lean to the clicked one's category.
-    Each reader's best pair only; clearest history first, then the widest disagreement."""
+    clicked, and the recent clicks the toggle shows lean to the clicked one's topic: at least
+    two in its category, more than in the other's, and at least one in its subcategory too
+    (MIND's "news" category alone is too broad to see). Each reader's best pair only; most
+    subcategory matches first, then the clearest category lean, then the widest disagreement."""
+    plain, twin = HOOK_ARMS
     candidates: list[HookCandidate] = []
     for user_id, results in by_user(run).items():
         arms = {r.arm: r for r in results}
         if not all(a in arms for a in HOOK_ARMS):
             continue
-        a, d = arms["A"], arms["D"]
-        recent = [news[i].category for i in recent_history(a) if i in news]
+        a, d = arms[plain], arms[twin]
+        recent = [news[i] for i in recent_history(a) if i in news]
         clicked = [i for i in a.items if a.labels[i] == 1 and i in news]
         skipped = [i for i in a.items if a.labels[i] == 0 and i in news]
         for c in clicked:
+            topic = (news[c].category, news[c].subcategory)
+            hits = sum(n.category == topic[0] for n in recent)
+            sub_hits = sum((n.category, n.subcategory) == topic for n in recent)
             for o in skipped:
-                hits = recent.count(news[c].category)
-                misses = recent.count(news[o].category)
+                misses = sum(n.category == news[o].category for n in recent)
                 a_gap, d_gap = a.scores[o] - a.scores[c], d.scores[c] - d.scores[o]
-                if a_gap > 0 and d_gap > 0 and hits >= 2 and hits > misses:
-                    candidates.append(HookCandidate(user_id, c, o, a_gap, d_gap, hits, misses))
+                if a_gap > 0 and d_gap > 0 and hits >= 2 and hits > misses and sub_hits >= 1:
+                    candidates.append(
+                        HookCandidate(user_id, c, o, a_gap, d_gap, hits, misses, sub_hits)
+                    )
     ranked = sorted(
         candidates,
         key=lambda k: (
+            -k.subcategory_hits,
             k.history_misses - k.history_hits,
             -(k.a_gap + k.d_gap),
             k.user_id,

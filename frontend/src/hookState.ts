@@ -30,11 +30,10 @@ export function step(state: HookState, command: HookCommand): HookState {
 }
 
 const KEYS: Record<string, HookKey> = {
+  // Up and down are left to the browser, so the presenter can still scroll.
   ArrowRight: 'next',
-  ArrowDown: 'next',
   PageDown: 'next', // presentation clickers send PageDown / PageUp
   ArrowLeft: 'prev',
-  ArrowUp: 'prev',
   PageUp: 'prev',
   h: 'history',
   r: 'reveal',

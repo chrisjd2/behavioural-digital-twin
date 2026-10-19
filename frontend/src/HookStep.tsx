@@ -16,7 +16,7 @@ const QUESTION = 'Can an AI impersonate a customer?'
 const PROMPTS = {
   guess: 'Which headline did this reader click? Vote 1 or 2.',
   history: 'Here is what they clicked before. Vote again.',
-  reveal: 'What they really clicked, and what two AI agents predicted.',
+  reveal: 'The real click, and what two AI agents predicted.',
 }
 
 function armName(arm: string): string {
@@ -28,25 +28,34 @@ function toggleFullscreen(element: HTMLElement | null) {
   else void element?.requestFullscreen?.()
 }
 
+/** MIND's category and subcategory, e.g. "news / newsus": what links a headline to the history. */
+function topic(headline: Headline): string {
+  return [headline.category ?? 'unknown', headline.subcategory].filter(Boolean).join(' / ')
+}
+
 function title(headline: Headline): string {
   return headline.title ?? `${headline.news_id} (headline not in the data)`
 }
 
-export default function HookStep() {
+/** Reports the shown run up to App, whose MOCK badge describes the run on screen. */
+export default function HookStep({ onRunMock }: { onRunMock: (mock: boolean) => void }) {
   const [load, setLoad] = useState<Load>({ state: 'loading' })
   const [state, dispatch] = useReducer(step, INITIAL)
   const stageRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     fetchHook()
-      .then((example) => setLoad({ state: 'ready', example }))
+      .then((example) => {
+        setLoad({ state: 'ready', example })
+        onRunMock(example.mock)
+      })
       .catch((error: unknown) =>
         setLoad({
           state: 'error',
           message: error instanceof Error ? error.message : 'The example could not be loaded.',
         }),
       )
-  }, [])
+  }, [onRunMock])
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -66,10 +75,14 @@ export default function HookStep() {
 
   return (
     <section ref={stageRef} className="hook" aria-labelledby="step-title">
+      {/* The stepper already shows the step; the row is kept for the prompt and the label. */}
+      <h2 id="step-title" className="hook-kicker">
+        Step 0 Hook
+      </h2>
       <div className="hook-top">
-        <h2 id="step-title" className="hook-kicker">
-          Step 0 Hook
-        </h2>
+        <p className="hook-prompt" aria-live="polite">
+          {state.stage !== 'title' && load.state === 'ready' ? prompt : ''}
+        </p>
         <p className="hook-stamp">Illustrative example (dev set)</p>
       </div>
 
@@ -88,13 +101,9 @@ export default function HookStep() {
         </p>
       ) : (
         <div className="hook-body">
-          <p className="hook-prompt" aria-live="polite">
-            {prompt}
-          </p>
           {(load.example.mock || load.example.data_source === 'synthetic') && (
             <p className="hook-caveat">
-              {load.example.mock && <span className="badge-mock">MOCK</span>}
-              {load.example.mock ? ' Predictions are fake output for development. ' : ''}
+              {load.example.mock && 'Mock run: the predictions are fake LLM output, not results. '}
               {load.example.data_source === 'synthetic' && 'Synthetic data: fake headlines.'}
             </p>
           )}
@@ -166,6 +175,7 @@ function HookCard({
       <span className="hook-card-number" aria-hidden="true">
         {number}
       </span>
+      <p className="hook-card-category">{topic(headline)}</p>
       <p className="hook-card-title">{title(headline)}</p>
       {revealed && (
         <>
@@ -202,7 +212,7 @@ function History({ history }: { history: Headline[] }) {
         <ol>
           {history.map((h) => (
             <li key={h.news_id}>
-              <span className="hook-category">{h.category ?? 'unknown'}</span> {title(h)}
+              <span className="hook-category">{topic(h)}</span> {title(h)}
             </li>
           ))}
         </ol>

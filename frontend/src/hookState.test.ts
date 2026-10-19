@@ -43,12 +43,8 @@ describe('presenter keys', () => {
     commandFor(new KeyboardEvent('keydown', { key: k, ...extra }))
 
   it('maps arrows, clicker page keys, H, R and F', () => {
-    expect(['ArrowRight', 'ArrowDown', 'PageDown'].map((k) => key(k))).toEqual([
-      'next',
-      'next',
-      'next',
-    ])
-    expect(['ArrowLeft', 'ArrowUp', 'PageUp'].map((k) => key(k))).toEqual(['prev', 'prev', 'prev'])
+    expect(['ArrowRight', 'PageDown'].map((k) => key(k))).toEqual(['next', 'next'])
+    expect(['ArrowLeft', 'PageUp'].map((k) => key(k))).toEqual(['prev', 'prev'])
     expect([key('h'), key('H'), key('r'), key('R'), key('f')]).toEqual([
       'history',
       'history',
@@ -60,6 +56,8 @@ describe('presenter keys', () => {
 
   it('ignores other keys and modified keys', () => {
     expect(key('x')).toBeUndefined()
+    expect(key('ArrowUp')).toBeUndefined() // left to the browser for scrolling
+    expect(key('ArrowDown')).toBeUndefined()
     expect(key('r', { ctrlKey: true })).toBeUndefined()
     expect(key('h', { metaKey: true })).toBeUndefined()
     expect(key('ArrowRight', { altKey: true })).toBeUndefined()

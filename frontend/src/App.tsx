@@ -41,11 +41,12 @@ function withDefaults(request: ExperimentRequest, defaults: ExperimentRequest): 
 
 export default function App() {
   const [load, setLoad] = useState<Load>({ state: 'loading' })
-  const [step, setStep] = useState(SEED_STEP)
+  const [step, setStep] = useState(HOOK_STEP)
   const [request, setRequest] = useState<ExperimentRequest | null>(null)
   const [build, setBuild] = useState<Build>({ state: 'idle' })
   const [runs, setRuns] = useState<Runs>({ state: 'idle' })
   const [runId, setRunId] = useState<string>()
+  const [hookRunMock, setHookRunMock] = useState(false)
 
   useEffect(() => {
     fetchStatus()
@@ -68,6 +69,11 @@ export default function App() {
   }
 
   const current = STEPS[step]
+  // The MOCK badge describes the run on screen, not the server's LLM (ADR-0001, ADR-0008).
+  const selectedRun =
+    runs.state === 'ready' ? runs.list.runs.find((r) => r.run_id === runId) : undefined
+  const shownRunIsMock =
+    step === HOOK_STEP ? hookRunMock : current.runCentric ? selectedRun?.mock === true : false
 
   function goTo(index: number) {
     setStep(index)
@@ -98,8 +104,11 @@ export default function App() {
       <header className="masthead">
         <div className="masthead-row">
           <p className="wordmark">Twin Lab</p>
-          {load.state === 'ready' && load.status.mock && (
-            <span className="badge-mock" title="Fake LLM output for development, not results">
+          {shownRunIsMock && (
+            <span
+              className="badge-mock"
+              title="This run is fake LLM output for development, not results"
+            >
               MOCK
             </span>
           )}
@@ -130,7 +139,7 @@ export default function App() {
           </p>
         )}
         {step === HOOK_STEP ? (
-          <HookStep />
+          <HookStep onRunMock={setHookRunMock} />
         ) : step === SEED_STEP ? (
           <>
             {load.state === 'loading' && <p className="muted">Checking the data source…</p>}

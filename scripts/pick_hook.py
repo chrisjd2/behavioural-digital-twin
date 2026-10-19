@@ -2,12 +2,14 @@
 
 A candidate is a reader and a clicked/skipped headline pair where the plain LLM (arm A)
 prefers the skipped headline, the full twin (arm D) the clicked one, and the reader's recent
-clicks lean to the clicked headline's category. Test and result runs are refused: the hook
-is illustrative, never evidence.
+clicks lean to the clicked headline's category and subcategory. Test and result runs are
+refused: the hook is illustrative, never evidence. --ids-only prints no headline text, for
+public places like a PR (ADR-0010).
 
     uv run python -m scripts.pick_hook                 # newest dev run with arms A and D
     uv run python -m scripts.pick_hook --run <run_id>
     uv run python -m scripts.pick_hook --write 2       # save candidate 2 to config/hook.json
+    uv run python -m scripts.pick_hook --ids-only
 """
 
 import argparse
@@ -43,16 +45,26 @@ def newest_dev_run_id(runs_dir: Path) -> str | None:
     )
 
 
-def describe(rank: int, k: HookCandidate, run: Run, news: Mapping[str, NewsItem]) -> list[str]:
+def describe(
+    rank: int, k: HookCandidate, run: Run, news: Mapping[str, NewsItem], *, ids_only: bool
+) -> list[str]:
+    summary = (
+        f"{rank}. {k.user_id} clicked {k.clicked_id}, skipped {k.other_id}: "
+        f"A prefers the skipped one by {k.a_gap:g}, D the clicked one by {k.d_gap:g}; "
+        f"recent clicks {k.history_hits} in the clicked category "
+        f"({k.subcategory_hits} in its subcategory), {k.history_misses} in the other's"
+    )
+    if ids_only:
+        return [summary]
+
     def line(label: str, news_id: str) -> str:
         n = news.get(news_id)
         return f"   {label:<8} {f'[{n.category}/{n.subcategory}] {n.title}' if n else news_id}"
 
-    history = recent_history(next(r for r in by_user(run)[k.user_id] if r.arm == "A"))
+    plain = HOOK_ARMS[0]
+    history = recent_history(next(r for r in by_user(run)[k.user_id] if r.arm == plain))
     return [
-        f"{rank}. {k.user_id}: A prefers the skipped headline by {k.a_gap:g}, "
-        f"D the clicked one by {k.d_gap:g}; recent clicks {k.history_hits} in the clicked "
-        f"category, {k.history_misses} in the other's",
+        summary,
         line("clicked", k.clicked_id),
         line("skipped", k.other_id),
         *(line("history", i) for i in history),
@@ -66,6 +78,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--top", type=int, default=5)
     parser.add_argument("--config", type=Path, default=None, help="Defaults to HOOK_CONFIG")
     parser.add_argument("--write", type=int, default=None, help="Save candidate K to the config")
+    parser.add_argument("--ids-only", action="store_true", help="No headline text (ADR-0010)")
     args = parser.parse_args(argv)
     settings = get_settings()
     if args.data_dir:
@@ -89,7 +102,7 @@ def main(argv: list[str] | None = None) -> int:
     candidates = hook_candidates(run, news)
     print(f"Run {run.run_id} ({run.population}, {run.model}): {len(candidates)} candidates")
     for rank, k in enumerate(candidates[: args.top], start=1):
-        print("\n".join(describe(rank, k, run, news)))
+        print("\n".join(describe(rank, k, run, news, ids_only=args.ids_only)))
 
     if args.write is not None:
         if not 1 <= args.write <= len(candidates):

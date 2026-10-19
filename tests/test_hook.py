@@ -197,15 +197,16 @@ def test_run_without_arms_a_and_d_is_an_error(lab: tuple[Path, Run], tmp_path: P
 # Candidate selection (ADR-0008: the typical-reader pick is wrong, the history points right)
 
 NEWS = {
-    news_id: NewsItem(news_id, category, "sub", f"Headline {news_id}", "")
-    for news_id, category in {
-        "Hs1": "sports",
-        "Hs2": "sports",
-        "Hs3": "sports",
-        "Hf1": "finance",
-        "Cs": "sports",  # clicked, sports
-        "Nf": "finance",  # not clicked
-        "Nt": "travel",  # not clicked
+    news_id: NewsItem(news_id, category, subcategory, f"Headline {news_id}", "")
+    for news_id, (category, subcategory) in {
+        "Hs1": ("sports", "football"),
+        "Hs2": ("sports", "football"),
+        "Hs3": ("sports", "golf"),
+        "Hb1": ("sports", "baseball"),
+        "Hf1": ("finance", "markets"),
+        "Cs": ("sports", "football"),  # clicked
+        "Nf": ("finance", "markets"),  # not clicked
+        "Nt": ("travel", "trips"),  # not clicked
     }.items()
 }
 
@@ -282,7 +283,36 @@ def test_picks_pairs_where_a_is_wrong_d_is_right_and_history_points_to_the_click
         ("U4", "Cs", "Nf"),
     ]
     best = candidates[0]
-    assert (best.a_gap, best.d_gap, best.history_hits, best.history_misses) == (10, 70, 3, 0)
+    assert (best.a_gap, best.d_gap) == (10, 70)
+    assert (best.history_hits, best.subcategory_hits, best.history_misses) == (3, 2, 0)
+
+
+def test_the_history_must_share_the_clicked_subcategory_not_just_the_category() -> None:
+    # Three sports clicks, none of them football: MIND categories alone are too broad.
+    other_sports = ("Hs3", "Hb1", "Hs3")
+    run = picker_run(
+        [
+            result("A", "U1", {"Cs": 10, "Nt": 20}, other_sports),
+            result("D", "U1", {"Cs": 80, "Nt": 10}, other_sports),
+        ]
+    )
+
+    assert hook_candidates(run, NEWS) == []
+
+
+def test_more_subcategory_matches_rank_first() -> None:
+    run = picker_run(
+        [
+            # U1: wide gaps, one football click.
+            result("A", "U1", {"Cs": 10, "Nt": 90}, ("Hs1", "Hs3", "Hb1")),
+            result("D", "U1", {"Cs": 90, "Nt": 10}, ("Hs1", "Hs3", "Hb1")),
+            # U2: narrow gaps, two football clicks.
+            result("A", "U2", {"Cs": 10, "Nt": 20}, ("Hs1", "Hs2")),
+            result("D", "U2", {"Cs": 20, "Nt": 10}, ("Hs1", "Hs2")),
+        ]
+    )
+
+    assert [c.user_id for c in hook_candidates(run, NEWS)] == ["U2", "U1"]
 
 
 def test_only_the_recent_history_counts() -> None:
@@ -326,7 +356,9 @@ def save_picker_run(tmp_path: Path, **changes: object) -> Run:
     news_dir.mkdir(parents=True, exist_ok=True)
     (tmp_path / "sample" / "SYNTHETIC").touch()
     (news_dir / "news.tsv").write_text(
-        "".join(f"{n.news_id}\t{n.category}\tsub\t{n.title}\t\n" for n in NEWS.values()),
+        "".join(
+            f"{n.news_id}\t{n.category}\t{n.subcategory}\t{n.title}\t\n" for n in NEWS.values()
+        ),
         encoding="utf-8",
     )
     return run
@@ -342,8 +374,27 @@ def test_pick_hook_prints_top_candidates_with_headlines(
     out = capsys.readouterr().out
     assert code == 0
     assert run.run_id in out
-    for expected in ("1. U1", "2. U2", "[sports/sub] Headline Cs", "Headline Nt", "Headline Hs3"):
+    for expected in (
+        "1. U1",
+        "2. U2",
+        "[sports/football] Headline Cs",
+        "Headline Nt",
+        "Headline Hs3",
+    ):
         assert expected in out
+
+
+def test_pick_hook_ids_only_prints_no_headline_text(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    save_picker_run(tmp_path)
+
+    assert pick_hook.main(["--data-dir", str(tmp_path), "--ids-only"]) == 0
+
+    out = capsys.readouterr().out
+    assert "1. U1 clicked Cs, skipped Nt" in out
+    assert "(2 in its subcategory)" in out
+    assert "Headline" not in out
 
 
 def test_pick_hook_writes_the_chosen_candidate_only_when_asked(tmp_path: Path) -> None:

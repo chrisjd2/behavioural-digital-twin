@@ -3,49 +3,16 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { HookExample } from './api/hook'
 import HookStep from './HookStep'
-import { statusFixture, stubApi } from './test-fixtures'
-
-const hookFixture: HookExample = {
-  run_id: '20261019-152445-dev-5c2e8d',
-  user_id: 'U1',
-  mock: false,
-  data_source: 'mind',
-  headlines: [
-    { news_id: 'N1', category: 'health', subcategory: 'medical', title: 'Pharmacy recall widens' },
-    { news_id: 'N2', category: 'news', subcategory: 'newsus', title: 'Senate vote delayed' },
-  ],
-  history: [
-    { news_id: 'H1', category: 'news', subcategory: 'newspolitics', title: 'Impeachment moves on' },
-    { news_id: 'H2', category: 'travel', subcategory: 'travelnews', title: 'Order ginger ale' },
-  ],
-  reveal: {
-    clicked_id: 'N2',
-    predictions: [
-      {
-        arm: 'A',
-        calls: [
-          { news_id: 'N1', p_click: 65, reaction: 'I need to check my medicine cabinet.' },
-          { news_id: 'N2', p_click: 40, reaction: 'Politics again, maybe later.' },
-        ],
-      },
-      {
-        arm: 'D',
-        calls: [
-          { news_id: 'N1', p_click: 30, reaction: 'Not really my kind of story.' },
-          { news_id: 'N2', p_click: 72.4, reaction: 'I follow every twist in Washington.' },
-        ],
-      },
-    ],
-  },
-}
+import { hookFixture, statusFixture, stubApi } from './test-fixtures'
 
 const LABEL = 'Illustrative example (dev set)'
 
 function setup(hook: HookExample | number = hookFixture) {
   stubApi({ status: statusFixture, urls: { '/api/hook': hook } })
   const user = userEvent.setup()
-  render(<HookStep />)
-  return user
+  const onRunMock = vi.fn()
+  render(<HookStep onRunMock={onRunMock} />)
+  return Object.assign(user, { onRunMock })
 }
 
 afterEach(() => {
@@ -67,6 +34,8 @@ describe('Step 0 Hook', () => {
     await user.keyboard('{ArrowRight}')
     expect(await screen.findByText('Pharmacy recall widens')).toBeInTheDocument()
     expect(screen.getByText('Senate vote delayed')).toBeInTheDocument()
+    expect(screen.getByText('news / newsus')).toBeInTheDocument()
+    expect(user.onRunMock).toHaveBeenCalledWith(false)
     expect(screen.getByText(/vote 1 or 2/i)).toBeInTheDocument()
     expect(screen.queryByText('Impeachment moves on')).not.toBeInTheDocument()
     expect(screen.queryByText(/they clicked this/i)).not.toBeInTheDocument()
@@ -78,7 +47,7 @@ describe('Step 0 Hook', () => {
       within(history)
         .getAllByRole('listitem')
         .map((li) => li.textContent),
-    ).toEqual(['news Impeachment moves on', 'travel Order ginger ale'])
+    ).toEqual(['news / newspolitics Impeachment moves on', 'travel / travelnews Order ginger ale'])
     expect(screen.getByText(/vote again/i)).toBeInTheDocument()
     expect(screen.queryByText(/they clicked this/i)).not.toBeInTheDocument()
 
@@ -161,7 +130,7 @@ describe('Step 0 Hook', () => {
 
     await user.keyboard('{ArrowRight}')
 
-    expect(await screen.findByText('MOCK')).toBeInTheDocument()
+    expect(await screen.findByText(/mock run: the predictions are fake/i)).toBeInTheDocument()
     expect(screen.getByText(/synthetic data: fake headlines/i)).toBeInTheDocument()
   })
 })

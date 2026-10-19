@@ -53,3 +53,4 @@ CONTEXT.md README.md AI_USAGE.md .env.example justfile
 ## Amendments
 
 - **Amendment 2026-10-19:** frontend lint uses oxlint (Vite template default) instead of typescript-eslint; the app error class is `AppError` (ruff N818), not `AppException`.
+- **Amendment 2026-10-19 (#22):** a top-level `config/` holds small committed settings that are ids only, such as `config/hook.json` (the Step 0 Hook's dev-set example: run, user and news ids). It never holds data, headline text or secrets (ADR-0010); paths to it come from `Settings` (`HOOK_CONFIG`).
