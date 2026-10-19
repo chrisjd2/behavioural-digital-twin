@@ -133,7 +133,7 @@ async def test_a_call_that_fails_for_good_cancels_the_rest(
 async def test_test_population_refuses_without_freeze(
     sample_source: DataSource, tmp_path: Path
 ) -> None:
-    with pytest.raises(FreezeError, match="prompts-frozen"):
+    with pytest.raises(FreezeError, match="Refusing to run the test set"):
         await run_experiment(
             sample_source,
             CONFIG,

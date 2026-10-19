@@ -103,7 +103,7 @@ def summarise_population(settings: Settings, request: ExperimentRequest) -> Popu
 
 def build_app(settings: Settings) -> FastAPI:
     app = FastAPI(title="Twin Lab")
-    # A replay's events are ~4.7 MB of JSON at N=300; gzip makes them ~0.9 MB. SSE is exempt.
+    # A replay's events are ~3.7 MB of JSON at N=300; gzip makes them ~0.8 MB. SSE is exempt.
     app.add_middleware(GZipMiddleware, minimum_size=1024)
 
     @app.exception_handler(AppError)
