@@ -2,6 +2,7 @@
 
 import asyncio
 import hashlib
+import json
 import subprocess
 from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass, field
@@ -14,6 +15,7 @@ from backend.arms import (
     parse_reactions,
     request_payload,
     retry_messages,
+    wrong_twin_donors,
 )
 from backend.baselines import BaselineContext
 from backend.data import (
@@ -155,6 +157,13 @@ async def make_retriever(  # noqa: PLR0913 - the run's pieces retrieval depends 
     return retriever
 
 
+def donors_for(sets: list[CandidateSet], config: ExperimentConfig) -> dict[str, CandidateSet]:
+    """Arm E: each user's wrong twin, by seeded derangement over this population."""
+    by_user = {c.user_id: c for c in sets}
+    assignment = wrong_twin_donors(list(by_user), seed=config.wrong_twin_seed)
+    return {user: by_user[donor] for user, donor in assignment.items()}
+
+
 def check_freeze(
     current: dict[str, object],
     source: DataSource,
@@ -204,7 +213,13 @@ async def run_experiment(  # noqa: PLR0913 — keyword-only run options
     retriever = await make_retriever(
         arms, sets, news, client=client, options=options, embeddings=embeddings, mock=mock
     )
-    resources = ArmResources(retriever=retriever, client=client, options=options, news=news)
+    resources = ArmResources(
+        retriever=retriever,
+        client=client,
+        options=options,
+        news=news,
+        donors=donors_for(sets, config) if "E" in arms else None,
+    )
     digest = hashlib.sha256(f"{created.isoformat()}{arms}".encode()).hexdigest()[:6]
     run = Run(
         run_id=f"{created:%Y%m%d-%H%M%S}-{population}-{digest}",
@@ -320,10 +335,16 @@ def summarise_run(
 
 def identity_summary(users: list[UserResult]) -> dict[str, dict[str, int]]:
     summary: dict[str, dict[str, int]] = {}
-    for u in users:
+    seen: set[str] = set()
+    for u in sorted(users, key=lambda u: u.arm):  # D before E
         profile = u.knowledge.get("profile")
         if not isinstance(profile, dict):
             continue
+        # Each distinct profile is screened once: E usually shows its donor's D profile.
+        key = json.dumps(profile.get("fields"), sort_keys=True)
+        if key in seen:
+            continue
+        seen.add(key)
         hits = profile.get("identity_hits", [])
         counts = summary.setdefault(
             u.arm,
