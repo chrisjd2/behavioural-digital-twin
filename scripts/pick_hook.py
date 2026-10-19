@@ -48,7 +48,7 @@ def describe(rank: int, k: HookCandidate, run: Run, news: Mapping[str, NewsItem]
         n = news.get(news_id)
         return f"   {label:<8} {f'[{n.category}/{n.subcategory}] {n.title}' if n else news_id}"
 
-    history = recent_history(by_user(run)[k.user_id][0])
+    history = recent_history(next(r for r in by_user(run)[k.user_id] if r.arm == "A"))
     return [
         f"{rank}. {k.user_id}: A prefers the skipped headline by {k.a_gap:g}, "
         f"D the clicked one by {k.d_gap:g}; recent clicks {k.history_hits} in the clicked "

@@ -169,8 +169,7 @@ function HookCard({
           <p className="hook-verdict">{clicked ? 'They clicked this' : 'They skipped this'}</p>
           <ul className="hook-predictions">
             {example.reveal.predictions.map(({ arm, calls }) => {
-              const call = calls.find((c) => c.news_id === headline.news_id)
-              if (!call) return null
+              const call = calls[number - 1] // calls come in headline order
               return (
                 <li key={arm} className={`hook-prediction arm-${arm.toLowerCase()}`}>
                   <span className="hook-arm">
