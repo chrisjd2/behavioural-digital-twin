@@ -26,7 +26,7 @@ Twin Lab asks: **can an LLM agent impersonate a real news reader and predict whi
 | **User** / **agent** | A sampled MIND user (one impression each). "Agent" is the same user as seen through an arm. *Avoid:* "persona" for anything except arm B. |
 | **Candidate set** | Up to 8 headlines from one impression shown to an agent: up to 2 clicked plus non-clicked to 8, in a seeded shuffle shared by all arms. |
 | **Dev set** | 30 users (dev seed) used for prompt and retrieval iteration. Disjoint from the test set. |
-| **Test set** | 200 users (test seed). Run **once**, after the freeze. |
+| **Test set** | 300 users (test seed; raised from 200 by the ADR-0001 power rule), the first 300 of a fixed 1,000-user test reserve. Run **once**, after the freeze. |
 | **Freeze** | The git tag `prompts-frozen` marking the point after which prompts, retrieval and config may not change before the test run. |
 | **Run** | One execution of chosen arms over a population. Saved as `data/runs/<id>.json`. |
 | **Frozen run** | The single test-set run made after the freeze. The source of every reported number. |
