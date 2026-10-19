@@ -30,3 +30,12 @@ Arms C, D and E show the agent memories retrieved from a user's click history. W
 
 - **TF-IDF default (brief):** fully offline but literal matching only.
 - **Dump the whole history into the prompt:** Deng et al. (2026) suggest compact beats full; also long prompts.
+
+## Amendment (2026-10-19, before the freeze)
+
+Selection, as implemented after the PR #33 experiment review:
+
+- **Order:** the 3 most recent clicks first, then **round-robin** across candidates in display order: every candidate's best match, then every candidate's second-best, then third-best, until 12. Filling candidate by candidate starved later display positions (positions 4–7 got a tailored memory for 9, 1, 4 and 0 of 30 dev users; round-robin gives 25, 21, 22 and 20).
+- **Exclusion:** a candidate the user already clicked before (it appears in their MIND History) is never shown as a memory. The question is how a person reacts to *new* content. This drops a real signal on about 1.8% of dev impressions and makes C, D and E slightly harder, not easier.
+- **Ties:** equal similarities go to the older click (stable sort over history order).
+- **Embeddings:** 768 dimensions (Gemini's reduced output size), unit-normalised, cached per item (see ADR-0002 amendment).

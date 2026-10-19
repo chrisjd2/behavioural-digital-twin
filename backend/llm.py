@@ -160,3 +160,16 @@ async def mock_backend(payload: Mapping[str, object]) -> RawResponse:
             {"id": news_id, "reaction": f"MOCK reaction to {news_id}.", "p_click": digest[0] % 101}
         )
     return RawResponse(json.dumps({"reactions": reactions}), prompt_tokens=0, completion_tokens=0)
+
+
+def openai_embedder(
+    base_url: str, api_key: str, *, model: str, dimensions: int
+) -> Callable[[list[str]], Awaitable[list[list[float]]]]:
+    """Embeddings through the same OpenAI-compatible endpoint (the SDK retries 429/5xx)."""
+    client = openai.AsyncOpenAI(base_url=base_url, api_key=api_key, max_retries=4)
+
+    async def embed(texts: list[str]) -> list[list[float]]:
+        response = await client.embeddings.create(model=model, input=texts, dimensions=dimensions)
+        return [item.embedding for item in response.data]
+
+    return embed

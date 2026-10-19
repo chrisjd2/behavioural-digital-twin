@@ -80,6 +80,7 @@ class CandidateSet:
     tie_rank: dict[str, int]  # tie-break order, independent of display order
     feed_ctr: float  # click rate over the whole real impression
     sample_ctr: float  # click rate within the candidate set (inflated by design)
+    history: tuple[str, ...] = ()  # clicks before this impression, oldest first (twin memory)
 
 
 def load_news(path: Path) -> dict[str, NewsItem]:
@@ -180,4 +181,5 @@ def build_candidate_set(
         tie_rank={news_id: rank for rank, news_id in enumerate(tie_order)},
         feed_ctr=len(clicked) / len(impression.shown),
         sample_ctr=len(chosen_clicked) / len(items),
+        history=impression.history,
     )

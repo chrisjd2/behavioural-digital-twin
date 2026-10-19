@@ -16,6 +16,9 @@ def save_run(run: Run, runs_dir: Path) -> Path:
 
 def load_run(path: Path) -> Run:
     data = json.loads(path.read_text(encoding="utf-8"))
-    data["users"] = [UserResult(**{**u, "items": tuple(u["items"])}) for u in data["users"]]
+    data["users"] = [
+        UserResult(**{**u, "items": tuple(u["items"]), "history": tuple(u["history"])})
+        for u in data["users"]
+    ]
     data["events"] = [RunEvent(**e) for e in data["events"]]
     return Run(**data)
