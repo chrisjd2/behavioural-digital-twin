@@ -1,5 +1,5 @@
 from collections import Counter
-from functools import lru_cache
+from dataclasses import replace
 from pathlib import Path
 from typing import Literal
 
@@ -11,16 +11,13 @@ from pydantic import BaseModel, Field
 from backend.config import Settings, get_settings
 from backend.data import (
     DataKind,
-    Impression,
-    NewsItem,
-    build_candidate_set,
     is_eligible,
-    load_behaviors,
-    load_news,
+    load_behaviors_cached,
+    load_news_cached,
     resolve_data_source,
-    sample_populations,
 )
 from backend.experiment import ExperimentConfig
+from backend.runner import candidate_sets, sampled_populations
 
 DEFAULTS = ExperimentConfig()
 
@@ -63,56 +60,39 @@ class PopulationSummary(BaseModel):
     n_users: int
     seed: int
     max_candidates: int
-    eligible_users: int
+    user_ids: list[str]  # in sampling order
+    eligible_users: int  # outside the held-out test set
     n_candidates: int
     categories: list[CategoryCount]
     mean_feed_ctr: float
     mean_sample_ctr: float
 
 
-@lru_cache(maxsize=2)
-def load_dev_split(dev_dir: Path, _mtime_ns: int) -> tuple[list[Impression], dict[str, NewsItem]]:
-    """Real MIND dev takes seconds to parse; keep it while the file is unchanged."""
-    return load_behaviors(dev_dir / "behaviors.tsv"), load_news(dev_dir / "news.tsv")
-
-
 def summarise_population(settings: Settings, request: ExperimentRequest) -> PopulationSummary:
-    """Sample the dev population exactly as the runner would. Never the test population."""
+    """Preview the dev population the runner would sample. Never the test population."""
     source = resolve_data_source(Path(settings.data_dir))
     if source.kind == "none":
         raise AppError(409, "no_data", "No MIND data or synthetic sample found in DATA_DIR.")
 
-    impressions, news = load_dev_split(
-        source.dev_dir, (source.dev_dir / "behaviors.tsv").stat().st_mtime_ns
+    config = replace(
+        DEFAULTS,
+        n_dev=request.n_users,
+        dev_seed=request.seed,
+        max_candidates=request.max_candidates,
     )
-    eligible = len({i.user_id for i in impressions if is_eligible(i)})
     try:
-        # Same draw as runner.candidate_sets (test users first, so dev stays disjoint);
-        # sampled here so the loaded split is reused across builds.
-        dev = sample_populations(
-            impressions,
-            n_dev=request.n_users,
-            n_test=DEFAULTS.n_test,
-            dev_seed=request.seed,
-            test_seed=DEFAULTS.test_seed,
-        ).dev
+        populations = sampled_populations(source, config)
     except ValueError as exc:
         raise AppError(422, "not_enough_users", str(exc)) from exc
-    sets = [
-        build_candidate_set(
-            imp,
-            seed=DEFAULTS.candidate_seed,
-            max_candidates=request.max_candidates,
-            max_clicked=DEFAULTS.max_clicked,
-        )
-        for imp in dev
-    ]
+    sets = candidate_sets(populations, config, "dev")
 
-    history = {i.impression_id: i.history for i in impressions}
+    impressions = load_behaviors_cached(source.dev_dir / "behaviors.tsv")
+    eligible = len({i.user_id for i in impressions if is_eligible(i)}) - len(populations.test)
+    news = load_news_cached(source.dev_dir / "news.tsv")
     readers: Counter[str] = Counter()
-    for c in sets:
+    for impression in populations.dev:
         # History items missing from news.tsv have no category to count.
-        readers.update({news[n].category for n in history[c.impression_id] if n in news})
+        readers.update({news[n].category for n in impression.history if n in news})
 
     return PopulationSummary(
         population="dev",
@@ -120,6 +100,7 @@ def summarise_population(settings: Settings, request: ExperimentRequest) -> Popu
         n_users=len(sets),
         seed=request.seed,
         max_candidates=request.max_candidates,
+        user_ids=[c.user_id for c in sets],
         eligible_users=eligible,
         n_candidates=sum(len(c.items) for c in sets),
         categories=[CategoryCount(category=k, users=v) for k, v in readers.most_common()],

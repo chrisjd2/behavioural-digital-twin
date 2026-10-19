@@ -11,7 +11,7 @@
   --error-wash: #fdf0ee;
 
   --arm-a: #64748b;
-  --arm-b: #d97706;
+  --arm-b: #b45309;
   --arm-c: #2563eb;
   --arm-d: #7c3aed;
   --arm-e: #4d9a94;
@@ -184,6 +184,11 @@ h2 {
   max-width: 52ch;
 }
 
+.run-note {
+  border-left: 6px solid var(--rule);
+  padding: 8px 16px;
+}
+
 /* Seed */
 .seed-grid {
   display: grid;
@@ -327,6 +332,7 @@ h2 {
 .stat {
   display: flex;
   flex-direction: column-reverse;
+  justify-content: flex-end;
 }
 
 .stat dt {
@@ -467,8 +473,8 @@ h2 {
 
 .control-tag {
   background: var(--arm-e);
-  color: #fff;
-  font-size: 0.75rem;
+  color: var(--ink);
+  font-size: 0.8rem;
   font-weight: 700;
   padding: 2px 10px;
   border-radius: 999px;

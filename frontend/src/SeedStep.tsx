@@ -1,9 +1,9 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
-import { buildPopulation, type ExperimentRequest, type PopulationSummary } from './api/experiment'
+import type { FormEvent, ReactNode } from 'react'
+import type { ExperimentRequest, PopulationSummary } from './api/experiment'
 import type { DataSource, Status } from './api/status'
 import { ARMS, BASELINES, CONTROL, type ArmCard } from './arms'
 
-type Build =
+export type Build =
   | { state: 'idle' }
   | { state: 'building' }
   | { state: 'error'; message: string }
@@ -24,30 +24,29 @@ const SOURCES: Record<DataSource, { title: string; detail: string }> = {
   },
 }
 
-const FIELDS: { key: keyof ExperimentRequest; label: string; hint: string }[] = [
-  { key: 'n_users', label: 'Users', hint: 'one feed each' },
-  { key: 'max_candidates', label: 'Candidates per agent', hint: 'headlines shown' },
+const FIELDS: { key: keyof ExperimentRequest; label: string; hint: string; min?: number }[] = [
+  { key: 'n_users', label: 'Users', hint: 'one feed each', min: 1 },
+  { key: 'max_candidates', label: 'Candidates per agent', hint: 'headlines shown', min: 2 },
   { key: 'seed', label: 'Seed', hint: 'same seed, same readers' },
 ]
 
 const percent = (x: number) => `${(x * 100).toFixed(1)}%`
 
-export default function SeedStep({ status }: { status: Status }) {
-  const [request, setRequest] = useState<ExperimentRequest>(status.experiment_defaults)
-  const [build, setBuild] = useState<Build>({ state: 'idle' })
+type Props = {
+  status: Status
+  request: ExperimentRequest
+  onRequestChange: (request: ExperimentRequest) => void
+  build: Build
+  onBuild: () => void
+}
+
+/** Step 1. Its state lives in App so a built preview survives step navigation. */
+export default function SeedStep({ status, request, onRequestChange, build, onBuild }: Props) {
   const source = SOURCES[status.data_source]
 
   function submit(event: FormEvent) {
     event.preventDefault()
-    setBuild({ state: 'building' })
-    buildPopulation(request)
-      .then((summary) => setBuild({ state: 'ready', summary }))
-      .catch((error: unknown) =>
-        setBuild({
-          state: 'error',
-          message: error instanceof Error ? error.message : 'The build failed.',
-        }),
-      )
+    onBuild()
   }
 
   return (
@@ -68,32 +67,38 @@ export default function SeedStep({ status }: { status: Status }) {
         </div>
 
         <form className="settings" onSubmit={submit}>
-          <h3>Population</h3>
-          <div className="fields">
-            {FIELDS.map(({ key, label, hint }) => (
-              <label key={key}>
-                <span className="field-label">{label}</span>
-                <input
-                  type="number"
-                  min={key === 'seed' ? undefined : 1}
-                  value={request[key]}
-                  readOnly={status.demo_mode}
-                  onChange={(e) => setRequest({ ...request, [key]: e.target.valueAsNumber })}
-                />
-                <span className="field-hint">{hint}</span>
-              </label>
-            ))}
-          </div>
+          <h3>Dev-set preview</h3>
           {status.demo_mode ? (
-            <p className="muted">Read-only demo: populations are built before the talk.</p>
+            <p className="muted">
+              Read-only demo. The replayed runs were built before the talk; each run shows its own
+              settings.
+            </p>
           ) : (
-            <button
-              type="submit"
-              className="primary"
-              disabled={status.data_source === 'none' || build.state === 'building'}
-            >
-              {build.state === 'building' ? 'Building population…' : 'Build population'}
-            </button>
+            <>
+              <div className="fields">
+                {FIELDS.map(({ key, label, hint, min }) => (
+                  <label key={key}>
+                    <span className="field-label">{label}</span>
+                    <input
+                      type="number"
+                      min={min}
+                      value={Number.isNaN(request[key]) ? '' : request[key]}
+                      onChange={(e) =>
+                        onRequestChange({ ...request, [key]: e.target.valueAsNumber })
+                      }
+                    />
+                    <span className="field-hint">{hint}</span>
+                  </label>
+                ))}
+              </div>
+              <button
+                type="submit"
+                className="primary"
+                disabled={status.data_source === 'none' || build.state === 'building'}
+              >
+                {build.state === 'building' ? 'Building population…' : 'Build population'}
+              </button>
+            </>
           )}
         </form>
       </div>
@@ -130,7 +135,7 @@ function Card({ arm, letter, children }: { arm: ArmCard; letter?: string; childr
   return (
     <li className={`card arm-${arm.id}`}>
       {letter && (
-        <span className="arm-letter" aria-label={`Arm ${letter}`}>
+        <span className="arm-letter" aria-hidden="true">
           {letter}
         </span>
       )}
@@ -146,7 +151,7 @@ function PopulationResult({ build }: { build: Build }) {
   if (build.state === 'idle') {
     return (
       <p className="result result-empty" data-testid="population-empty">
-        No population built yet. Choose the settings and build one to see who is in it.
+        No population built yet. Build one to preview who a dev-set run would include.
       </p>
     )
   }
@@ -166,7 +171,10 @@ function PopulationResult({ build }: { build: Build }) {
     <div className="result result-summary" data-testid="population-summary">
       <dl className="stats">
         <Stat label="readers sampled" value={summary.n_users.toLocaleString('en-GB')} />
-        <Stat label="eligible readers" value={summary.eligible_users.toLocaleString('en-GB')} />
+        <Stat
+          label="eligible readers outside the test set"
+          value={summary.eligible_users.toLocaleString('en-GB')}
+        />
         <Stat label="headlines to judge" value={summary.n_candidates.toLocaleString('en-GB')} />
         <Stat label="feed click rate" value={percent(summary.mean_feed_ctr)} />
         <Stat label="click rate in candidates" value={percent(summary.mean_sample_ctr)} />

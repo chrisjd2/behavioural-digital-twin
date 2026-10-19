@@ -21,6 +21,7 @@ export type PopulationSummary = {
   n_users: number
   seed: number
   max_candidates: number
+  user_ids: string[]
   eligible_users: number
   n_candidates: number
   categories: CategoryCount[]

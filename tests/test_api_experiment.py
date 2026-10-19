@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pytest
 
-from backend.data import load_behaviors, resolve_data_source
+from backend.data import is_eligible, load_behaviors, resolve_data_source
 from backend.experiment import ExperimentConfig
-from backend.runner import candidate_sets
+from backend.runner import candidate_sets, sampled_populations
 from tests.test_status import make_client
 
 
@@ -29,19 +29,27 @@ def test_summary_matches_the_runner_candidate_sets(data_dir: Path) -> None:
     body = build(data_dir, n_users=12, seed=7, max_candidates=6).json()
 
     config = ExperimentConfig(n_dev=12, dev_seed=7, max_candidates=6)
-    sets = candidate_sets(resolve_data_source(data_dir), config, "dev")
-    assert body["n_users"] == 12
+    populations = sampled_populations(resolve_data_source(data_dir), config)
+    sets = candidate_sets(populations, config, "dev")
+    assert body["user_ids"] == [c.user_id for c in sets]
+    assert not set(body["user_ids"]) & {i.user_id for i in populations.test}
     assert body["n_candidates"] == sum(len(c.items) for c in sets)
     assert max(len(c.items) for c in sets) <= 6
     assert body["mean_feed_ctr"] == pytest.approx(sum(c.feed_ctr for c in sets) / 12)
     assert body["mean_sample_ctr"] == pytest.approx(sum(c.sample_ctr for c in sets) / 12)
 
 
-def test_reports_eligible_users_and_categories_read(data_dir: Path) -> None:
+def test_eligible_users_exclude_the_test_set(data_dir: Path) -> None:
     body = build(data_dir, n_users=10).json()
 
     impressions = load_behaviors(data_dir / "sample" / "dev" / "behaviors.tsv")
-    assert 0 < body["eligible_users"] <= len({i.user_id for i in impressions})
+    eligible = {i.user_id for i in impressions if is_eligible(i)}
+    assert body["eligible_users"] == len(eligible) - ExperimentConfig().n_test
+
+
+def test_reports_categories_read(data_dir: Path) -> None:
+    body = build(data_dir, n_users=10).json()
+
     assert body["categories"], "synthetic users read at least one category"
     counts = [c["users"] for c in body["categories"]]
     assert counts == sorted(counts, reverse=True)
