@@ -10,6 +10,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import Literal
 
 MIND_TIME_FORMAT = "%m/%d/%Y %I:%M:%S %p"
 MIN_HISTORY = 10
@@ -39,6 +40,29 @@ class Impression:
 class Populations:
     dev: tuple[Impression, ...]
     test: tuple[Impression, ...]
+
+
+DataKind = Literal["mind", "synthetic", "none"]
+
+
+@dataclass(frozen=True)
+class DataSource:
+    """Where the dev (test impressions) and train (earlier history) splits live."""
+
+    kind: DataKind
+    root: Path
+    dev_dir: Path
+    train_dir: Path
+
+
+def resolve_data_source(data_dir: Path) -> DataSource:
+    """Real MIND (`<data_dir>/mind`) wins over the synthetic sample (`<data_dir>/sample`)."""
+    layouts: tuple[tuple[DataKind, str], ...] = (("mind", "mind"), ("synthetic", "sample"))
+    for kind, folder in layouts:
+        root = data_dir / folder
+        if all((root / split / "behaviors.tsv").exists() for split in ("dev", "train")):
+            return DataSource(kind, root, root / "dev", root / "train")
+    return DataSource("none", data_dir, data_dir / "dev", data_dir / "train")
 
 
 @dataclass(frozen=True)
@@ -85,6 +109,11 @@ def load_behaviors(path: Path) -> list[Impression]:
                 )
             )
     return impressions
+
+
+def date_range(impressions: list[Impression]) -> tuple[datetime, datetime]:
+    times = [impression.time for impression in impressions]
+    return min(times), max(times)
 
 
 def is_eligible(impression: Impression) -> bool:

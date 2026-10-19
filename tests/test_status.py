@@ -6,7 +6,11 @@ from backend.main import AppError, build_app
 
 def make_settings(**overrides: object) -> Settings:
     # No frontend build by default, so tests don't depend on the working tree.
-    defaults = {"llm_model": "gemini-test-001", "frontend_dist": "does-not-exist"}
+    defaults = {
+        "llm_model": "gemini-test-001",
+        "frontend_dist": "does-not-exist",
+        "data_dir": "does-not-exist",
+    }
     return Settings.model_validate({**defaults, **overrides})
 
 

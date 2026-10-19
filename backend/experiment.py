@@ -2,11 +2,16 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Literal
 
 from backend.baselines import random_scores
-from backend.data import CandidateSet, build_candidate_set, load_behaviors, sample_populations
+from backend.data import (
+    CandidateSet,
+    DataSource,
+    build_candidate_set,
+    load_behaviors,
+    sample_populations,
+)
 from backend.metrics import auc
 
 Population = Literal["dev", "test"]
@@ -31,7 +36,7 @@ class ExperimentConfig:
 
 
 def evaluate(
-    data_dir: Path, config: ExperimentConfig, *, population: Population, arms: list[str]
+    source: DataSource, config: ExperimentConfig, *, population: Population, arms: list[str]
 ) -> dict[str, list[float]]:
     """Per-user AUC for each arm, in population order."""
     unknown = sorted(set(arms) - set(ARMS))
@@ -39,7 +44,7 @@ def evaluate(
         raise ValueError(f"Unknown arm(s): {', '.join(unknown)}")
 
     populations = sample_populations(
-        load_behaviors(data_dir / "behaviors.tsv"),
+        load_behaviors(source.dev_dir / "behaviors.tsv"),
         n_dev=config.n_dev,
         n_test=config.n_test,
         dev_seed=config.dev_seed,

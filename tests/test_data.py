@@ -14,8 +14,8 @@ from tests.factories import make_impression
 
 
 def test_synthetic_sample_loads_in_mind_format(sample_dir: Path) -> None:
-    news = load_news(sample_dir / "news.tsv")
-    behaviors = load_behaviors(sample_dir / "behaviors.tsv")
+    news = load_news(sample_dir / "dev" / "news.tsv")
+    behaviors = load_behaviors(sample_dir / "dev" / "behaviors.tsv")
 
     assert len(news) == 300
     assert all(item.title.startswith("[SYNTHETIC]") for item in news.values())
@@ -65,7 +65,7 @@ def test_eligibility(history: int, clicks: int, non_clicks: int, eligible: bool)
 def test_populations_are_disjoint_deterministic_and_one_impression_per_user(
     sample_dir: Path,
 ) -> None:
-    behaviors = load_behaviors(sample_dir / "behaviors.tsv")
+    behaviors = load_behaviors(sample_dir / "dev" / "behaviors.tsv")
 
     first = sample_populations(behaviors, n_dev=30, n_test=100, dev_seed=7, test_seed=11)
     again = sample_populations(behaviors, n_dev=30, n_test=100, dev_seed=7, test_seed=11)
@@ -80,7 +80,7 @@ def test_populations_are_disjoint_deterministic_and_one_impression_per_user(
 
 
 def test_test_population_does_not_depend_on_dev_seed(sample_dir: Path) -> None:
-    behaviors = load_behaviors(sample_dir / "behaviors.tsv")
+    behaviors = load_behaviors(sample_dir / "dev" / "behaviors.tsv")
 
     a = sample_populations(behaviors, n_dev=30, n_test=100, dev_seed=1, test_seed=11)
     b = sample_populations(behaviors, n_dev=30, n_test=100, dev_seed=2, test_seed=11)
@@ -90,7 +90,7 @@ def test_test_population_does_not_depend_on_dev_seed(sample_dir: Path) -> None:
 
 
 def test_population_too_small_raises(sample_dir: Path) -> None:
-    behaviors = load_behaviors(sample_dir / "behaviors.tsv")
+    behaviors = load_behaviors(sample_dir / "dev" / "behaviors.tsv")
 
     with pytest.raises(ValueError, match="eligible"):
         sample_populations(behaviors, n_dev=30, n_test=10_000, dev_seed=1, test_seed=2)

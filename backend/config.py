@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     base_rate_hint: bool = False
     demo_mode: bool = False
     data_dir: str = "data"
+    hf_token: str = ""
     frontend_dist: str = "frontend/dist"
 
 
