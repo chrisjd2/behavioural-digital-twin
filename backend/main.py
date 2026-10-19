@@ -1,12 +1,18 @@
+from collections import Counter
+from dataclasses import replace
 from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from backend.config import Settings, get_settings
-from backend.data import resolve_data_source
+from backend.data import is_eligible, load_behaviors, load_news, resolve_data_source
+from backend.experiment import ExperimentConfig
+from backend.runner import candidate_sets
+
+DEFAULTS = ExperimentConfig()
 
 
 class AppError(Exception):
@@ -19,12 +25,79 @@ class AppError(Exception):
         self.detail = detail
 
 
+class ExperimentRequest(BaseModel):
+    """What Step 1 Seed may vary; everything else keeps the `ExperimentConfig` defaults."""
+
+    n_users: int = Field(default=DEFAULTS.n_dev, ge=1, le=5000)
+    seed: int = DEFAULTS.dev_seed
+    max_candidates: int = Field(default=DEFAULTS.max_candidates, ge=2, le=20)
+
+
 class Status(BaseModel):
     mock: bool
     demo_mode: bool
     model: str
     data_source: str
     call_count: int
+    experiment_defaults: ExperimentRequest
+
+
+class CategoryCount(BaseModel):
+    category: str
+    users: int  # sampled users with at least one past click in this category
+
+
+class PopulationSummary(BaseModel):
+    population: str
+    data_source: str
+    n_users: int
+    seed: int
+    max_candidates: int
+    eligible_users: int
+    n_candidates: int
+    categories: list[CategoryCount]
+    mean_feed_ctr: float
+    mean_sample_ctr: float
+
+
+def summarise_population(settings: Settings, request: ExperimentRequest) -> PopulationSummary:
+    """Sample the dev population exactly as the runner would. Never the test population."""
+    source = resolve_data_source(Path(settings.data_dir))
+    if source.kind == "none":
+        raise AppError(409, "no_data", "No MIND data or synthetic sample found in DATA_DIR.")
+
+    config = replace(
+        DEFAULTS,
+        n_dev=request.n_users,
+        dev_seed=request.seed,
+        max_candidates=request.max_candidates,
+    )
+    impressions = load_behaviors(source.dev_dir / "behaviors.tsv")
+    eligible = len({i.user_id for i in impressions if is_eligible(i)})
+    try:
+        sets = candidate_sets(source, config, "dev")
+    except ValueError as exc:
+        raise AppError(422, "not_enough_users", str(exc)) from exc
+
+    news = load_news(source.dev_dir / "news.tsv")
+    history = {i.impression_id: i.history for i in impressions}
+    readers: Counter[str] = Counter()
+    for c in sets:
+        # History items missing from news.tsv have no category to count.
+        readers.update({news[n].category for n in history[c.impression_id] if n in news})
+
+    return PopulationSummary(
+        population="dev",
+        data_source=source.kind,
+        n_users=len(sets),
+        seed=request.seed,
+        max_candidates=request.max_candidates,
+        eligible_users=eligible,
+        n_candidates=sum(len(c.items) for c in sets),
+        categories=[CategoryCount(category=k, users=v) for k, v in readers.most_common()],
+        mean_feed_ctr=sum(c.feed_ctr for c in sets) / len(sets),
+        mean_sample_ctr=sum(c.sample_ctr for c in sets) / len(sets),
+    )
 
 
 def build_app(settings: Settings) -> FastAPI:
@@ -44,7 +117,14 @@ def build_app(settings: Settings) -> FastAPI:
             model=settings.llm_model,
             data_source=resolve_data_source(Path(settings.data_dir)).kind,
             call_count=0,
+            experiment_defaults=ExperimentRequest(),
         )
+
+    @app.post("/api/experiment")
+    def experiment(request: ExperimentRequest) -> PopulationSummary:  # pyright: ignore[reportUnusedFunction]
+        if settings.demo_mode:
+            raise AppError(403, "demo_mode", "Building populations is disabled in the demo.")
+        return summarise_population(settings, request)
 
     # Mounted last so /api routes take precedence.
     dist = Path(settings.frontend_dist)
