@@ -37,3 +37,8 @@ Five arms share the same candidates, order, output format and model; only the ag
 - **B as a 10-persona averaged panel (closer to Maiorano):** 10× calls, and averaging compresses `p_click` toward the middle, muddying calibration.
 - **No control arm:** leaves the realism explanation open.
 - **E as a shuffled-history arm without profile:** less directly comparable to D.
+
+## Amendment (2026-10-19, before the freeze): confirmed by Chris
+
+- **Arm B personas are coherent:** a life stage is drawn first (student, early, mid or late career, retired) and conditions age, job and news habit; Big Five, values and location stay independent. Still seeded from the user ID only and never reads the user's data. A field-by-field random persona would make B lose for the wrong reason.
+- **A user's own candidates are never shown to their twin:** they are excluded from memories (ADR-0006 amendment) and from the profile's input (ADR-0007 amendment). The question is how a person reacts to new content.
