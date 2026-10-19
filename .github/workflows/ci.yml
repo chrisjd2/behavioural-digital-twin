@@ -25,6 +25,20 @@ jobs:
       - run: uv run basedpyright
       - run: uv run pytest -q
 
+  freeze:
+    # ADR-0001: after the prompts-frozen tag, experiment code must not change.
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'post-freeze-experiment') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: astral-sh/setup-uv@v6
+      - run: uv python install
+      - run: uv sync --frozen
+      - run: uv run python -m scripts.check_freeze
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
