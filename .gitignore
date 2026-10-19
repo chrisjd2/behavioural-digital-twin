@@ -23,3 +23,7 @@ dist/
 
 # Talk prep (ADR-0010)
 talk/
+
+# Local-only working files
+brief.md
+AI_USAGE.md
