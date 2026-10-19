@@ -18,7 +18,7 @@ def force_mock_llm(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture(scope="session")
 def data_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
     directory = tmp_path_factory.mktemp("data")
-    write_synthetic_sample(directory / "sample", n_users=400, n_news=300, seed=1)
+    write_synthetic_sample(directory / "sample", n_users=600, n_news=300, seed=1)
     return directory
 
 

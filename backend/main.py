@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from backend.config import Settings, get_settings
 from backend.data import (
+    TEST_RESERVE,
     DataKind,
     NewsItem,
     available_sources,
@@ -65,7 +66,7 @@ class PopulationSummary(BaseModel):
     seed: int
     max_candidates: int
     user_ids: list[str]  # in sampling order
-    eligible_users: int  # outside the held-out test set
+    eligible_users: int  # outside the held-out test reserve: the pool dev is drawn from
     n_candidates: int
     categories: list[CategoryCount]
     mean_feed_ctr: float
@@ -91,7 +92,9 @@ def summarise_population(settings: Settings, request: ExperimentRequest) -> Popu
     sets = candidate_sets(populations, config, "dev")
 
     impressions = load_behaviors_cached(source.dev_dir / "behaviors.tsv")
-    eligible = len({i.user_id for i in impressions if is_eligible(i)}) - len(populations.test)
+    total = len({i.user_id for i in impressions if is_eligible(i)})
+    # Dev is drawn from outside the whole test reserve, not just the scored test users.
+    eligible = total - max(config.n_test, min(TEST_RESERVE, total - config.n_dev))
     news = load_news_cached(source.dev_dir / "news.tsv")
     readers: Counter[str] = Counter()
     for impression in populations.dev:

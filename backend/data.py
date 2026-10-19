@@ -18,6 +18,7 @@ MIND_TIME_FORMAT = "%m/%d/%Y %I:%M:%S %p"
 MIN_HISTORY = 10
 MIN_CLICKS = 1
 MIN_NON_CLICKS = 3
+TEST_RESERVE = 1000  # users set aside for test; any n_test up to this leaves dev unchanged
 
 
 @dataclass(frozen=True)
@@ -179,9 +180,14 @@ def sample_populations(
     if len(users) < n_dev + n_test:
         raise ValueError(f"Only {len(users)} eligible users; need {n_dev + n_test}")
 
-    test_users = random.Random(f"test:{test_seed}").sample(users, n_test)
-    remaining = sorted(set(users) - set(test_users))
-    dev_users = random.Random(f"dev:{dev_seed}").sample(remaining, n_dev)
+    # The test draw is a prefix of a fixed-size reserve, so raising n_test (ADR-0001's power
+    # rule) extends the test set without changing it, and dev, drawn from outside the whole
+    # reserve, does not depend on n_test at all.
+    reserve_size = max(n_test, min(TEST_RESERVE, len(users) - n_dev))
+    reserve = random.Random(f"test:{test_seed}").sample(users, reserve_size)
+    test_users = reserve[:n_test]
+    outside = sorted(set(users) - set(reserve))
+    dev_users = random.Random(f"dev:{dev_seed}").sample(outside, n_dev)
 
     def pick(user: str) -> Impression:
         options = sorted(by_user[user], key=lambda imp: imp.impression_id)

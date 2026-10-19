@@ -16,7 +16,7 @@ A Python package (`backend/`) plus CLI scripts that load MIND, sample dev and te
 ### Data
 1. As the experimenter, `download_mind.py` fetches and unpacks MIND-small **dev and train** into `data/mind/`, and the app detects it automatically.
 2. As the experimenter, I can generate a synthetic sample in MIND format for tests, clearly marked fake.
-3. As the experimenter, I can sample a test population (N=200, test seed) and a disjoint dev population (N=30, dev seed) under the eligibility rules.
+3. As the experimenter, I can sample a test population (N=300 after the ADR-0001 power check, test seed) and a disjoint dev population (N=30, dev seed) under the eligibility rules.
 
 ### Arms and baselines
 4. As the experimenter, each user gets a candidate set (≤ 2 clicked + non-clicked to 8) in a seeded order shared by all arms.

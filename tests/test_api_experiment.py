@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from backend.data import is_eligible, load_behaviors, resolve_data_source
+from backend.data import TEST_RESERVE, is_eligible, load_behaviors, resolve_data_source
 from backend.experiment import ExperimentConfig
 from backend.runner import candidate_sets, sampled_populations
 from tests.test_status import make_client
@@ -39,12 +39,13 @@ def test_summary_matches_the_runner_candidate_sets(data_dir: Path) -> None:
     assert body["mean_sample_ctr"] == pytest.approx(sum(c.sample_ctr for c in sets) / 12)
 
 
-def test_eligible_users_exclude_the_test_set(data_dir: Path) -> None:
+def test_eligible_users_exclude_the_whole_test_reserve(data_dir: Path) -> None:
     body = build(data_dir, n_users=10).json()
 
     impressions = load_behaviors(data_dir / "sample" / "dev" / "behaviors.tsv")
-    eligible = {i.user_id for i in impressions if is_eligible(i)}
-    assert body["eligible_users"] == len(eligible) - ExperimentConfig().n_test
+    total = len({i.user_id for i in impressions if is_eligible(i)})
+    reserve = max(ExperimentConfig().n_test, min(TEST_RESERVE, total - 10))
+    assert body["eligible_users"] == total - reserve  # the pool dev is drawn from
 
 
 def test_reports_categories_read(data_dir: Path) -> None:
