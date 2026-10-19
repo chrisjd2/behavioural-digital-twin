@@ -18,7 +18,7 @@ from backend.data import (
     sample_populations,
 )
 from backend.experiment import ARMS as BASELINES, ExperimentConfig, Population
-from backend.freeze import fingerprint, freeze_problem, tag_sha
+from backend.freeze import REPO_ROOT, fingerprint, freeze_problem, tag_sha
 from backend.llm import LLMClient, mock_backend
 from backend.metrics import UserScores
 from backend.report import build_report
@@ -72,7 +72,7 @@ class Run:
 
 def git_sha() -> str:
     result = subprocess.run(
-        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
+        ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True, check=False
     )
     return result.stdout.strip() if result.returncode == 0 else "unknown (not a git checkout)"
 
@@ -120,6 +120,9 @@ async def run_experiment(  # noqa: PLR0913 — keyword-only run options
     problem = freeze_problem(current) if population == "test" else "not the test population"
     if population == "test" and problem and not allow_unfrozen:
         raise FreezeError(f"Refusing to run the test set: {problem} (ADR-0001).")
+    if population == "test" and problem and source.kind == "mind" and tag_sha() is None:
+        # Peeking at real test data before freezing would defeat the pre-registration.
+        raise FreezeError("--allow-unfrozen is refused on real MIND until the freeze tag exists.")
 
     created = datetime.now(UTC)
     sets = candidate_sets(source, config, population)

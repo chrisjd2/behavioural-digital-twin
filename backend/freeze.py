@@ -19,6 +19,29 @@ from backend.experiment import ExperimentConfig
 
 FREEZE_TAG = "prompts-frozen"
 FROZEN_FILE = "frozen.json"
+REPO_ROOT = Path(__file__).resolve().parents[1]
+# Code that picks the test users or turns model output into numbers. Any change to these
+# after the tag refuses the test run; UI and API code (main.py, runs.py, frontend) may change.
+EXPERIMENT_PATHS = (
+    *(
+        f"backend/{module}.py"
+        for module in (
+            "arms",
+            "baselines",
+            "data",
+            "experiment",
+            "freeze",
+            "llm",
+            "metrics",
+            "personas",
+            "profiles",
+            "report",
+            "retrieval",
+            "runner",
+        )
+    ),
+    "uv.lock",
+)
 _CHUNK = 1 << 20
 
 
@@ -54,7 +77,9 @@ def fingerprint(
 
 
 def _git(repo: Path | None, *args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, check=False)
+    return subprocess.run(
+        ["git", *args], cwd=repo or REPO_ROOT, capture_output=True, text=True, check=False
+    )
 
 
 def tag_sha(repo: Path | None = None) -> str | None:
@@ -62,7 +87,9 @@ def tag_sha(repo: Path | None = None) -> str | None:
     return result.stdout.strip() if result.returncode == 0 else None
 
 
-def freeze_problem(current: dict[str, object], repo: Path | None = None) -> str | None:
+def freeze_problem(  # noqa: PLR0911 - one return per distinct refusal reason
+    current: dict[str, object], repo: Path | None = None
+) -> str | None:
     """Why the test set may not run, or None when everything matches the frozen setup."""
     if tag_sha(repo) is None:
         return f"tag '{FREEZE_TAG}' does not exist"
@@ -70,6 +97,10 @@ def freeze_problem(current: dict[str, object], repo: Path | None = None) -> str 
         return f"HEAD does not contain '{FREEZE_TAG}'"
     if _git(repo, "status", "--porcelain").stdout.strip():
         return "working tree has uncommitted changes"
+    changed_code = _git(repo, "diff", "--name-only", FREEZE_TAG, "HEAD", "--", *EXPERIMENT_PATHS)
+    if changed_code.stdout.strip():
+        files = ", ".join(changed_code.stdout.split())
+        return f"experiment code changed since '{FREEZE_TAG}': {files}"
     frozen = _git(repo, "show", f"{FREEZE_TAG}:{FROZEN_FILE}")
     if frozen.returncode != 0:
         return f"'{FREEZE_TAG}' has no {FROZEN_FILE}"

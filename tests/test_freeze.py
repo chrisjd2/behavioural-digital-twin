@@ -5,9 +5,12 @@ from pathlib import Path
 import pytest
 
 from backend.arms import LLMOptions
-from backend.data import DataSource
+from backend.data import DataSource, resolve_data_source
 from backend.experiment import ExperimentConfig
 from backend.freeze import FREEZE_TAG, FROZEN_FILE, fingerprint, freeze_problem
+from backend.llm import Cache, LLMClient, mock_backend
+from backend.runner import FreezeError, run_experiment
+from backend.sample import write_synthetic_sample
 from scripts.run_headless import main
 
 OPTIONS = LLMOptions(reasoning_effort="medium", max_output_tokens=4096, base_rate_hint=False)
@@ -138,3 +141,54 @@ def test_allow_unfrozen_is_recorded_and_never_a_result(
     assert "WARNING: test set run with --allow-unfrozen" in out
     assert "MOCK LLM OUTPUT" in out
     assert "NOT A RESULT" in out
+
+
+def test_experiment_code_changes_after_the_tag_are_refused(
+    repo: Path, sample_source: DataSource
+) -> None:
+    (repo / "backend").mkdir()
+    (repo / "backend" / "data.py").write_text("MIN_HISTORY = 10\n", encoding="utf-8")
+    freeze(repo, current(sample_source))
+    (repo / "backend" / "data.py").write_text("MIN_HISTORY = 20\n", encoding="utf-8")
+    git(repo, "commit", "-qam", "tweak eligibility")
+
+    problem = freeze_problem(current(sample_source), repo) or ""
+
+    assert "experiment code changed" in problem
+    assert "backend/data.py" in problem
+
+
+def test_ui_code_changes_after_the_tag_are_allowed(repo: Path, sample_source: DataSource) -> None:
+    (repo / "backend").mkdir()
+    (repo / "backend" / "main.py").write_text("v = 1\n", encoding="utf-8")
+    freeze(repo, current(sample_source))
+    (repo / "backend" / "main.py").write_text("v = 2\n", encoding="utf-8")
+    git(repo, "commit", "-qam", "new endpoint")
+
+    assert freeze_problem(current(sample_source), repo) is None
+
+
+async def test_override_is_refused_on_real_mind_before_the_tag(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write_synthetic_sample(tmp_path / "mind", n_users=400, n_news=300, seed=1)
+    (tmp_path / "mind" / "SYNTHETIC").unlink()  # looks like real MIND to the guard
+    monkeypatch.setattr("backend.runner.tag_sha", lambda: None)
+    client = LLMClient(
+        model="mock",
+        base_url="mock://",
+        cache=Cache(tmp_path / "c.sqlite"),
+        backend=mock_backend,
+        concurrency=2,
+    )
+
+    with pytest.raises(FreezeError, match="until the freeze tag exists"):
+        await run_experiment(
+            resolve_data_source(tmp_path),
+            ExperimentConfig(n_dev=10, n_test=20),
+            population="test",
+            arms=["random"],
+            client=client,
+            options=OPTIONS,
+            allow_unfrozen=True,
+        )
