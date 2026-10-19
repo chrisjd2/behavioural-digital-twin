@@ -26,6 +26,7 @@ type Load =
 type Props = {
   runId: string | undefined // none: there are no saved runs yet
   liveRuns: boolean // false in DEMO_MODE (ADR-0011)
+  mockLlm: boolean // the server's MOCK_LLM, for the live-run note
   onLiveRunSaved: (runId: string) => void
 }
 
@@ -36,7 +37,7 @@ const minutes = (seconds: number) =>
  * Step 3: replay a saved run's reactions. Events are fetched once; playback needs no network
  * (ADR-0008). Render with `key={runId}` so a new run starts from the beginning.
  */
-export default function SimulationStep({ runId, liveRuns, onLiveRunSaved }: Props) {
+export default function SimulationStep({ runId, liveRuns, mockLlm, onLiveRunSaved }: Props) {
   const [load, setLoad] = useState<Load>({ state: 'loading' })
 
   useEffect(() => {
@@ -57,7 +58,7 @@ export default function SimulationStep({ runId, liveRuns, onLiveRunSaved }: Prop
     }
   }, [runId])
 
-  const live = liveRuns && <LiveRunPanel onSaved={onLiveRunSaved} />
+  const live = liveRuns && <LiveRunPanel onSaved={onLiveRunSaved} mockLlm={mockLlm} />
   if (!runId) return live
   if (load.state === 'loading') return <p className="muted">Loading the recorded run…</p>
   if (load.state === 'error') {

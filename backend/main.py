@@ -20,6 +20,7 @@ from backend.data import (
 )
 from backend.errors import AppError
 from backend.experiment import ExperimentConfig
+from backend.hook import hook_router
 from backend.report_views import report_router
 from backend.run_views import CategoryCount, run_router
 from backend.runner import candidate_sets, sampled_populations
@@ -131,6 +132,7 @@ def build_app(settings: Settings) -> FastAPI:
         return summarise_population(settings, request)
 
     app.include_router(run_router(settings))
+    app.include_router(hook_router(settings))
     app.include_router(simulation_router(settings))
     app.include_router(report_router(settings))
 

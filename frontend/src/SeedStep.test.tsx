@@ -9,11 +9,12 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-/** Seed state lives in App, so render the app (it opens on Step 1). */
+/** Seed state lives in App, so render the app and open Step 1. */
 async function renderSeed(status: Status = statusFixture, experiment?: Reply) {
   const fetchMock = stubApi({ status, experiment })
   const user = userEvent.setup()
   render(<App />)
+  await user.click(screen.getByRole('button', { name: /seed/i }))
   await screen.findByRole('heading', { level: 2, name: /seed/i })
   return { fetchMock, user }
 }
