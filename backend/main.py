@@ -1,6 +1,7 @@
 from collections import Counter
-from dataclasses import replace
+from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -8,9 +9,18 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from backend.config import Settings, get_settings
-from backend.data import is_eligible, load_behaviors, load_news, resolve_data_source
+from backend.data import (
+    DataKind,
+    Impression,
+    NewsItem,
+    build_candidate_set,
+    is_eligible,
+    load_behaviors,
+    load_news,
+    resolve_data_source,
+    sample_populations,
+)
 from backend.experiment import ExperimentConfig
-from backend.runner import candidate_sets
 
 DEFAULTS = ExperimentConfig()
 
@@ -37,7 +47,7 @@ class Status(BaseModel):
     mock: bool
     demo_mode: bool
     model: str
-    data_source: str
+    data_source: DataKind
     call_count: int
     experiment_defaults: ExperimentRequest
 
@@ -48,8 +58,8 @@ class CategoryCount(BaseModel):
 
 
 class PopulationSummary(BaseModel):
-    population: str
-    data_source: str
+    population: Literal["dev"]
+    data_source: DataKind
     n_users: int
     seed: int
     max_candidates: int
@@ -60,26 +70,44 @@ class PopulationSummary(BaseModel):
     mean_sample_ctr: float
 
 
+@lru_cache(maxsize=2)
+def load_dev_split(dev_dir: Path, _mtime_ns: int) -> tuple[list[Impression], dict[str, NewsItem]]:
+    """Real MIND dev takes seconds to parse; keep it while the file is unchanged."""
+    return load_behaviors(dev_dir / "behaviors.tsv"), load_news(dev_dir / "news.tsv")
+
+
 def summarise_population(settings: Settings, request: ExperimentRequest) -> PopulationSummary:
     """Sample the dev population exactly as the runner would. Never the test population."""
     source = resolve_data_source(Path(settings.data_dir))
     if source.kind == "none":
         raise AppError(409, "no_data", "No MIND data or synthetic sample found in DATA_DIR.")
 
-    config = replace(
-        DEFAULTS,
-        n_dev=request.n_users,
-        dev_seed=request.seed,
-        max_candidates=request.max_candidates,
+    impressions, news = load_dev_split(
+        source.dev_dir, (source.dev_dir / "behaviors.tsv").stat().st_mtime_ns
     )
-    impressions = load_behaviors(source.dev_dir / "behaviors.tsv")
     eligible = len({i.user_id for i in impressions if is_eligible(i)})
     try:
-        sets = candidate_sets(source, config, "dev")
+        # Same draw as runner.candidate_sets (test users first, so dev stays disjoint);
+        # sampled here so the loaded split is reused across builds.
+        dev = sample_populations(
+            impressions,
+            n_dev=request.n_users,
+            n_test=DEFAULTS.n_test,
+            dev_seed=request.seed,
+            test_seed=DEFAULTS.test_seed,
+        ).dev
     except ValueError as exc:
         raise AppError(422, "not_enough_users", str(exc)) from exc
+    sets = [
+        build_candidate_set(
+            imp,
+            seed=DEFAULTS.candidate_seed,
+            max_candidates=request.max_candidates,
+            max_clicked=DEFAULTS.max_clicked,
+        )
+        for imp in dev
+    ]
 
-    news = load_news(source.dev_dir / "news.tsv")
     history = {i.impression_id: i.history for i in impressions}
     readers: Counter[str] = Counter()
     for c in sets:
