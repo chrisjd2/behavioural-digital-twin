@@ -134,11 +134,12 @@ function Chat({ runId, userId, arm }: { runId: string; userId: string; arm: stri
   const [draft, setDraft] = useState('')
   const [asking, setAsking] = useState(false)
   const [fallback, setFallback] = useState<Fallback>({ state: 'none' })
-  const end = useRef<HTMLDivElement>(null)
+  const transcript = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    end.current?.scrollIntoView?.({ block: 'nearest' })
-  }, [entries, fallback])
+    const box = transcript.current
+    if (box) box.scrollTop = box.scrollHeight
+  }, [entries, fallback, asking])
 
   function showRecorded(reason: string) {
     if (fallback.state === 'ready' || fallback.state === 'loading') {
@@ -182,7 +183,7 @@ function Chat({ runId, userId, arm }: { runId: string; userId: string; arm: stri
   return (
     <section className={`interview-chat arm-${arm.toLowerCase()}`} aria-label="Interview">
       <p className="simulated-label interview-label">{SIMULATED_LABEL}</p>
-      <div className="transcript" aria-live="polite">
+      <div className="transcript" aria-live="polite" ref={transcript}>
         {entries.length === 0 && fallback.state === 'none' && (
           <p className="muted transcript-empty">
             Ask about news interests and reading habits. Questions about who this reader is get “I
@@ -198,7 +199,6 @@ function Chat({ runId, userId, arm }: { runId: string; userId: string; arm: stri
         )}
         {asking && <p className="muted thinking">Agent {arm} is answering…</p>}
         <RecordedFallback fallback={fallback} />
-        <div ref={end} />
       </div>
       <div className="starters" aria-label="Suggested questions">
         {STARTERS.map((q) => (
