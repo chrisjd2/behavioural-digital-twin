@@ -32,6 +32,12 @@ def test_resolves_real_mind_before_synthetic(tmp_path: Path) -> None:
     assert source.train_dir == tmp_path / "mind" / "train"
 
 
+def test_synthetic_marker_wins_over_folder_name(tmp_path: Path) -> None:
+    write_synthetic_sample(tmp_path / "mind", n_users=20, n_news=30, seed=1)
+
+    assert resolve_data_source(tmp_path).kind == "synthetic"
+
+
 def test_falls_back_to_synthetic_then_none(tmp_path: Path) -> None:
     assert resolve_data_source(tmp_path).kind == "none"
 

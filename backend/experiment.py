@@ -1,18 +1,10 @@
-"""Experiment configuration and evaluation (ADR-0001)."""
+"""Experiment configuration and the non-LLM scorers (ADR-0001). Orchestration lives in runner.py."""
 
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal
 
 from backend.baselines import random_scores
-from backend.data import (
-    CandidateSet,
-    DataSource,
-    build_candidate_set,
-    load_behaviors,
-    sample_populations,
-)
-from backend.metrics import auc
 
 Population = Literal["dev", "test"]
 Scorer = Callable[..., dict[str, float]]
@@ -33,33 +25,4 @@ class ExperimentConfig:
     baseline_seed: int = 1
     max_candidates: int = 8
     max_clicked: int = 2
-
-
-def evaluate(
-    source: DataSource, config: ExperimentConfig, *, population: Population, arms: list[str]
-) -> dict[str, list[float]]:
-    """Per-user AUC for each arm, in population order."""
-    unknown = sorted(set(arms) - set(ARMS))
-    if unknown:
-        raise ValueError(f"Unknown arm(s): {', '.join(unknown)}")
-
-    populations = sample_populations(
-        load_behaviors(source.dev_dir / "behaviors.tsv"),
-        n_dev=config.n_dev,
-        n_test=config.n_test,
-        dev_seed=config.dev_seed,
-        test_seed=config.test_seed,
-    )
-    candidate_sets: list[CandidateSet] = [
-        build_candidate_set(
-            imp,
-            seed=config.candidate_seed,
-            max_candidates=config.max_candidates,
-            max_clicked=config.max_clicked,
-        )
-        for imp in (populations.dev if population == "dev" else populations.test)
-    ]
-    return {
-        arm: [auc(ARMS[arm](c, seed=config.baseline_seed), c.labels) for c in candidate_sets]
-        for arm in arms
-    }
+    bootstrap_seed: int = 20261019
