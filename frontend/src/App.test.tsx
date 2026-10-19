@@ -33,11 +33,14 @@ describe('App shell', () => {
         .map((b) => b.textContent),
     ).toEqual(names.map((name, i) => `${i}${name}`))
 
-    for (const name of ['Hook', 'Population', 'Simulation', 'Report', 'Interview']) {
+    for (const name of ['Hook', 'Simulation', 'Report', 'Interview']) {
       await user.click(within(stepper).getByRole('button', { name: new RegExp(name) }))
       expect(screen.getByRole('heading', { level: 2, name: new RegExp(name) })).toBeInTheDocument()
       expect(screen.getByText(/not built yet/i)).toBeInTheDocument()
     }
+    await user.click(within(stepper).getByRole('button', { name: /population/i }))
+    expect(screen.getByRole('heading', { level: 2, name: /population/i })).toBeInTheDocument()
+    expect(screen.queryByText(/not built yet/i)).not.toBeInTheDocument()
   })
 
   it('shows MOCK on every step in mock mode', async () => {

@@ -17,20 +17,12 @@ from backend.data import (
     load_news_cached,
     resolve_data_source,
 )
+from backend.errors import AppError
 from backend.experiment import ExperimentConfig
+from backend.run_views import CategoryCount, run_router
 from backend.runner import candidate_sets, sampled_populations
 
 DEFAULTS = ExperimentConfig()
-
-
-class AppError(Exception):
-    """An error with an HTTP status and a stable machine-readable code."""
-
-    def __init__(self, status_code: int, code: str, detail: str) -> None:
-        super().__init__(detail)
-        self.status_code = status_code
-        self.code = code
-        self.detail = detail
 
 
 class ExperimentRequest(BaseModel):
@@ -48,11 +40,6 @@ class Status(BaseModel):
     data_source: DataKind
     call_count: int
     experiment_defaults: ExperimentRequest
-
-
-class CategoryCount(BaseModel):
-    category: str
-    users: int  # sampled users with at least one past click in this category
 
 
 class PopulationSummary(BaseModel):
@@ -137,6 +124,8 @@ def build_app(settings: Settings) -> FastAPI:
         if settings.demo_mode:
             raise AppError(403, "demo_mode", "Building populations is disabled in the demo.")
         return summarise_population(settings, request)
+
+    app.include_router(run_router(settings))
 
     # Mounted last so /api routes take precedence.
     dist = Path(settings.frontend_dist)

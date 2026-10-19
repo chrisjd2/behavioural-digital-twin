@@ -112,7 +112,7 @@ describe('Step 1 Seed', () => {
     await screen.findByTestId('population-summary')
     const stepper = screen.getByRole('navigation', { name: /steps/i })
     await user.click(within(stepper).getByRole('button', { name: /population/i }))
-    expect(screen.getByTestId('run-note')).toHaveTextContent(/saved run/i)
+    expect(screen.getByRole('heading', { level: 2, name: /population/i })).toBeInTheDocument()
     await user.click(within(stepper).getByRole('button', { name: /seed/i }))
 
     expect(screen.getByTestId('population-summary')).toBeInTheDocument()
