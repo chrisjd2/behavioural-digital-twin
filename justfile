@@ -45,6 +45,10 @@ test:
 check: lint typecheck test
     cd frontend && npm run -s build
 
+# Run the four agent gates, printing JSON envelopes (e.g. `just gates --issue 5`); exits with the worst code
+gates *args:
+    rc=0; for g in run_lint run_typecheck run_tests coverage_delta; do uv run python scripts/gates/$g.py {{args}} || { c=$?; if [ $c -gt $rc ]; then rc=$c; fi; }; done; exit $rc
+
 # Build the runtime image (what Cloud Run runs)
 image:
     docker build -t twin-lab:local .
