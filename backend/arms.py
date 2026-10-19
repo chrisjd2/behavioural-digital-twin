@@ -12,7 +12,17 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 
 from backend.data import CandidateSet, NewsItem
+from backend.llm import LLMClient
 from backend.personas import invent_persona
+from backend.profiles import (
+    PROFILE_SCHEMA,
+    PROFILE_WORD_LIMIT,
+    Profile,
+    parse_profile,
+    profile_block,
+    profile_history,
+    profile_messages,
+)
 from backend.retrieval import Retriever
 
 ABSTRACT_CHARS = 300
@@ -49,10 +59,22 @@ ARM_B_SYSTEM = (
     "Answer as yourself, honestly and briefly."
 )
 
+PROFILE_RETRY_INSTRUCTION = (
+    f"That profile was not usable. Return valid JSON only, at most {PROFILE_WORD_LIMIT} words "
+    "in total, where "
+    "every item cites one or more click ids from the history above."
+)
+
 ARM_C_SYSTEM = (
     "You are one specific Microsoft News reader. Below are headlines you really clicked on "
     "before this moment. Let these interests guide your reactions; where they say nothing "
     "about a headline, say so rather than inventing a preference. Answer honestly and briefly."
+)
+
+# D is C plus one sentence and the profile itself, so D - C measures only the profile.
+ARM_D_SYSTEM = (
+    f"{ARM_C_SYSTEM} A short profile of your reading habits, distilled from your own clicks, "
+    "comes first."
 )
 
 # The first two sentences are ADR-0005's feed framing, verbatim.
@@ -132,7 +154,13 @@ def retry_messages(messages: list[dict[str, str]], previous: str) -> list[dict[s
     ]
 
 
-def request_payload(messages: list[dict[str, str]], options: LLMOptions) -> dict[str, object]:
+def request_payload(
+    messages: list[dict[str, str]],
+    options: LLMOptions,
+    *,
+    name: str = "reactions",
+    schema: Mapping[str, object] = OUTPUT_SCHEMA,
+) -> dict[str, object]:
     return {
         "messages": messages,
         "temperature": 0,
@@ -140,7 +168,7 @@ def request_payload(messages: list[dict[str, str]], options: LLMOptions) -> dict
         "max_tokens": options.max_output_tokens,
         "response_format": {
             "type": "json_schema",
-            "json_schema": {"name": "reactions", "schema": OUTPUT_SCHEMA, "strict": True},
+            "json_schema": {"name": name, "schema": schema, "strict": True},
         },
     }
 
@@ -217,11 +245,67 @@ def arm_c_messages(
     ]
 
 
+def arm_d_messages(
+    candidates: CandidateSet,
+    news: Mapping[str, NewsItem],
+    knowledge: Knowledge,
+    *,
+    base_rate_hint: bool,
+) -> list[dict[str, str]]:
+    profile, memories = knowledge["profile"], knowledge["memories"]
+    assert isinstance(profile, dict)
+    assert isinstance(memories, list)
+    # An unusable profile is never shown: that user's D prompt is then exactly C's.
+    shown = (
+        f"\n\nYour reading profile:\n{profile_block(profile['fields'])}" if profile["ok"] else ""
+    )
+    system = (
+        f"{ARM_D_SYSTEM if shown else ARM_C_SYSTEM}{shown}"
+        f"\n\nYour past clicks:\n{memories_block(memories)}"
+    )
+    return [
+        {"role": "system", "content": system},
+        {"role": "user", "content": feed_message(candidates, news, base_rate_hint=base_rate_hint)},
+    ]
+
+
 @dataclass(frozen=True)
 class ArmResources:
     """Per-run helpers an arm may need to work out what its agent knows."""
 
     retriever: Retriever | None = None
+    client: LLMClient | None = None  # for arms that need an LLM call to prepare (D's profile)
+    options: LLMOptions | None = None
+    news: Mapping[str, NewsItem] | None = None
+
+
+def profile_payload(
+    history: Sequence[str], news: Mapping[str, NewsItem], options: LLMOptions, *, retry_of: str = ""
+) -> dict[str, object]:
+    messages = profile_messages(history, news)
+    if retry_of:
+        messages = [
+            *messages,
+            {"role": "assistant", "content": retry_of},
+            {"role": "user", "content": PROFILE_RETRY_INSTRUCTION},
+        ]
+    return request_payload(messages, options, name="profile", schema=PROFILE_SCHEMA)
+
+
+async def distil_profile(history: Sequence[str], resources: ArmResources) -> Profile:
+    """One cached call; one retry if the reply is unusable (invalid, cites nothing real or
+    runs long). The better attempt is kept; an unusable profile is never shown to the agent."""
+    client, options, news = resources.client, resources.options, resources.news
+    assert client is not None, "Arm D needs an LLM client"
+    assert options is not None
+    assert news is not None
+    completion = await client.complete(profile_payload(history, news, options))
+    first = parse_profile(completion.content, history)
+    if first.ok:
+        return first
+    retry = profile_payload(history, news, options, retry_of=completion.content)
+    second = parse_profile((await client.complete(retry)).content, history)
+    return second if second.ok or second.word_count > first.word_count else first
 
 
 async def _knows_nothing(_: CandidateSet, __: ArmResources) -> Knowledge:
@@ -233,9 +317,14 @@ async def _invent_persona(candidates: CandidateSet, _: ArmResources) -> Knowledg
 
 
 async def _retrieve_memories(candidates: CandidateSet, resources: ArmResources) -> Knowledge:
-    assert resources.retriever is not None, "Arm C needs a retriever"
+    assert resources.retriever is not None, "This arm needs a retriever"
     memories = resources.retriever.memories(candidates.history, candidates.items)
     return {"memories": [asdict(m) for m in memories]}
+
+
+async def _profile_and_memories(candidates: CandidateSet, resources: ArmResources) -> Knowledge:
+    profile = await distil_profile(profile_history(candidates.history, candidates.items), resources)
+    return {"profile": asdict(profile), **await _retrieve_memories(candidates, resources)}
 
 
 @dataclass(frozen=True)
@@ -250,6 +339,7 @@ ARM_SPECS: dict[str, ArmSpec] = {
     "A": ArmSpec(_knows_nothing, lambda c, n, _k, **kw: arm_a_messages(c, n, **kw)),
     "B": ArmSpec(_invent_persona, arm_b_messages),
     "C": ArmSpec(_retrieve_memories, arm_c_messages),
+    "D": ArmSpec(_profile_and_memories, arm_d_messages),
 }
 
 # A fixed fake user, rendered through every arm, so the hash covers everything that shapes
@@ -263,17 +353,29 @@ _CANONICAL = CandidateSet(
     tie_rank={"N1": 1, "N2": 0},
     feed_ctr=0.5,
     sample_ctr=0.5,
-    history=("H1",),
+    # 51 clicks including a candidate, so the 50-click cut and the exclusion of the
+    # headlines being predicted both shape the profile hash.
+    history=(*(f"H{i}" for i in range(1, 61)), "N1"),  # the candidate is the newest click
 )
 _CANONICAL_NEWS = {
     i: NewsItem(i, "news", "world", f"Headline {i}", "x" * (ABSTRACT_CHARS + 10))
-    for i in ("N1", "N2", "H1")
+    for i in ("N1", "N2", *(f"H{i}" for i in range(1, 61)))
 }
 _CANONICAL_KNOWLEDGE: dict[str, Knowledge] = {
     "A": {},
     "B": invent_persona(_CANONICAL.user_id),
     "C": {"memories": [{"news_id": "H1", "headline": "Headline H1", "category": "news"}]},
+    "D": {
+        "profile": {
+            "ok": True,
+            "fields": {"interests": [{"text": "World news", "evidence": ["H1"]}]},
+        },
+        "memories": [{"news_id": "H1", "headline": "Headline H1", "category": "news"}],
+    },
 }
+
+
+_PROFILE_HISTORY = profile_history(_CANONICAL.history, _CANONICAL.items)
 
 
 def prompt_hashes(options: LLMOptions) -> dict[str, str]:
@@ -292,4 +394,10 @@ def prompt_hashes(options: LLMOptions) -> dict[str, str]:
         ]
         blob = json.dumps(rendered, sort_keys=True).encode("utf-8")
         hashes[arm] = hashlib.sha256(blob).hexdigest()[:12]
+    profile_requests = [
+        profile_payload(_PROFILE_HISTORY, _CANONICAL_NEWS, options),
+        profile_payload(_PROFILE_HISTORY, _CANONICAL_NEWS, options, retry_of="<previous>"),
+    ]
+    blob = json.dumps(profile_requests, sort_keys=True).encode("utf-8")
+    hashes["profile"] = hashlib.sha256(blob).hexdigest()[:12]
     return hashes

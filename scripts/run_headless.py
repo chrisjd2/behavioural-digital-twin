@@ -157,6 +157,11 @@ def print_run(run: Run, *, uses_llm: bool) -> None:
     print(
         f"\nLLM calls: {c['calls']} new, {c['cache_hits']} cached, {c['prompt_tokens']} tokens in"
     )
+    for arm, screen in run.identity_screen.items():
+        print(
+            f"Identity screen, arm {arm}: {screen['flagged_profiles']}/{screen['profiles']} "
+            f"profiles flagged ({screen['hits']} hits); {screen['unusable_profiles']} unusable"
+        )
     if run.unfrozen_override:
         print("WARNING: test set run with --allow-unfrozen; recorded in the run file.")
 

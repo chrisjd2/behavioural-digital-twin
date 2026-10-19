@@ -143,6 +143,16 @@ def openai_backend(
     return send
 
 
+def _schema_name(payload: Mapping[str, object]) -> str | None:
+    response_format = payload.get("response_format")
+    if isinstance(response_format, dict):
+        schema = response_format.get("json_schema")
+        if isinstance(schema, dict):
+            name = schema.get("name")
+            return name if isinstance(name, str) else None
+    return None
+
+
 _ID_PATTERN = re.compile(r'"id":\s*"([^"]+)"')
 
 
@@ -153,6 +163,14 @@ async def mock_backend(payload: Mapping[str, object]) -> RawResponse:
     prompt = json.dumps(messages, sort_keys=True)
     contents = (str(m.get("content", "")) for m in messages if isinstance(m, dict))
     ids = list(dict.fromkeys(i for text in contents for i in _ID_PATTERN.findall(text)))
+    if _schema_name(payload) == "profile":
+        profile = {
+            "interests": [{"text": "MOCK interest in these stories", "evidence": ids[:2]}],
+            "rarely_clicks": [],
+            "style_preferences": [],
+            "recent_shifts": [],
+        }
+        return RawResponse(json.dumps(profile), prompt_tokens=0, completion_tokens=0)
     reactions = []
     for news_id in ids:
         digest = hashlib.sha256(f"{prompt}:{news_id}".encode()).digest()

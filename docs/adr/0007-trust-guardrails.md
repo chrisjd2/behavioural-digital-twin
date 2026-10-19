@@ -30,3 +30,9 @@ Trust is central to the audience (Salesforce). Two places can drift into inferri
 
 - **Free-text profile (brief):** easier but drifts into identity inference unnoticed.
 - **Blocking runs on identity-screen hits:** hides the problem instead of measuring it.
+
+## Amendment (2026-10-19, before the freeze)
+
+After two adversarial reviews (PR #37), the identity screen is a rule-based check in `backend/identity.py`, not a keyword list. Profiles describe reading habits, so a claim about the *reader* appears in three places, and only those are screened: after a claim word ("is a devout Christian", "presumably female"), as an item-opening fragment that ends its clause ("Married", "Wealthy homeowner", "Gen Z", "A 45-year-old"), or as a verb about the reader at the start of an item ("Votes Republican", "Lives in Ohio", "Has young kids"). Topics, which follow reading verbs or run on into a topic noun ("Likely clicks Republican primary coverage", "Gen Z trends", "a 40-year-old record"), are not flagged. Location, personality, family and occupation are screened as well as the original kinds. Every phrasing reported by the reviewers is pinned in `tests/test_identity.py` in both directions. The screen is still imperfect; it measures and a person reviews every flag.
+
+Profiles are built from the last 50 clicks *excluding the headlines being predicted* (the same rule as memories, ADR-0006 amendment). An unusable profile is never shown to the agent; that user's Arm D prompt is then exactly Arm C's.
