@@ -1,0 +1,15 @@
+.git
+.venv
+.env
+.env.*
+data
+**/node_modules
+**/dist
+**/__pycache__
+.pytest_cache
+.reviews
+.claude
+docs
+talk
+brief.md
+AI_USAGE.md

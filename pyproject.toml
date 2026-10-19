@@ -1,0 +1,73 @@
+[project]
+name = "twin-lab"
+version = "0.1.0"
+description = "Can an AI impersonate a customer? LLM digital twins vs plain LLM vs invented personas on MIND click data."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic-settings>=2.6",
+    "openai>=1.55",
+    "numpy>=2.1",
+    "sse-starlette>=2.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "httpx>=0.28",
+    "coverage>=7.6",
+    "ruff>=0.8",
+    "basedpyright>=1.22",
+    "pre-commit>=4.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# Same curated set as kleisi-ops-server. Remove a rule only with a `# reason:` comment.
+select = [
+    "E", "W", "F", "I", "B", "UP", "SIM", "RUF", "ASYNC", "C4", "PIE", "PL", "TID", "PT", "N",
+]
+ignore = [
+    "E501",    # reason: line length handled by the formatter.
+    "PLR2004", # reason: magic-value warnings are noisy for metrics code and tests.
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["PLR0913", "N802", "N803"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["backend"]
+combine-as-imports = true
+
+[tool.ruff.format]
+quote-style = "double"
+docstring-code-format = true
+
+[tool.basedpyright]
+include = ["backend", "scripts", "tests"]
+exclude = ["**/__pycache__", ".venv", "frontend", "data"]
+pythonVersion = "3.12"
+# reason: ADR-0009 — `standard` rather than `all`; numpy noise is not worth fighting this week.
+typeCheckingMode = "standard"
+venvPath = "."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers --strict-config"
+testpaths = ["tests"]
+xfail_strict = true
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.coverage.run]
+branch = true
+source = ["backend"]
