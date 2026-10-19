@@ -9,7 +9,7 @@ never blocking, so the Report can show how often the guardrail was needed.
 
 import json
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
 from backend.data import NewsItem
@@ -36,10 +36,12 @@ PROFILE_SCHEMA: dict[str, object] = {
 
 PROFILE_SYSTEM = (
     "You summarise one person's news-click history into a short reading profile, using only "
-    "evidence in the history. Write at most 120 words in total across all fields.\n"
+    f"evidence in the history. Write at most {PROFILE_WORD_LIMIT} words in total across all "
+    "fields.\n"
     "- interests: topics and kinds of story they click.\n"
-    "- rarely_clicks: topics noticeably absent or rare; cite the clicks that show where their "
-    "attention goes instead.\n"
+    "- rarely_clicks: topics with few or no clicks in this history. Say 'few or no clicks on "
+    "...', never 'avoids' or 'dislikes': the history shows what they clicked, not what they "
+    "were shown and skipped. Cite the clicks that show where their attention went instead.\n"
     "- style_preferences: formats or tones they favour (e.g. explainers, lists, breaking news).\n"
     "- recent_shifts: how the most recent clicks differ from earlier ones, if at all.\n"
     "Every item must cite one or more click ids from the history as evidence.\n"
@@ -48,31 +50,69 @@ PROFILE_SYSTEM = (
     "sexuality. 'Follows election coverage' is fine; 'is a conservative' is not."
 )
 
-# The screen looks for claims about who the person IS ("is a conservative", "likely a
-# mother", "in their 30s"), not topic words: "Black Friday", "White House" and "Republican
-# primary" are news, not inferences. It measures, it never blocks (ADR-0007).
+# The screen looks for claims about who the PERSON is, in the forms profiles use: claims
+# ("is a devout Christian"), fragments ("Conservative-leaning reader", "Politically
+# liberal"), verbs ("Votes Republican", "Lives in Ohio", "Has young kids") and age forms
+# ("early 40s", "Gen Z"). Topic words stay unflagged: "Black Friday", "White House",
+# "Republican primary" and "women's soccer" are news, not inferences. It measures, it
+# never blocks (ADR-0007); a person reviews every flag.
 _CLAIM = (
-    r"\b(?:is|are|was|seems|appears|likely|probably|possibly|perhaps|as|being)\s+(?:an?\s+|the\s+)?"
+    r"\b(?:is|are|was|seems|appears|likely|probably|possibly|perhaps|presumably|apparently)"
+    r"\s+(?:to\s+be\s+)?(?:an?\s+)?(?:[\w-]+\s+){0,2}?"
 )
+_PERSON = r"\s+(?:reader|person|user|individual|man|woman|parent|household)\b"
 IDENTITY_TERMS = {
-    "age": r"(?:teenager|retiree|retired|elderly|senior citizen|millennial|boomer|student)",
-    "gender": r"(?:man|woman|male|female|mother|father|mom|dad|parent|wife|husband)",
+    "age": r"(?:teenager|teen|retiree|retired|elderly|senior|millennial|boomer|student|young adult)",
+    "gender": r"(?:man|woman|male|female|mother|father|mom|dad|wife|husband|guy|girl)",
+    "family": r"(?:parent|married|divorced|widow\w*|single|grandmother|grandfather|grandparent)",
+    "occupation": r"(?:nurse|teacher|doctor|engineer|lawyer|farmer|veteran|homemaker|executive)",
     "politics": r"(?:liberal|conservative|democrat|republican|progressive|left[- ]wing|right[- ]wing)",
-    "religion": r"(?:christian|muslim|jewish|catholic|protestant|hindu|buddhist|atheist|religious)",
-    "health": r"(?:diabetic|pregnant|disabled|depressed|ill|sick|overweight|obese|in recovery)",
-    "sexuality": r"(?:gay|lesbian|bisexual|straight|queer|transgender|lgbt\w*)",
-    "ethnicity": r"(?:black|white|hispanic|latino|latina|asian|african[- ]american)",
+    "religion": r"(?:christian|muslim|jewish|catholic|protestant|hindu|buddhist|atheist|religious|devout)",
+    "health": r"(?:diabetic|pregnant|disabled|depressed|anxious|sick|overweight|obese|alcoholic)",
+    "sexuality": r"(?:gay|lesbian|bisexual|queer|transgender|lgbt\w*)",
+    "ethnicity": r"(?:african[- ]american|asian[- ]american|black|white|hispanic|latino|latina|asian)",
     "income": r"(?:wealthy|rich|affluent|low[- ]income|poor|working[- ]class|middle[- ]class)",
+    "personality": r"(?:introvert\w*|extrovert\w*|neurotic|impulsive|shy|outgoing)",
 }
-_DIRECT = {  # phrasings that are inferences on their own, with no "is a" in front
-    "age": r"\b(?:\d{1,2}[- ]years?[- ]old|aged \d{1,2}|in (?:their|his|her) (?:teens|\d0s))\b",
-    "health": r"\b(?:has|have|living with) (?:diabetes|cancer|depression|anxiety|a disability)\b",
+_DIRECT = {  # forms that are inferences on their own
+    "age": (
+        r"\b(?:in\s+(?:their|his|her)\s+(?:early\s+|mid[- ]?|late\s+)?(?:teens|\d0s)"
+        r"|(?:early|mid|late)[- ]\d0s|(?:aged?|over|under)\s+\d{2}\b(?!\s+(?:stories|years))"
+        r"|\d{2}\+|gen\s?[xyz]\b|(?:nearing|approaching)\s+retirement"
+        r"|(?:they|he|she)\s+(?:are|is)\s+\d{1,2}(?:\s+years?\s+old)?)"
+    ),
+    "politics": (
+        r"\b(?:leans?\s+(?:left|right|liberal|conservative)|votes?\s+(?:democrat\w*|republican\w*)"
+        r"|supports?\s+(?:democrats|republicans|trump|biden)|(?:liberal|conservative|left|right)"
+        r"[- ]leaning|politically\s+(?:liberal|conservative|left|right|progressive|moderate))\b"
+    ),
+    "health": (
+        r"\b(?:(?:has|have|living\s+with|struggles?\s+with|suffers?\s+from|battling)\s+"
+        r"(?:diabetes|cancer|depression|anxiety|a\s+disability|weight|addiction|illness)"
+        r"|recovering\s+(?:alcoholic|addict))\b"
+    ),
+    "family": (
+        r"\b(?:has|have)\s+(?:(?:young|grown|small|teenage)\s+)?(?:kids|children|grandchildren)\b"
+        r"|\bsingle\s+(?:mother|father|parent|mom|dad)\b"
+    ),
+    "location": (
+        r"\b(?:lives?|living|based|located|resides?)\s+in\b"
+        r"|\b(?:likely|probably|possibly|presumably)\s+(?:from|in)\s+(?!the\b)\w+"
+    ),
+    "occupation": r"\b(?:works?|employed)\s+(?:as|in)\b",
+    "personality": r"\b(?:\w+\s+personality|introvert\w*|extrovert\w*|neurotic)\b",
 }
 _IDENTITY = {
     kind: re.compile(
-        _CLAIM + term + r"\b" + (f"|{_DIRECT[kind]}" if kind in _DIRECT else ""), re.IGNORECASE
+        "|".join(
+            [
+                *([_CLAIM + term + r"\b", r"\b" + term + _PERSON] if term else []),
+                *([_DIRECT[kind]] if kind in _DIRECT else []),
+            ]
+        ),
+        re.IGNORECASE,
     )
-    for kind, term in IDENTITY_TERMS.items()
+    for kind, term in {**dict.fromkeys(_DIRECT, ""), **IDENTITY_TERMS}.items()
 }
 
 
@@ -83,6 +123,13 @@ class Profile:
     word_count: int
     identity_hits: list[dict[str, str]]  # [{"kind", "term", "text"}]
     ok: bool  # parsed, within the word limit, and at least one valid item
+
+
+def profile_history(history: Sequence[str], exclude: Iterable[str]) -> list[str]:
+    """The clicks a profile is built from: the last 50, never the headlines being predicted
+    (the same rule as memories, ADR-0006 amendment)."""
+    skip = set(exclude)
+    return [h for h in history if h not in skip][-PROFILE_CLICKS:]
 
 
 def profile_messages(history: Sequence[str], news: Mapping[str, NewsItem]) -> list[dict[str, str]]:
@@ -122,7 +169,11 @@ def parse_profile(content: str, history: Sequence[str]) -> Profile:
         for item in items if isinstance(items, list) else []:
             text = item.get("text") if isinstance(item, dict) else None
             evidence = item.get("evidence") if isinstance(item, dict) else None
-            cited = [e for e in evidence if e in allowed] if isinstance(evidence, list) else []
+            cited = (
+                [e for e in evidence if isinstance(e, str) and e in allowed]
+                if isinstance(evidence, list)
+                else []
+            )
             if not isinstance(text, str) or not text.strip() or not cited:
                 dropped += 1
                 continue
