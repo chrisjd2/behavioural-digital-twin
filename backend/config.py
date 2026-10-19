@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     hf_token: str = ""
     frontend_dist: str = "frontend/dist"
     hook_config: str = "config/hook.json"  # Step 0's dev-set example (scripts.pick_hook)
+    # Step 5 Interview (ADR-0008, ADR-0011): the recorded fallback and the rate limits.
+    interview_recorded: str = "config/interview_recorded.json"  # scripts.record_interviews
+    interview_ip_limit_per_hour: int = 30
+    interview_daily_limit: int = 500
 
     def llm_options(self) -> LLMOptions:
         return LLMOptions(
