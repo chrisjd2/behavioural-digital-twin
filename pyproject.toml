@@ -30,6 +30,7 @@ package = false
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+extend-exclude = [".claude/worktrees"]
 
 [tool.ruff.lint]
 # Same curated set as kleisi-ops-server. Remove a rule only with a `# reason:` comment.
@@ -54,7 +55,7 @@ docstring-code-format = true
 
 [tool.basedpyright]
 include = ["backend", "scripts", "tests"]
-exclude = ["**/__pycache__", ".venv", "frontend", "data"]
+exclude = ["**/__pycache__", ".venv", "frontend", "data", ".claude/worktrees"]
 pythonVersion = "3.12"
 # reason: ADR-0009 — `standard` rather than `all`; numpy noise is not worth fighting this week.
 typeCheckingMode = "standard"
