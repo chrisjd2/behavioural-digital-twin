@@ -1,5 +1,7 @@
 # Data, cache and runs — never committed (ADR-0010)
 data/
+# The hosted demo's data, built into the private demo image only (ADR-0011)
+demo-data/
 
 # Secrets
 .env

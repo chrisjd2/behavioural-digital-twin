@@ -56,3 +56,25 @@ image:
 # Run the runtime image locally on :8080
 serve: image
     docker run --rm -p 8080:8080 --env-file .env twin-lab:local
+
+# Assemble demo-data/ from DATA_DIR: the frozen run, the hook's run, their news (never committed)
+demo-data *args:
+    rm -rf demo-data
+    uv run python -m scripts.build_demo_data {{args}}
+
+# Build the hosted demo image: runtime plus demo-data/ (ADR-0011)
+demo-image:
+    test -d demo-data || { echo "No demo-data/: run just demo-data first"; exit 1; }
+    docker build --target demo -t twin-lab-demo:local .
+
+# Rehearse the hosted demo on :8080: DEMO_MODE, the key from .env at run time, not in the image
+demo-serve: demo-image
+    env=(); if [ -f .env ]; then env=(--env-file .env); fi; docker run --rm -p 8080:8080 "${env[@]}" -e DEMO_MODE=1 -e MOCK_LLM=false -e DATA_DIR=data twin-lab-demo:local
+
+# Deploy the demo to Cloud Run (docs/deploy.md); add --dry-run to print the commands only
+deploy PROJECT REGION REPO *args:
+    uv run python -m scripts.deploy deploy --project {{PROJECT}} --region {{REGION}} --repo {{REPO}} {{args}}
+
+# Delete the Cloud Run service and the demo image; add --dry-run to print the commands only
+teardown PROJECT REGION REPO *args:
+    uv run python -m scripts.deploy teardown --project {{PROJECT}} --region {{REGION}} --repo {{REPO}} {{args}}

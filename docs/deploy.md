@@ -1,0 +1,69 @@
+# Hosted demo on Cloud Run
+
+A temporary, public, read-only copy of the app for the panel ([ADR-0011](adr/0011-docker-and-cloud-run-demo.md)). It runs with `DEMO_MODE=1`: replay, Hook, Seed, Population and Report work; new runs and population building are refused (403); the interview is the only LLM caller, rate-limited, with the recorded exchanges as its fallback.
+
+The examples use `PROJECT=my-project`, `REGION=europe-west2`, `REPO=twin-lab`. Add `--dry-run` to `just deploy` or `just teardown` to print the commands without running them.
+
+## One-time setup
+
+```bash
+gcloud config set project my-project
+
+# APIs
+gcloud services enable run.googleapis.com artifactregistry.googleapis.com secretmanager.googleapis.com
+
+# A private Docker repository. Private is the default: grant no allUsers / allAuthenticatedUsers.
+# `just deploy` checks the repo's IAM policy and refuses a public one.
+gcloud artifacts repositories create twin-lab --repository-format=docker --location=europe-west2
+
+# The Gemini key: Secret Manager injects it at run time; it is never in the image
+printf '%s' "$LLM_API_KEY" | gcloud secrets create llm-api-key --data-file=-
+
+# Let Cloud Run's runtime service account (the default compute one) read it
+PROJECT_NUMBER=$(gcloud projects describe my-project --format='value(projectNumber)')
+gcloud secrets add-iam-policy-binding llm-api-key \
+  --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+  --role=roles/secretmanager.secretAccessor
+```
+
+Docker must be running locally; `just deploy` runs `gcloud auth configure-docker` for the registry.
+
+## Before each deploy
+
+```bash
+just demo-data             # demo-data/ from DATA_DIR: newest result run (or --run <id>), the hook's run, their news
+just demo-serve            # rehearse on http://localhost:8080 with DEMO_MODE=1 (key from .env at run time)
+```
+
+`demo-data/` holds only the frozen result run, the Step 0 Hook's dev run (`config/hook.json`), the recorded interview's run (`config/interview_recorded.json`, if present), and the news items those runs mention. No `cache.sqlite` (the interview never uses the cache), no `.env`, no keys. It is gitignored and only ever enters the private demo image. With MIND-small and N=300 it is about 17 MB.
+
+## Deploy
+
+```bash
+just deploy my-project europe-west2 twin-lab --dry-run   # print the commands
+just deploy my-project europe-west2 twin-lab             # run them
+```
+
+This builds the `demo` image target (the runtime image plus `demo-data/`, owned by root so the app cannot write it), pushes it to `europe-west2-docker.pkg.dev/my-project/twin-lab/twin-lab-demo:demo` and deploys service `twin-lab` with:
+
+- `--allow-unauthenticated`: a public URL, no sign-in
+- `--min-instances=0 --max-instances=1`: one instance at most, because the interview's rate limits are counted in memory (ADR-0011 amendment)
+- `--set-env-vars=DEMO_MODE=1,MOCK_LLM=false` (the image also sets `DEMO_MODE=1`)
+- `--set-secrets=LLM_API_KEY=llm-api-key:latest`
+- `--memory=1Gi`: about 200 MiB resident after serving the test run's replay, measured on the real demo data
+
+Options: `--service`, `--secret`, `--tag`, `--memory` (see `uv run python -m scripts.deploy --help`).
+
+## Teardown
+
+```bash
+just teardown my-project europe-west2 twin-lab --dry-run
+just teardown my-project europe-west2 twin-lab
+```
+
+Deletes the Cloud Run service and the demo image (every tag). The repository and the secret stay; delete them by hand when the demo is over:
+
+```bash
+gcloud artifacts repositories delete twin-lab --location=europe-west2
+gcloud secrets delete llm-api-key
+```
