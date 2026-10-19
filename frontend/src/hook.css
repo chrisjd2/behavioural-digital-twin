@@ -127,18 +127,17 @@
 }
 
 /* The reveal: the real click is framed in ink; the skipped one steps back. */
-.hook-card.is-clicked,
-.hook-card.is-skipped {
+.hook-cards.is-compact .hook-card {
   padding: 18px 24px 22px 72px;
 }
 
-.hook-card.is-clicked {
+/* Only revealed cards are clicked, and those are always compact. */
+.hook-cards.is-compact .hook-card.is-clicked {
   border: 6px solid var(--ink);
   padding: 15px 21px 19px 69px;
 }
 
-.hook-card.is-clicked .hook-card-number,
-.hook-card.is-skipped .hook-card-number {
+.hook-cards.is-compact .hook-card-number {
   left: 22px;
   top: 16px;
   font-size: 2.4rem;
@@ -149,8 +148,8 @@
 }
 
 /* Revealed, each card also carries two predictions: the headline steps down a size. */
-.hook-card.is-clicked .hook-card-title,
-.hook-card.is-skipped .hook-card-title {
+/* With the history or the predictions on screen, headlines step down a size to fit 1080p. */
+.hook-cards.is-compact .hook-card-title {
   font-size: 1.5rem;
 }
 
@@ -240,12 +239,20 @@
 
 .hook-history {
   border-top: 2px solid var(--ink);
-  padding-top: 18px;
+  padding-top: 12px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 0 20px;
+}
+
+.hook-history ol {
+  grid-column: 1 / -1;
 }
 
 .hook-history h3 {
   font-size: 1.4rem;
-  margin: 0 0 10px;
+  margin: 0 0 8px;
 }
 
 .hook-history ol {
@@ -253,7 +260,7 @@
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 8px;
+  gap: 4px;
 }
 
 .hook-history li {
@@ -261,8 +268,8 @@
   grid-template-columns: 15rem 1fr;
   align-items: baseline;
   gap: 12px;
-  font-size: 1.2rem;
-  line-height: 1.3;
+  font-size: 1.15rem;
+  line-height: 1.25;
 }
 
 .hook-category {
@@ -272,7 +279,6 @@
 }
 
 .hook-history-note {
-  margin-top: 10px;
   font-size: 1.1rem;
   color: var(--muted);
 }

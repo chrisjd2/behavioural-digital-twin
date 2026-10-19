@@ -81,7 +81,7 @@ p {
 }
 
 /* Beside live-run controls: the server's LLM, not the run on screen. */
-.mock-note {
+.live-runs-note {
   margin-left: 16px;
   font-weight: 700;
   color: var(--error);

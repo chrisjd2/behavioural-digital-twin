@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import type { PopulationSummary } from './api/experiment'
 import type { HookExample } from './api/hook'
 import type { AgentDetail, Headline, Profile, RunPopulation, RunSummary } from './api/runs'
+import type { RunEvent, RunEvents } from './api/simulation'
 import type { Status } from './api/status'
 
 export const statusFixture: Status = {
@@ -162,6 +163,45 @@ export const agentFixture: AgentDetail = {
       wrong_twin: { control: true, donor: 'U2', shared_history: 0 },
     },
   ],
+}
+
+const REPLAY_HEADLINES: [string, string, boolean][] = [
+  ['N9', 'How to get a six-pack in 30 days', true],
+  ['N10', 'Stocks slip as investors wait on the Fed', false],
+]
+
+/** A recorded run in the runner's order: arms one after another, two readers each. */
+export const replayEvents: RunEvent[] = (() => {
+  const events: RunEvent[] = []
+  const seq = () => events.length
+  for (const arm of ['A', 'B']) {
+    for (const [done, user_id] of ['U1', 'U2'].entries()) {
+      events.push({ seq: seq(), kind: 'call_started', user_id, arm })
+      for (const [news_id, headline, clicked] of REPLAY_HEADLINES) {
+        events.push({
+          seq: seq(),
+          kind: 'reaction',
+          user_id,
+          arm,
+          news_id,
+          headline,
+          reaction: `${arm} ${user_id}: I would ${clicked ? 'definitely' : 'never'} read this.`,
+          p_click: clicked ? 70 : 20,
+          clicked,
+        })
+      }
+      events.push({ seq: seq(), kind: 'arm_progress', arm, done: done + 1, total: 2 })
+    }
+  }
+  events.push({ seq: seq(), kind: 'arm_progress', arm: 'random', done: 2, total: 2 })
+  events.push({ seq: seq(), kind: 'run_complete', run_id: runFixture.run_id })
+  return events
+})()
+
+export const runEventsFixture: RunEvents = {
+  run: { ...runFixture, arms: ['A', 'B', 'random'] },
+  recorded_seconds: 894,
+  events: replayEvents,
 }
 
 type ErrorReply = { errorStatus: number; body: object }

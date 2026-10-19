@@ -98,7 +98,7 @@ export default function SeedStep({ status, request, onRequestChange, build, onBu
               >
                 {build.state === 'building' ? 'Building population…' : 'Build population'}
               </button>
-              {status.mock && <span className="mock-note">Live runs use the MOCK LLM</span>}
+              {status.mock && <span className="live-runs-note">Live runs use the MOCK LLM</span>}
             </>
           )}
         </form>

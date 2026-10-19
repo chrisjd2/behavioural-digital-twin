@@ -38,7 +38,7 @@ describe('App shell', () => {
         .map((b) => b.textContent),
     ).toEqual(names.map((name, i) => `${i}${name}`))
 
-    for (const name of ['Simulation', 'Report', 'Interview']) {
+    for (const name of ['Report', 'Interview']) {
       await user.click(within(stepper).getByRole('button', { name: new RegExp(name) }))
       expect(screen.getByRole('heading', { level: 2, name: new RegExp(name) })).toBeInTheDocument()
       expect(screen.getByText(/not built yet/i)).toBeInTheDocument()

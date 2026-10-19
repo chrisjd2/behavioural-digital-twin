@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -22,6 +23,7 @@ from backend.experiment import ExperimentConfig
 from backend.hook import hook_router
 from backend.run_views import CategoryCount, run_router
 from backend.runner import candidate_sets, sampled_populations
+from backend.simulation import simulation_router
 
 DEFAULTS = ExperimentConfig()
 
@@ -102,6 +104,8 @@ def summarise_population(settings: Settings, request: ExperimentRequest) -> Popu
 
 def build_app(settings: Settings) -> FastAPI:
     app = FastAPI(title="Twin Lab")
+    # A replay's events are ~4.7 MB of JSON at N=300; gzip makes them ~0.9 MB. SSE is exempt.
+    app.add_middleware(GZipMiddleware, minimum_size=1024)
 
     @app.exception_handler(AppError)
     async def handle_app_exception(_: Request, exc: AppError) -> JSONResponse:  # pyright: ignore[reportUnusedFunction]
@@ -128,6 +132,7 @@ def build_app(settings: Settings) -> FastAPI:
 
     app.include_router(run_router(settings))
     app.include_router(hook_router(settings))
+    app.include_router(simulation_router(settings))
 
     # Mounted last so /api routes take precedence.
     dist = Path(settings.frontend_dist)

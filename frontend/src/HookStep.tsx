@@ -107,7 +107,7 @@ export default function HookStep({ onRunMock }: { onRunMock: (mock: boolean) => 
               {load.example.data_source === 'synthetic' && 'Synthetic data: fake headlines.'}
             </p>
           )}
-          <div className="hook-cards">
+          <div className={`hook-cards${state.history || revealed ? ' is-compact' : ''}`}>
             {load.example.headlines.map((headline, i) => (
               <HookCard
                 key={headline.news_id}
@@ -206,6 +206,7 @@ function History({ history }: { history: Headline[] }) {
   return (
     <section className="hook-history" aria-labelledby="hook-history-title">
       <h3 id="hook-history-title">What this reader clicked before</h3>
+      <p className="hook-history-note">Oldest first; the most recent click is last.</p>
       {history.length === 0 ? (
         <p className="muted">This reader has no earlier clicks in the data.</p>
       ) : (
@@ -217,7 +218,6 @@ function History({ history }: { history: Headline[] }) {
           ))}
         </ol>
       )}
-      <p className="hook-history-note">Oldest first; the most recent click is last.</p>
     </section>
   )
 }
