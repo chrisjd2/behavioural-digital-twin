@@ -180,9 +180,11 @@ export function ReliabilityDiagrams({ reliability }: { reliability: Reliability[
   return (
     <div className="reliability">
       {reliability.map(({ arm, bins }) => {
-        const points = bins
-          .filter((b) => b.n > 0 && b.mean_p_click !== null)
-          .map((b) => ({ ...b, x: b.mean_p_click ?? 0, y: b.clicks / b.n }))
+        const points = bins.flatMap((b) =>
+          b.n > 0 && b.mean_p_click !== null
+            ? [{ ...b, x: b.mean_p_click, y: b.clicks / b.n }]
+            : [],
+        )
         return (
           <figure key={arm} className={`reliability-panel ${armClass(arm)}`}>
             <figcaption>

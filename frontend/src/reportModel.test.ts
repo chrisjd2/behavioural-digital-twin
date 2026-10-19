@@ -112,7 +112,7 @@ describe('outcome buckets', () => {
 
 describe('not-a-result banner', () => {
   it('names every reason', () => {
-    expect(notResultText(['mock', 'dev', 'synthetic'])).toBe('NOT A RESULT: mock, dev, synthetic')
+    expect(notResultText(['mock', 'dev', 'synthetic'])).toBe('NOT A RESULT: MOCK, dev, synthetic')
     expect(notResultText(['unfrozen'])).toBe('NOT A RESULT: unfrozen')
   })
 })

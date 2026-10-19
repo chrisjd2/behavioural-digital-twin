@@ -45,7 +45,8 @@ export function outcomeLine({ difference, verdict }: PrimaryOutcome): string {
 }
 
 export function notResultText(reasons: NotResultReason[]): string {
-  return `NOT A RESULT: ${reasons.join(', ')}`
+  // Mock output is always shown as MOCK (CLAUDE.md).
+  return `NOT A RESULT: ${reasons.map((r) => (r === 'mock' ? 'MOCK' : r)).join(', ')}`
 }
 
 export function bucketCounts(primary: PrimaryOutcome): Record<Bucket, number> {
@@ -87,9 +88,4 @@ export function armName(arm: string): string {
 /** The CSS class carrying an arm's colour; baselines fall back to grey. */
 export function armClass(arm: string): string {
   return `arm-${arm.toLowerCase()}`
-}
-
-/** "A", "B"... for arms; baselines have no letter. */
-export function armLetter(arm: string): string | undefined {
-  return arm.length === 1 ? arm : undefined
 }

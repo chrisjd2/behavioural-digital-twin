@@ -102,9 +102,7 @@ export default function ReportStep({ runId }: { runId: string }) {
               title="D − A AUC difference"
               differences={[{ arm: 'D', reference: 'A', auc: report.primary.difference }]}
             />
-            <p className="small muted">
-              N = {report.n_users} users, bootstrap 95% CI (10,000 resamples of users).
-            </p>
+            <p className="small muted">N = {report.n_users} users, bootstrap 95% CI over users.</p>
           </>
         ) : (
           <p className="result-empty">
@@ -164,7 +162,8 @@ export default function ReportStep({ runId }: { runId: string }) {
             <summary>Reliability diagram</summary>
             <p className="small muted">
               Predictions grouped by <code>p_click</code> in steps of 10, against the share really
-              clicked within our candidate sets. On the dashed diagonal, predictions match clicks.
+              clicked within our candidate sets, a share inflated by design like sample CTR. On the
+              dashed diagonal, predictions match that share.
             </p>
             <ReliabilityDiagrams reliability={report.reliability} />
           </details>

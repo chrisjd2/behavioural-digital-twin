@@ -1,4 +1,4 @@
-"""Step 4 Report (#20): the run's stored pre-registered report, and one user's predictions.
+"""Step 4 Report: the run's stored pre-registered report, and one user's predictions.
 
 The report is aggregate. The predictions endpoint is the only read endpoint that reveals click
 labels, so the label-free Population endpoints in `run_views` stay that way.

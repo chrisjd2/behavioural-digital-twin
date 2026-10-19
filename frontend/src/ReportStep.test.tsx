@@ -30,7 +30,13 @@ const reportFixture: RunReport = {
   is_result: true,
   not_result_reasons: [],
   n_users: 3,
-  arms: [arm('A', 0.55), arm('D', 0.7), arm('E', 0.56), arm('popularity', 0.69, 'baseline')],
+  arms: [
+    arm('A', 0.55),
+    arm('D', 0.7),
+    arm('E', 0.56),
+    arm('popularity', 0.69, 'baseline'),
+    arm('random', 0.51, 'baseline'),
+  ],
   differences: [
     { arm: 'D', reference: 'A', auc: { mean: 0.1468, low: 0.1017, high: 0.1915 } },
     { arm: 'D', reference: 'E', auc: { mean: 0.1413, low: 0.0957, high: 0.1884 } },
@@ -140,7 +146,11 @@ describe('Report step', () => {
     expect(await screen.findByTestId('outcome')).toHaveTextContent(
       'D − A AUC +0.147 [+0.102, +0.192]: no detectable difference',
     )
-    expect(screen.getByText(/pre-registered rule \(ADR-0001\)/i)).toBeVisible()
+    expect(
+      screen.getByText(
+        'Pre-registered rule (ADR-0001): twins beat plain LLM only if the 95% CI on the mean per-user D − A AUC difference excludes 0 and is positive. Entirely negative: plain LLM better. Otherwise: no detectable difference.',
+      ),
+    ).toBeVisible()
   })
 
   it('shows no banner for a result run', async () => {
@@ -160,7 +170,7 @@ describe('Report step', () => {
     })
 
     const banner = await screen.findByRole('note')
-    expect(banner).toHaveTextContent('NOT A RESULT: mock, dev, synthetic')
+    expect(banner).toHaveTextContent('NOT A RESULT: MOCK, dev, synthetic')
     expect(banner).toHaveTextContent(/synthetic sample: fake readers/i)
   })
 
@@ -189,10 +199,15 @@ describe('Report step', () => {
 
     const auc = await screen.findByRole('img', { name: /^AUC:/ })
     expect(auc).toHaveAccessibleName(/plain llm: 0\.550, 95% ci \[0\.520, 0\.580\]/i)
+    expect([...auc.querySelectorAll('.bar-row')].map((r) => r.classList[1])).toEqual([
+      'arm-a',
+      'arm-d',
+      'arm-e',
+    ])
     expect(auc.querySelectorAll('.bar')).toHaveLength(3)
     expect(auc.querySelectorAll('.whisker')).toHaveLength(3)
     const references = auc.querySelectorAll('.reference-baseline text')
-    expect([...references].map((r) => r.textContent)).toEqual(['Popularity 0.690'])
+    expect([...references].map((r) => r.textContent)).toEqual(['Popularity 0.690', 'Random 0.510'])
   })
 
   it('lists paired differences', async () => {
@@ -228,7 +243,7 @@ describe('Report step', () => {
 
     const table = await screen.findByRole('region', { name: 'Diagnostics table' })
     expect(within(table).getByText('1 of 3 profiles flagged (2 hits, 0 unusable)')).toBeVisible()
-    expect(within(table).getAllByRole('row')).toHaveLength(5)
+    expect(within(table).getAllByRole('row')).toHaveLength(6)
   })
 })
 

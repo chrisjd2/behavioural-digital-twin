@@ -1,4 +1,4 @@
-"""Step 4 Report endpoints (#20): the stored report, and one user's predictions against reality."""
+"""Step 4 Report endpoints: the stored report, and one user's predictions against reality."""
 
 import json
 from dataclasses import replace
@@ -291,9 +291,11 @@ def test_predictions_are_the_only_endpoint_with_labels(
     lab: tuple[Path, Run], client: TestClient
 ) -> None:
     _, run = lab
-    body = predictions(client, run, run.users[0].user_id)
+    user = run.users[0].user_id
 
-    assert '"clicked"' in json.dumps(body)
+    assert '"clicked"' in json.dumps(predictions(client, run, user))
+    assert not labels_leak(client.get(f"/api/run/{run.run_id}/population").json())
+    assert not labels_leak(client.get(f"/api/run/{run.run_id}/agent/{user}").json())
 
 
 def test_predictions_for_an_unknown_user_is_404(lab: tuple[Path, Run], client: TestClient) -> None:

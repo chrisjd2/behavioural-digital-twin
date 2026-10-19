@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react'
-import { fetchPredictions, type PrimaryOutcome, type UserPredictions } from './api/report'
+import {
+  fetchPredictions,
+  type Bucket,
+  type PrimaryOutcome,
+  type UserPredictions,
+} from './api/report'
 import { ArmLabel } from './ReportCharts'
 import {
   armClass,
@@ -87,7 +92,8 @@ export default function UserBrowser({
   )
 }
 
-const BUCKET_RULES: Record<string, string> = {
+// backend.report.BUCKET_THRESHOLD (ADR-0001).
+const BUCKET_RULES: Record<Bucket, string> = {
   'Twin better': 'D − A AUC above +0.1',
   'About the same': 'D − A AUC within ±0.1',
   'Plain LLM better': 'D − A AUC below −0.1',
@@ -155,7 +161,7 @@ function UserRankings({ runId, userId }: { runId: string; userId: string }) {
             </tr>
           </thead>
           <tbody>
-            {user.candidates.map((c, i) => (
+            {user.candidates.map((c) => (
               <tr key={c.news_id} className={c.clicked ? 'clicked' : undefined}>
                 <th scope="row">
                   <span className="headline-category">{c.category ?? 'unknown category'}</span>
@@ -163,7 +169,8 @@ function UserRankings({ runId, userId }: { runId: string; userId: string }) {
                 </th>
                 <td className="reality">{c.clicked ? 'Clicked' : 'Not clicked'}</td>
                 {user.arms.map((a) => {
-                  const p = a.predictions[i]
+                  const p = a.predictions.find((x) => x.news_id === c.news_id)
+                  if (!p) return <td key={a.arm}>missing</td>
                   return (
                     <td
                       key={a.arm}
