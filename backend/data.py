@@ -65,12 +65,21 @@ def resolve_data_source(data_dir: Path) -> DataSource:
 
     Anything carrying the synthetic marker is labelled synthetic wherever it lives.
     """
+    return next(
+        iter(available_sources(data_dir)),
+        DataSource("none", data_dir, data_dir / "dev", data_dir / "train"),
+    )
+
+
+def available_sources(data_dir: Path) -> list[DataSource]:
+    """Every complete data source in `data_dir`, in precedence order."""
+    sources = []
     for folder in ("mind", "sample"):
         root = data_dir / folder
         if all((root / split / "behaviors.tsv").exists() for split in ("dev", "train")):
             kind: DataKind = "synthetic" if (root / SYNTHETIC_MARKER).exists() else "mind"
-            return DataSource(kind, root, root / "dev", root / "train")
-    return DataSource("none", data_dir, data_dir / "dev", data_dir / "train")
+            sources.append(DataSource(kind, root, root / "dev", root / "train"))
+    return sources
 
 
 @dataclass(frozen=True)
