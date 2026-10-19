@@ -1,0 +1,365 @@
+/* Step 3 Simulation: the feed is the stage; playback docks beside it. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.baseline {
+  --arm: var(--baseline);
+}
+
+.replay-labels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  margin-bottom: 20px;
+}
+
+.replay-labels .mock-note,
+.replay-labels .notice {
+  margin: 0;
+}
+
+.recorded-label {
+  font-size: 1.05rem;
+  padding: 6px 14px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+}
+
+.replay-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.feed .simulated-label {
+  margin-top: 0;
+}
+
+.feed-waiting {
+  padding: 40px 0;
+}
+
+.reaction-feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.reaction-card {
+  border: 1px solid var(--rule);
+  border-left: 10px solid var(--arm);
+  border-radius: 4px 12px 12px 4px;
+  padding: 16px 20px;
+  display: grid;
+  gap: 6px;
+  background: var(--paper);
+}
+
+/* The newest card is the one to read; the rest recede. */
+.reaction-card:first-child {
+  box-shadow: 0 6px 20px rgb(23 32 51 / 12%);
+  animation: card-in 260ms ease-out;
+}
+
+.reaction-card:not(:first-child) {
+  opacity: 0.62;
+}
+
+.reaction-card:not(:first-child) .reaction-text {
+  display: none;
+}
+
+.reaction-who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.reaction-who .arm-letter {
+  width: 1.6em;
+  height: 1.6em;
+  font-size: 0.95rem;
+  border-radius: 6px;
+}
+
+.reaction-headline {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.2;
+  max-width: 48ch;
+}
+
+.reaction-text {
+  font-size: 1.05rem;
+  font-style: italic;
+  max-width: 60ch;
+}
+
+.reaction-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 20px;
+  margin-top: 4px;
+}
+
+.p-click {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.p-click-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.p-click-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  min-width: 2.6em;
+  color: var(--arm);
+}
+
+.p-click-bar {
+  width: 140px;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--wash);
+  overflow: hidden;
+}
+
+.p-click-bar span {
+  display: block;
+  height: 100%;
+  background: var(--arm);
+}
+
+.reveal {
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 6px 14px;
+  border-radius: 8px;
+}
+
+.reveal-pending {
+  color: var(--muted);
+  border: 2px dashed var(--rule);
+}
+
+.reveal-clicked {
+  background: var(--ink);
+  color: var(--paper);
+  border: 2px solid var(--ink);
+  animation: reveal-in 220ms ease-out;
+}
+
+.reveal-skipped {
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  animation: reveal-in 220ms ease-out;
+}
+
+@keyframes card-in {
+  from {
+    transform: translateY(-10px);
+    opacity: 0.4;
+  }
+}
+
+@keyframes reveal-in {
+  from {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reaction-card:first-child,
+  .reveal-clicked,
+  .reveal-skipped {
+    animation: none;
+  }
+}
+
+.replay-panel {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 20px;
+  padding: 20px;
+  background: var(--wash);
+  border-radius: 12px;
+}
+
+.transport {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.transport .primary {
+  min-width: 6em;
+  padding: 10px 20px;
+}
+
+.speeds {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.speeds legend {
+  float: left;
+  margin-right: 8px;
+}
+
+.speed {
+  position: relative;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 4px 12px;
+  border: 2px solid var(--rule);
+  border-radius: 8px;
+  background: var(--paper);
+  cursor: pointer;
+}
+
+.speed input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.speed:has(input:focus-visible) {
+  outline: 3px solid var(--arm-c);
+  outline-offset: 2px;
+}
+
+.speed-on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.timeline-bar,
+.arm-progress-bar {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--rule);
+  overflow: hidden;
+}
+
+.timeline-bar span,
+.arm-progress-bar span {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+}
+
+.timeline p {
+  margin-top: 6px;
+}
+
+.panel-title {
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+.arm-progress {
+  list-style: none;
+  margin: -12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.arm-progress li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 4.5em;
+  gap: 2px 10px;
+  font-size: 0.85rem;
+}
+
+.arm-progress-name {
+  grid-column: 1 / -1;
+}
+
+.arm-progress-name strong {
+  color: var(--arm);
+}
+
+.arm-progress .arm-progress-bar span {
+  background: var(--arm);
+}
+
+.arm-progress .baseline .arm-progress-bar span {
+  background: repeating-linear-gradient(90deg, var(--baseline) 0 6px, transparent 6px 9px);
+}
+
+.arm-progress-count {
+  text-align: right;
+  font-weight: 700;
+  line-height: 12px;
+}
+
+.live-run {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 2px dashed var(--rule);
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+
+.live-feed {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+  gap: 24px;
+  margin-top: 0;
+}
+
+.live-feed .arm-progress {
+  margin: 0;
+}
+
+@media (max-width: 1100px) {
+  .replay-grid,
+  .live-feed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* Controls first on narrow screens, so the presenter can pause without scrolling. */
+  .replay-panel {
+    position: static;
+    order: -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .reaction-headline {
+    font-size: 1.15rem;
+  }
+  .p-click-bar {
+    width: 80px;
+  }
+}
