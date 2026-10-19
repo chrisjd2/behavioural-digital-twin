@@ -30,3 +30,6 @@ AI_USAGE.md
 
 # Agent worktrees
 .claude/worktrees/
+
+# Playwright MCP snapshots
+.playwright-mcp/
