@@ -15,10 +15,12 @@ from backend.arms import (
     request_payload,
     retry_messages,
 )
+from backend.baselines import BaselineContext
 from backend.data import (
     CandidateSet,
     DataSource,
     NewsItem,
+    Populations,
     build_candidate_set,
     date_range,
     load_behaviors,
@@ -90,16 +92,19 @@ def git_sha() -> str:
     return result.stdout.strip() if result.returncode == 0 else "unknown (not a git checkout)"
 
 
-def candidate_sets(
-    source: DataSource, config: ExperimentConfig, population: Population
-) -> list[CandidateSet]:
-    populations = sample_populations(
+def sampled_populations(source: DataSource, config: ExperimentConfig) -> Populations:
+    return sample_populations(
         load_behaviors(source.dev_dir / "behaviors.tsv"),
         n_dev=config.n_dev,
         n_test=config.n_test,
         dev_seed=config.dev_seed,
         test_seed=config.test_seed,
     )
+
+
+def candidate_sets(
+    populations: Populations, config: ExperimentConfig, population: Population
+) -> list[CandidateSet]:
     return [
         build_candidate_set(
             imp,
@@ -189,7 +194,9 @@ async def run_experiment(  # noqa: PLR0913 — keyword-only run options
     problem = check_freeze(current, source, population, allow_unfrozen=allow_unfrozen)
 
     created = datetime.now(UTC)
-    sets = candidate_sets(source, config, population)
+    populations = sampled_populations(source, config)
+    sets = candidate_sets(populations, config, population)
+    baseline_context = BaselineContext(source, populations)
     news = load_news(source.dev_dir / "news.tsv")
     retriever = await make_retriever(
         arms, sets, news, client=client, options=options, embeddings=embeddings, mock=mock
@@ -241,9 +248,14 @@ async def run_experiment(  # noqa: PLR0913 — keyword-only run options
 
     for arm in arms:
         if arm in BASELINES:
+            scorer = BASELINES[arm]
             run.users.extend(
                 result(
-                    arm, c, BASELINES[arm](c, seed=config.baseline_seed), reactions={}, knowledge={}
+                    arm,
+                    c,
+                    scorer(c, seed=config.baseline_seed, context=baseline_context),
+                    reactions={},
+                    knowledge={},
                 )
                 for c in sets
             )
