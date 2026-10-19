@@ -1,12 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import {
-  askAgent,
-  fetchRecordedInterview,
-  type RecordedInterview,
-  type Turn,
-} from './api/interview'
+import { ApiError } from './api/client'
+import { askAgent, fetchRecordedInterview, type RecordedInterview } from './api/interview'
 import { fetchReport } from './api/report'
-import { fetchPopulation, type Headline, type RunSummary } from './api/runs'
+import { fetchPopulation, type Headline, type IdentityHit, type RunSummary } from './api/runs'
 import { ARMS, CONTROL } from './arms'
 import { IDENTITY_STARTER, SIMULATED_LABEL, STARTERS } from './labels'
 import './interview.css'
@@ -14,7 +10,8 @@ import './interview.css'
 const ARM_CARDS = Object.fromEntries([...ARMS, CONTROL].map((a) => [a.id.toUpperCase(), a]))
 const LLM_ARMS = ['A', 'B', 'C', 'D', 'E']
 const DEFAULT_ARM = 'D'
-const MAX_TURNS = 20 // backend.interview.MAX_TURNS
+/** The conversation, not the service, ended: start a new one rather than fall back. */
+const ENDED = new Set(['conversation_expired', 'conversation_too_long'])
 
 /** What each arm's agent will say about itself, so the audience knows what it is talking to. */
 const ARM_NOTES: Record<string, string> = {
@@ -32,7 +29,7 @@ type Readers =
 
 type Entry =
   | { kind: 'question'; text: string }
-  | { kind: 'answer'; text: string; mock: boolean; cited: Headline[] }
+  | { kind: 'answer'; text: string; mock: boolean; cited: Headline[]; hits: IdentityHit[] }
 
 type Fallback =
   | { state: 'none' }
@@ -141,12 +138,14 @@ function Chat({ runId, userId, arm }: { runId: string; userId: string; arm: stri
   const [draft, setDraft] = useState('')
   const [asking, setAsking] = useState(false)
   const [fallback, setFallback] = useState<Fallback>({ state: 'none' })
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [ended, setEnded] = useState<string>()
   const transcript = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const box = transcript.current
     if (box) box.scrollTop = box.scrollHeight
-  }, [entries, fallback, asking])
+  }, [entries, fallback, asking, ended])
 
   function showRecorded(reason: string) {
     if (fallback.state === 'ready' || fallback.state === 'loading') {
@@ -163,24 +162,28 @@ function Chat({ runId, userId, arm }: { runId: string; userId: string; arm: stri
     const text = question.trim()
     if (!text || asking) return
     const asked: Entry[] = [...entries, { kind: 'question', text }]
-    // The API takes at most MAX_TURNS turns: a long conversation sends its latest ones.
-    const messages: Turn[] = asked.slice(-MAX_TURNS).map((e) => ({
-      role: e.kind === 'question' ? 'interviewer' : 'agent',
-      text: e.text,
-    }))
     setEntries(asked)
     setDraft('')
     setAsking(true)
-    askAgent({ run_id: runId, user_id: userId, arm, messages })
-      .then((reply) =>
-        setEntries([
-          ...asked,
-          { kind: 'answer', text: reply.text, mock: reply.mock, cited: reply.cited },
-        ]),
+    askAgent({ run_id: runId, user_id: userId, arm, session_id: sessionId, question: text })
+      .then((reply) => {
+        setSessionId(reply.session_id)
+        const { mock, cited, identity_hits: hits } = reply
+        setEntries([...asked, { kind: 'answer', text: reply.text, mock, cited, hits }])
+      })
+      // The unanswered question stays on screen; the server never kept it.
+      .catch((error: unknown) =>
+        error instanceof ApiError && error.code && ENDED.has(error.code)
+          ? setEnded(error.message)
+          : showRecorded(messageOf(error)),
       )
-      // The unanswered question stays on screen and in the conversation.
-      .catch((error: unknown) => showRecorded(messageOf(error)))
       .finally(() => setAsking(false))
+  }
+
+  function startOver() {
+    setEntries([])
+    setSessionId(null)
+    setEnded(undefined)
   }
 
   function onSubmit(event: FormEvent) {
@@ -202,10 +205,25 @@ function Chat({ runId, userId, arm }: { runId: string; userId: string; arm: stri
           entry.kind === 'question' ? (
             <Question key={i} text={entry.text} />
           ) : (
-            <Answer key={i} arm={arm} text={entry.text} cited={entry.cited} mock={entry.mock} />
+            <Answer
+              key={i}
+              arm={arm}
+              text={entry.text}
+              cited={entry.cited}
+              mock={entry.mock}
+              hits={entry.hits}
+            />
           ),
         )}
         {asking && <p className="muted thinking">Agent {arm} is answering…</p>}
+        {ended && (
+          <div className="conversation-ended" role="status">
+            <p>{ended}</p>
+            <button type="button" className="secondary" onClick={startOver}>
+              Start a new conversation
+            </button>
+          </div>
+        )}
         <RecordedFallback fallback={fallback} />
       </div>
       <div className="starters" aria-label="Suggested questions">
@@ -262,12 +280,14 @@ function Answer({
   text,
   cited,
   mock,
+  hits,
   recorded,
 }: {
   arm: string
   text: string
   cited: Headline[]
   mock: boolean
+  hits: IdentityHit[]
   recorded?: boolean
 }) {
   return (
@@ -279,6 +299,14 @@ function Answer({
         <p className="turn-tags">
           {recorded && <span className="badge-recorded">recorded</span>}
           {mock && <span className="badge-mock-small">MOCK</span>}
+          {hits.length > 0 && (
+            <span
+              className="badge-identity"
+              title={hits.map((h) => `${h.kind}: “${h.term}”`).join('; ')}
+            >
+              identity screen: {[...new Set(hits.map((h) => h.kind))].join(', ')}
+            </span>
+          )}
         </p>
         <p className="turn-text">{text}</p>
         {cited.length > 0 && (
@@ -334,6 +362,7 @@ function RecordedFallback({ fallback }: { fallback: Fallback }) {
             text={e.answer}
             cited={e.cited}
             mock={recorded.mock}
+            hits={e.identity_hits}
             recorded
           />
         </div>

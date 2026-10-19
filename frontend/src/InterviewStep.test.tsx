@@ -10,15 +10,19 @@ const RUN = runFixture.run_id
 const POPULATION = `/api/run/${RUN}/population`
 const REPORT = `/api/run/${RUN}/report`
 
-const reply = (text: string, mock = false): InterviewReply => ({
+const reply = (text: string, mock = false, more: Partial<InterviewReply> = {}): InterviewReply => ({
+  session_id: 'S1',
   run_id: RUN,
   user_id: 'U2',
   arm: 'D',
+  model: 'gemini-test-001',
   text,
   mock,
   cited: [
     { news_id: 'N7', category: 'sports', subcategory: 'nfl', title: 'Packers win in overtime' },
   ],
+  identity_hits: [],
+  ...more,
 })
 
 const recorded: RecordedInterview = {
@@ -28,16 +32,26 @@ const recorded: RecordedInterview = {
   model: 'gemini-test-001',
   mock: false,
   exchanges: [
-    { question: 'What do you read?', answer: 'Health stories, mostly [N1].', cited: [] },
-    { question: 'How old are you?', answer: "I don't know, it's not in my data.", cited: [] },
+    {
+      question: 'What do you read?',
+      answer: 'Health stories, mostly [N1].',
+      cited: [],
+      identity_hits: [],
+    },
+    {
+      question: 'How old are you?',
+      answer: "I don't know, it's not in my data.",
+      cited: [],
+      identity_hits: [],
+    },
   ],
 }
 
 type Answer = { status: number; body: unknown }
 const ok = (body: unknown): Answer => ({ status: 200, body })
-const fail = (status: number, detail: string): Answer => ({
+const fail = (status: number, detail: string, code = 'x'): Answer => ({
   status,
-  body: { code: 'x', detail },
+  body: { code, detail },
 })
 
 /** Each URL answers from its queue in turn (the last answer repeats); POSTs are recorded. */
@@ -157,12 +171,13 @@ describe('InterviewStep: the conversation', () => {
       run_id: RUN,
       user_id: 'U2',
       arm: 'D',
-      messages: [{ role: 'interviewer', text: 'Hi there' }],
+      session_id: null,
+      question: 'Hi there',
     })
     expect(screen.queryByText('recorded')).not.toBeInTheDocument()
   })
 
-  it('sends the whole conversation each turn', async () => {
+  it('continues the conversation by its session id, sending only the new question', async () => {
     const { sent } = stub({ ...readersReady, '/api/interview': [ok(reply('First answer'))] })
     const user = renderStep()
 
@@ -171,11 +186,42 @@ describe('InterviewStep: the conversation', () => {
     await user.click(screen.getByRole('button', { name: /how old are you/i }))
 
     await waitFor(() => expect(sent).toHaveLength(2))
-    expect(sent[1].messages).toEqual([
-      { role: 'interviewer', text: STARTERS[0] },
-      { role: 'agent', text: 'First answer' },
-      { role: 'interviewer', text: IDENTITY_STARTER },
-    ])
+    expect(sent[1]).toMatchObject({ session_id: 'S1', question: IDENTITY_STARTER })
+  })
+
+  it('flags a reply the identity screen fired on', async () => {
+    const hits = [{ kind: 'age', term: 'Is 45 years old', text: 'Is 45 years old' }]
+    stub({
+      ...readersReady,
+      '/api/interview': [ok(reply('I am 45 years old.', false, { identity_hits: hits }))],
+    })
+    const user = renderStep()
+
+    await user.click(await screen.findByRole('button', { name: STARTERS[0] }))
+
+    expect(await screen.findByText('identity screen: age')).toBeInTheDocument()
+  })
+
+  it('an ended conversation offers a new one instead of the fallback', async () => {
+    const { sent } = stub({
+      ...readersReady,
+      '/api/interview': [
+        fail(422, 'This conversation is full. Start a new one.', 'conversation_too_long'),
+        ok(reply('Fresh start')),
+      ],
+    })
+    const user = renderStep()
+
+    await user.click(await screen.findByRole('button', { name: STARTERS[0] }))
+    expect(
+      await screen.findByText('This conversation is full. Start a new one.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/showing recorded exchanges/i)).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /start a new conversation/i }))
+    await user.click(screen.getByRole('button', { name: STARTERS[1] }))
+
+    expect(await screen.findByText('Fresh start')).toBeInTheDocument()
+    expect(sent[1].session_id).toBeNull()
   })
 
   it('labels mock replies MOCK', async () => {

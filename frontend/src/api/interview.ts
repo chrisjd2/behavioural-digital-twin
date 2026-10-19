@@ -1,29 +1,35 @@
 import { requestJson } from './client'
-import type { Headline } from './runs'
+import type { Headline, IdentityHit } from './runs'
 
-/** Mirrors `backend.interview.Turn`. */
-export type Turn = { role: 'interviewer' | 'agent'; text: string }
-
-/** Mirrors `backend.interview.InterviewRequest`. */
+/** Mirrors `backend.interview.InterviewRequest`. The conversation so far lives on the server. */
 export type InterviewRequest = {
   run_id: string
   user_id: string
   arm: string
-  messages: Turn[] // oldest first, ending with the interviewer's question
+  session_id: string | null // null starts a new conversation
+  question: string
 }
 
 /** Mirrors `backend.interview.InterviewReply`. */
 export type InterviewReply = {
+  session_id: string // send it back with the next question
   run_id: string
   user_id: string
   arm: string
+  model: string // the run's model, which answered
   text: string
   mock: boolean // a fake reply from the mock LLM
   cited: Headline[] // past clicks the reply cites, in order
+  identity_hits: IdentityHit[] // the ADR-0007 identity screen fired on the reply
 }
 
 /** Mirrors `backend.interview.RecordedExchange`. */
-export type RecordedExchange = { question: string; answer: string; cited: Headline[] }
+export type RecordedExchange = {
+  question: string
+  answer: string
+  cited: Headline[]
+  identity_hits: IdentityHit[]
+}
 
 /** Mirrors `backend.interview.RecordedInterview`. Shown, labelled "recorded", as the fallback. */
 export type RecordedInterview = {
@@ -35,7 +41,7 @@ export type RecordedInterview = {
   exchanges: RecordedExchange[]
 }
 
-/** Throws with the backend's detail on a failed call or a rate limit (429). */
+/** Throws an `ApiError` on a failed call, a rate limit (429) or an ended conversation. */
 export function askAgent(request: InterviewRequest): Promise<InterviewReply> {
   return requestJson<InterviewReply>('/api/interview', {
     method: 'POST',

@@ -179,7 +179,8 @@
 }
 
 .badge-recorded,
-.badge-mock-small {
+.badge-mock-small,
+.badge-identity {
   font-size: 0.75rem;
   font-weight: 800;
   padding: 1px 8px;
@@ -194,6 +195,23 @@
 .badge-mock-small {
   background: var(--error);
   color: #fff;
+}
+
+.badge-identity {
+  background: #fff7ed;
+  border: 2px solid var(--arm-b);
+  color: var(--ink);
+}
+
+.conversation-ended {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 2px dashed var(--rule);
+  border-radius: 12px;
+  font-weight: 600;
 }
 
 .turn-text {
