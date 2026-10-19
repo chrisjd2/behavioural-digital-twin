@@ -16,6 +16,7 @@ type Props = {
 const KIND_NOTES: Record<string, string> = {
   MOCK: 'MOCK run: fake LLM output. Not a reported result.',
   'Unfrozen test': 'Test run made without the freeze. Not a reported result.',
+  'Synthetic test': 'Test run on the synthetic sample. Not a reported result.',
   Dev: 'Dev run. Not a reported result.',
 }
 

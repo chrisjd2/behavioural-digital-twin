@@ -134,10 +134,13 @@ export function fetchAgent(runId: string, userId: string): Promise<AgentDetail> 
 }
 
 /** What a run may be read as (ADR-0001): only a frozen test run on real data is a result. */
-export function runKind(run: RunSummary): 'Result' | 'MOCK' | 'Unfrozen test' | 'Dev' {
+export function runKind(
+  run: RunSummary,
+): 'Result' | 'MOCK' | 'Synthetic test' | 'Unfrozen test' | 'Dev' {
   if (run.is_result) return 'Result'
   if (run.mock) return 'MOCK'
-  return run.population === 'test' ? 'Unfrozen test' : 'Dev'
+  if (run.population !== 'test') return 'Dev'
+  return run.data_source === 'synthetic' ? 'Synthetic test' : 'Unfrozen test'
 }
 
 /** Steps 2-4 open on the newest result run, otherwise the newest run (PRD-03). */

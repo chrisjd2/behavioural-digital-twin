@@ -3,6 +3,31 @@ import { fetchPopulation, type RunPopulation } from './api/runs'
 import AgentPanel from './AgentPanel'
 import PopulationGraph from './PopulationGraph'
 
+/**
+ * The step's full width (whether or not the reader panel is open) and the window height, so
+ * the graph keeps one layout and fits above the fold. jsdom has no ResizeObserver: 1000 wide.
+ */
+function useStepSize() {
+  const [box, setBox] = useState<HTMLDivElement | null>(null)
+  const [width, setWidth] = useState(1000)
+  const [windowHeight, setWindowHeight] = useState(() => window.innerHeight)
+  useEffect(() => {
+    if (!box || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(([entry]) => {
+      const next = Math.round(entry.contentRect.width)
+      if (next > 0) setWidth((w) => (Math.abs(w - next) > 24 ? next : w))
+    })
+    observer.observe(box)
+    return () => observer.disconnect()
+  }, [box])
+  useEffect(() => {
+    const resize = () => setWindowHeight(window.innerHeight)
+    window.addEventListener('resize', resize)
+    return () => window.removeEventListener('resize', resize)
+  }, [])
+  return { measure: setBox, width, windowHeight }
+}
+
 type Load =
   | { state: 'loading' }
   | { state: 'error'; message: string }
@@ -16,6 +41,7 @@ export default function PopulationStep({ runId }: { runId: string }) {
   const [load, setLoad] = useState<Load>({ state: 'loading' })
   const [selected, setSelected] = useState<string | null>(null)
   const graph = useRef<HTMLDivElement>(null)
+  const { measure, width, windowHeight } = useStepSize()
 
   useEffect(() => {
     let current = true
@@ -56,12 +82,13 @@ export default function PopulationStep({ runId }: { runId: string }) {
   }
 
   return (
-    <div className={selected ? 'population with-panel' : 'population'}>
+    <div className={selected ? 'population with-panel' : 'population'} ref={measure}>
       <div className="population-graph" ref={graph}>
         <ul className="graph-legend">
           <li>
             <span className="legend-agent" aria-hidden="true" />
-            {population.agents.length} readers, coloured by the category they click most
+            {population.agents.length} readers, coloured by the category they click most (top six;
+            the rest grey)
           </li>
           <li>
             <span className="legend-category" aria-hidden="true" />
@@ -72,7 +99,13 @@ export default function PopulationStep({ runId }: { runId: string }) {
         {population.data_source === 'synthetic' && (
           <p className="notice">Synthetic sample: these readers are fake.</p>
         )}
-        <PopulationGraph population={population} selected={selected} onSelect={setSelected} />
+        <PopulationGraph
+          population={population}
+          selected={selected}
+          onSelect={setSelected}
+          width={width}
+          windowHeight={windowHeight}
+        />
         {!selected && <p className="muted small">Select a reader to see what each arm knew.</p>}
       </div>
       {selected && <AgentPanel key={selected} runId={runId} userId={selected} onClose={close} />}

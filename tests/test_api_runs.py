@@ -3,6 +3,7 @@
 import asyncio
 import json
 import os
+import shutil
 from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
@@ -10,7 +11,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.data import load_news, resolve_data_source
+from backend.data import SYNTHETIC_MARKER, load_news, resolve_data_source
 from backend.experiment import ExperimentConfig
 from backend.llm import Cache, LLMClient, mock_backend
 from backend.runner import Run, UserResult, run_experiment
@@ -378,3 +379,33 @@ def test_a_headline_missing_from_news_is_shown_as_missing(
         "subcategory": None,
         "title": None,
     }
+
+
+def test_population_needs_only_the_runs_news_file(lab: tuple[Path, Run], tmp_path: Path) -> None:
+    """A demo image may ship news.tsv without the behaviours files."""
+    directory, run = lab
+    save_run(run, tmp_path / RUNS_SUBDIR)
+    news = tmp_path / "sample" / "dev" / "news.tsv"
+    news.parent.mkdir(parents=True)
+    shutil.copy(directory / "sample" / "dev" / "news.tsv", news)
+    shutil.copy(directory / "sample" / SYNTHETIC_MARKER, tmp_path / "sample" / SYNTHETIC_MARKER)
+
+    response = make_client(data_dir=str(tmp_path), demo_mode=True).get(
+        f"/api/run/{run.run_id}/population"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["agents"]
+
+
+def test_mind_news_is_not_used_for_a_synthetic_run(lab: tuple[Path, Run], tmp_path: Path) -> None:
+    directory, run = lab
+    save_run(run, tmp_path / RUNS_SUBDIR)
+    news = tmp_path / "mind" / "dev" / "news.tsv"
+    news.parent.mkdir(parents=True)
+    shutil.copy(directory / "sample" / "dev" / "news.tsv", news)  # unmarked: reads as real MIND
+
+    response = make_client(data_dir=str(tmp_path)).get(f"/api/run/{run.run_id}/population")
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "news_unavailable"

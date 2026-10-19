@@ -13,7 +13,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel, Field, ValidationError
 
 from backend.config import Settings
-from backend.data import NewsItem, available_sources, load_news_cached
+from backend.data import SYNTHETIC_MARKER, NewsItem, load_news_cached
 from backend.errors import AppError
 from backend.runner import LLM_ARMS, Run, UserResult
 from backend.runs import RUNS_SUBDIR, RunFileError, load_run, load_run_cached, run_path
@@ -199,19 +199,19 @@ def run_summary(run: Run) -> RunSummary:
 
 
 @lru_cache(maxsize=256)
-def _summary(path: Path, _mtime_ns: int) -> RunSummary:
-    """Run files are large (~11 MB at N=300): each is parsed once while it is unchanged."""
-    return run_summary(load_run(path))
+def _summary(path: Path, _mtime_ns: int) -> RunSummary | RunProblem:
+    """Run files are large (~11 MB at N=300): each is parsed once while it is unchanged,
+    including the ones that fail."""
+    try:
+        return run_summary(load_run(path))
+    except RunFileError as exc:
+        return RunProblem(run_id=exc.run_id, problem=exc.problem, detail=exc.detail)
 
 
 def list_runs(runs_dir: Path) -> RunList:
-    runs: list[RunSummary] = []
-    problems: list[RunProblem] = []
-    for path in runs_dir.glob("*.json"):
-        try:
-            runs.append(_summary(path, path.stat().st_mtime_ns))
-        except RunFileError as exc:
-            problems.append(RunProblem(run_id=exc.run_id, problem=exc.problem, detail=exc.detail))
+    entries = [_summary(path, path.stat().st_mtime_ns) for path in runs_dir.glob("*.json")]
+    runs = [e for e in entries if isinstance(e, RunSummary)]
+    problems = [e for e in entries if isinstance(e, RunProblem)]
     runs.sort(key=lambda r: r.created, reverse=True)
     problems.sort(key=lambda p: p.run_id, reverse=True)
     return RunList(runs=runs, problems=problems)
@@ -228,10 +228,14 @@ def open_run(settings: Settings, run_id: str) -> Run:
 
 
 def run_news(settings: Settings, run: Run) -> Mapping[str, NewsItem]:
-    """The news.tsv of the data source the run was made from."""
-    for source in available_sources(Path(settings.data_dir)):
-        if source.kind == run.data_source:
-            return load_news_cached(source.dev_dir / "news.tsv")
+    """The dev news.tsv of the data the run was made from, labelled as `resolve_data_source`
+    does. Only news.tsv is needed, so a demo image's DATA_DIR may hold just that."""
+    for folder in ("mind", "sample"):
+        root = Path(settings.data_dir) / folder
+        kind = "synthetic" if (root / SYNTHETIC_MARKER).exists() else "mind"
+        news = root / "dev" / "news.tsv"
+        if kind == run.data_source and news.is_file():
+            return load_news_cached(news)
     raise AppError(
         409, "news_unavailable", f"Run {run.run_id} used {run.data_source} data, not in DATA_DIR."
     )

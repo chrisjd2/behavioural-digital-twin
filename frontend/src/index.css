@@ -284,7 +284,7 @@ h2 {
 .legend-agent {
   width: 12px;
   height: 12px;
-  background: linear-gradient(90deg, #8b6f4e 50%, #6b8250 50%);
+  background: linear-gradient(90deg, #c8324b 50%, #2b8a3e 50%);
 }
 
 .legend-category {
@@ -338,6 +338,10 @@ h2 {
   stroke: var(--paper);
   stroke-width: 1.5;
   cursor: pointer;
+}
+
+.has-selection .agent-node:not([aria-pressed='true']) {
+  opacity: 0.35;
 }
 
 .agent-node:hover {

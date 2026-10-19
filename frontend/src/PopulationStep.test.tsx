@@ -69,7 +69,11 @@ describe('Run picker', () => {
 
   it('names the kind of run first', async () => {
     const unfrozen = { ...runFixture, run_id: 'unfrozen', population: 'test' }
-    const list: RunList = { runs: [NEWER_MOCK, RESULT, unfrozen, runFixture], problems: [] }
+    const synthetic = { ...unfrozen, run_id: 'synthetic', data_source: 'synthetic' }
+    const list: RunList = {
+      runs: [NEWER_MOCK, RESULT, unfrozen, synthetic, runFixture],
+      problems: [],
+    }
     await openPopulation(list, { [populationUrl(RESULT.run_id)]: runPopulationFixture })
 
     const options = within(await screen.findByRole('combobox', { name: /run/i })).getAllByRole(
@@ -79,6 +83,7 @@ describe('Run picker', () => {
       'MOCK',
       'Result',
       'Unfrozen test',
+      'Synthetic test',
       'Dev',
     ])
   })
