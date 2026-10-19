@@ -15,11 +15,11 @@ from collections import deque
 from collections.abc import Callable, Mapping, Sequence
 from functools import cache
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Self
 
 import openai
 from fastapi import APIRouter, Request
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from backend.config import Settings
 from backend.errors import AppError
@@ -28,8 +28,9 @@ from backend.profiles import PROFILE_FIELDS
 from backend.run_views import Headline, by_user, headlines, open_run, run_news
 from backend.runner import LLM_ARMS, Run, UserResult
 
-MAX_TURNS = 20
-MAX_TURN_CHARS = 1000
+MAX_TURNS = 20  # the UI sends only the latest turns
+MAX_QUESTION_CHARS = 1000
+MAX_ANSWER_CHARS = 20_000  # the agent's own replies, sent back as context; not capped live
 
 REFUSAL = "I don't know, it's not in my data."
 
@@ -53,8 +54,9 @@ ARM_INTROS = {
     ),
     "B": (
         "You are an invented character, not a real person and not built from anyone's data. "
-        "Say openly that you are invented whenever you describe yourself. Any detail about you "
-        "comes only from the invented character below; give it only as invented."
+        "Say openly that you are invented whenever you describe yourself. The invented details "
+        "below shape only your news habits; they are not evidence about any reader, so the "
+        "identity rule applies to them too."
     ),
     "C": TWIN_INTRO,
     "D": TWIN_INTRO,
@@ -67,6 +69,10 @@ ARM_INTROS = {
 
 _CITATION = re.compile(r"\[([^\]]+)\]")
 _ID = re.compile(r"N\d+")
+_IDENTITY_QUESTION = re.compile(
+    r"\b(how old|your age|gender|married|vote|religio|where do you live|your job|income)",
+    re.IGNORECASE,
+)
 _MEMORY_LINE = re.compile(r"^- \[(N\d+)\]", re.MULTILINE)
 
 
@@ -134,7 +140,13 @@ def cited_ids(text: str, knowledge: Mapping[str, object]) -> list[str]:
 
 class Turn(BaseModel):
     role: Literal["interviewer", "agent"]
-    text: str = Field(min_length=1, max_length=MAX_TURN_CHARS)
+    text: str = Field(min_length=1, max_length=MAX_ANSWER_CHARS)
+
+    @model_validator(mode="after")
+    def _short_question(self) -> Self:
+        if self.role == "interviewer" and len(self.text) > MAX_QUESTION_CHARS:
+            raise ValueError(f"A question may be at most {MAX_QUESTION_CHARS} characters.")
+        return self
 
 
 class InterviewRequest(BaseModel):
@@ -204,6 +216,8 @@ class RateLimiter:
         now = self.clock()
         if (day := int(now // 86_400)) != self._day:
             self._day, self._today = day, 0
+            # Forget addresses with nothing in the last hour, so memory stays bounded.
+            self._recent = {a: q for a, q in self._recent.items() if q and q[-1] > now - 3_600}
         recent = self._recent.setdefault(address, deque())
         while recent and recent[0] <= now - 3_600:
             recent.popleft()
@@ -226,9 +240,13 @@ def client_address(forwarded_for: str | None, peer: str | None) -> str:
 
 
 async def mock_interview_backend(payload: Mapping[str, object]) -> RawResponse:
-    """A deterministic fake reply, labelled MOCK, citing the agent's first two memories."""
+    """A deterministic fake reply, labelled MOCK, citing the agent's first two memories. An
+    identity question gets the refusal the prompt asks for, so the UI path can be seen without
+    a key; the real guardrail is the system prompt, not this."""
     messages = payload["messages"]
     assert isinstance(messages, list)
+    if _IDENTITY_QUESTION.search(str(messages[-1]["content"])):
+        return RawResponse(f"MOCK reply. {REFUSAL}", prompt_tokens=0, completion_tokens=0)
     ids = _MEMORY_LINE.findall(str(messages[0]["content"]))[:2]
     clicks = f"I would cite {' and '.join(f'[{i}]' for i in ids)}." if ids else "No clicks."
     digest = hashlib.sha256(json.dumps(messages, sort_keys=True).encode()).hexdigest()[:6]
@@ -238,23 +256,22 @@ async def mock_interview_backend(payload: Mapping[str, object]) -> RawResponse:
 retry_sleep = asyncio.sleep
 
 
-class MemoryCache(Cache):
-    """Per process, so the interview writes nothing to DATA_DIR (a demo image's is read-only
-    data) and is safe to use from any thread."""
+class NoCache(Cache):
+    """The interview is a conversation, not an experiment: replies are never cached, so it
+    writes nothing to DATA_DIR and keeps ADR-0002's one cache for runs."""
 
     def __init__(self) -> None:  # pyright: ignore[reportMissingSuperCall] -- no SQLite file
-        self._replies: dict[str, str] = {}
+        pass
 
     def get(self, key: str) -> str | None:
-        return self._replies.get(key)
+        return None
 
     def put(self, key: str, model: str, content: str) -> None:
-        self._replies[key] = content
+        pass
 
 
 def interview_client(settings: Settings) -> LLMClient:
-    """The same model and endpoint as the runs. A repeated conversation (a starter question
-    for the same agent) is answered from memory without spending quota."""
+    """The configured model and endpoint: the frozen run's, in the hosted demo."""
     if settings.mock_llm:
         backend, model, base_url = mock_interview_backend, "mock", "mock://"
     else:
@@ -263,7 +280,7 @@ def interview_client(settings: Settings) -> LLMClient:
     return LLMClient(
         model=model,
         base_url=base_url,
-        cache=MemoryCache(),
+        cache=NoCache(),
         backend=backend,
         concurrency=settings.concurrency,
         sleep=retry_sleep,

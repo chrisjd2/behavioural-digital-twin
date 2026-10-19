@@ -25,6 +25,10 @@ The app is shown in a 10-minute panel presentation. A full test run (300 users Ã
 **Becomes harder:**
 - Recorded interview exchanges must be prepared before the panel.
 
+## Amendment (#21)
+
+The recorded exchanges live in `config/interview_recorded.json`, not in the run file: the frozen run is not edited after it is made. The config holds ids and the model's generated text only (`scripts.record_interviews` replaces quoted headlines with their ids), so the repo still holds no MIND text (ADR-0010); the app shows cited headlines from the run's data. The fallback names the run, reader and arm it was recorded with.
+
 ## Alternatives considered
 
 - **Live simulation at small N:** shows a different, noisier result than the reported one.

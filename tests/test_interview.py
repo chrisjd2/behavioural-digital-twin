@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 
 from backend import interview
 from backend.config import Settings
+from backend.data import load_news
 from backend.interview import (
     IDENTITY_RULE,
     REFUSAL,
@@ -80,8 +81,11 @@ def test_prompts_never_hold_labels_scores_or_the_candidates(
     user = result(run, arm)
     prompt = interview_system_prompt(arm, user.knowledge)
 
+    news = load_news(lab[0] / "sample" / "dev" / "news.tsv")
     for news_id in user.items:  # the headlines being predicted, clicked or not
         assert not re.search(rf"\b{news_id}\b", prompt)
+        if news_id not in user.history:  # a past click may share a headline's text
+            assert news[news_id].title not in prompt
     assert "p_click" not in prompt
     assert "label" not in prompt.lower()
     assert "similar to" not in prompt  # retrieval reasons quote candidate headlines
@@ -174,7 +178,8 @@ def test_identity_question_goes_through_the_guardrailed_prompt(
     response = ask(lab).post("/api/interview", json=body(lab[1], "D", "How old are you?"))
 
     assert response.status_code == 200
-    assert response.json()["text"].startswith("MOCK")
+    assert response.json()["text"] == f"MOCK reply. {REFUSAL}"
+    assert response.json()["cited"] == []
     messages = sent[0]["messages"]
     assert isinstance(messages, list)
     assert messages[0]["role"] == "system"
@@ -216,6 +221,22 @@ def test_the_last_message_must_be_the_interviewers(lab: tuple[Path, Run]) -> Non
 
     assert response.status_code == 422
     assert response.json()["code"] == "no_question"
+
+
+def test_long_agent_replies_can_be_sent_back_but_questions_are_capped(
+    lab: tuple[Path, Run],
+) -> None:
+    request = body(lab[1])
+    request["messages"] = [
+        {"role": "interviewer", "text": "Hi"},
+        {"role": "agent", "text": "x" * 5000},
+        {"role": "interviewer", "text": "More?"},
+    ]
+    client = ask(lab)
+
+    assert client.post("/api/interview", json=request).status_code == 200
+    too_long = {**body(lab[1]), "messages": [{"role": "interviewer", "text": "x" * 1001}]}
+    assert client.post("/api/interview", json=too_long).status_code == 422
 
 
 @pytest.mark.parametrize(
@@ -318,6 +339,17 @@ def test_daily_limit_is_global_and_resets_at_midnight_utc() -> None:
     assert limiter.allow("9.9.9.9") == "daily"
     clock.at = 86_400 * 20_001  # the next UTC day
     assert limiter.allow("9.9.9.9") is None
+
+
+def test_quiet_addresses_are_forgotten_each_day() -> None:
+    clock = FakeClock(at=86_400 * 20_000)
+    limiter = RateLimiter(per_ip=30, daily=500, clock=clock)
+    limiter.allow("old")
+    clock.at = 86_400 * 20_001 + 10
+
+    limiter.allow("new")
+
+    assert set(limiter._recent) == {"new"}  # pyright: ignore[reportPrivateUsage]
 
 
 def test_refused_messages_do_not_count() -> None:

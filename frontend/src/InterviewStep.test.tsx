@@ -84,10 +84,19 @@ describe('InterviewStep: choosing who to interview', () => {
   })
 
   it('falls back to the first reader when the run has no median', async () => {
-    stub({ ...readersReady, [REPORT]: [fail(404, 'no report')] })
+    stub({ ...readersReady, [REPORT]: [ok({ primary: null })] })
     renderStep()
 
     expect(await screen.findByRole('combobox', { name: /reader/i })).toHaveValue('U1')
+    expect(screen.queryByText(/median reader unknown/i)).not.toBeInTheDocument()
+  })
+
+  it('says when the report could not give the median reader', async () => {
+    stub({ ...readersReady, [REPORT]: [fail(500, 'Report broke')] })
+    renderStep()
+
+    expect(await screen.findByRole('combobox', { name: /reader/i })).toHaveValue('U1')
+    expect(screen.getByText('Median reader unknown: Report broke')).toBeInTheDocument()
   })
 
   it('a failed reader list is an error, not an empty one', async () => {
@@ -215,7 +224,9 @@ describe('InterviewStep: recorded fallback', () => {
     expect(await screen.findByText(/interview limit reached/i)).toBeInTheDocument()
     expect(await screen.findByText('Health stories, mostly [N1].')).toBeInTheDocument()
     expect(screen.getAllByText('recorded')).toHaveLength(2)
-    expect(screen.getByText(/reader U1, arm C \(Twin \+ memory\)/)).toBeInTheDocument()
+    expect(
+      screen.getByText(new RegExp(`reader U1, arm C \\(Twin \\+ memory\\) of run ${RUN}`)),
+    ).toBeInTheDocument()
     expect(screen.getByText(SIMULATED_LABEL)).toBeInTheDocument()
   })
 

@@ -14,6 +14,7 @@ import './interview.css'
 const ARM_CARDS = Object.fromEntries([...ARMS, CONTROL].map((a) => [a.id.toUpperCase(), a]))
 const LLM_ARMS = ['A', 'B', 'C', 'D', 'E']
 const DEFAULT_ARM = 'D'
+const MAX_TURNS = 20 // backend.interview.MAX_TURNS
 
 /** What each arm's agent will say about itself, so the audience knows what it is talking to. */
 const ARM_NOTES: Record<string, string> = {
@@ -27,7 +28,7 @@ const ARM_NOTES: Record<string, string> = {
 type Readers =
   | { state: 'loading' }
   | { state: 'error'; message: string }
-  | { state: 'ready'; userIds: string[]; median: string | undefined }
+  | { state: 'ready'; userIds: string[]; median: string | undefined; medianProblem?: string }
 
 type Entry =
   | { kind: 'question'; text: string }
@@ -56,13 +57,16 @@ export default function InterviewStep({ run, mockLlm }: Props) {
 
   useEffect(() => {
     let current = true
-    // The report only supplies the default reader; a run without arms A and D has no median.
-    Promise.all([fetchPopulation(run.run_id), fetchReport(run.run_id).catch(() => null)])
-      .then(([population, report]) => {
+    // The report only supplies the default reader, so its failure is noted, not fatal.
+    const report = fetchReport(run.run_id).then(
+      (r) => ({ median: r.primary?.median_user, problem: undefined }),
+      (error: unknown) => ({ median: undefined, problem: messageOf(error) }),
+    )
+    Promise.all([fetchPopulation(run.run_id), report])
+      .then(([population, { median, problem }]) => {
         if (!current) return
         const userIds = population.agents.map((a) => a.user_id)
-        const median = report?.primary?.median_user
-        setReaders({ state: 'ready', userIds, median })
+        setReaders({ state: 'ready', userIds, median, medianProblem: problem })
         setUserId(median && userIds.includes(median) ? median : userIds[0])
       })
       .catch(
@@ -100,6 +104,9 @@ export default function InterviewStep({ run, mockLlm }: Props) {
               </option>
             ))}
           </select>
+          {readers.medianProblem && (
+            <span className="field-hint">Median reader unknown: {readers.medianProblem}</span>
+          )}
         </label>
         <fieldset className="interview-arms">
           <legend className="field-label">Arm</legend>
@@ -156,7 +163,8 @@ function Chat({ runId, userId, arm }: { runId: string; userId: string; arm: stri
     const text = question.trim()
     if (!text || asking) return
     const asked: Entry[] = [...entries, { kind: 'question', text }]
-    const messages: Turn[] = asked.map((e) => ({
+    // The API takes at most MAX_TURNS turns: a long conversation sends its latest ones.
+    const messages: Turn[] = asked.slice(-MAX_TURNS).map((e) => ({
       role: e.kind === 'question' ? 'interviewer' : 'agent',
       text: e.text,
     }))
@@ -316,7 +324,7 @@ function RecordedFallback({ fallback }: { fallback: Fallback }) {
       {why}
       <p className="fallback-source">
         Showing recorded exchanges instead, with reader {recorded.user_id}, arm {recorded.arm} (
-        {ARM_CARDS[recorded.arm]?.name ?? 'unknown arm'}).
+        {ARM_CARDS[recorded.arm]?.name ?? 'unknown arm'}) of run {recorded.run_id}.
       </p>
       {recorded.exchanges.map((e, i) => (
         <div key={i} className="recorded-exchange">
