@@ -14,6 +14,7 @@ services:
       - ./backend:/app/backend
       - ./tests:/app/tests
       - ./scripts:/app/scripts
+      - ./config:/app/config
       - ./data:/app/data
     ports:
       - "8000:8000"
