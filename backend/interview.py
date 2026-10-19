@@ -13,6 +13,7 @@ import re
 import time
 from collections import deque
 from collections.abc import Callable, Mapping, Sequence
+from functools import cache
 from pathlib import Path
 from typing import Literal
 
@@ -366,7 +367,15 @@ def interview_router(settings: Settings) -> APIRouter:
     """The same in `DEMO_MODE`: the interview is the demo's one allowed LLM caller, and the
     rate limits apply in every mode so local and hosted behave alike (ADR-0011)."""
     router = APIRouter()
-    client = interview_client(settings)
+
+    @cache
+    def client() -> LLMClient:
+        """Built on first use: without a key the app still starts, and only this fails."""
+        try:
+            return interview_client(settings)
+        except openai.OpenAIError as exc:
+            raise AppError(502, "interview_unavailable", f"No live LLM: {exc}") from exc
+
     limiter = RateLimiter(
         per_ip=settings.interview_ip_limit_per_hour, daily=settings.interview_daily_limit
     )
@@ -379,7 +388,7 @@ def interview_router(settings: Settings) -> APIRouter:
         if limit := limiter.allow(address):
             n = limiter.per_ip if limit == "ip" else limiter.daily
             raise AppError(429, "rate_limited", LIMIT_DETAILS[limit].format(n=n))
-        return await ask_agent(settings, client, request)
+        return await ask_agent(settings, client(), request)
 
     @router.get("/api/interview/recorded")
     def recorded() -> RecordedInterview:  # pyright: ignore[reportUnusedFunction]

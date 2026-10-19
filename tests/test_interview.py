@@ -272,6 +272,15 @@ def test_the_interview_works_in_both_modes(lab: tuple[Path, Run], demo_mode: boo
     assert response.status_code == 200
 
 
+def test_real_mode_without_a_key_is_an_error_not_a_crash(lab: tuple[Path, Run]) -> None:
+    client = ask(lab, mock_llm=False, llm_api_key="")
+
+    assert client.get("/api/status").status_code == 200
+    response = client.post("/api/interview", json=body(lab[1]))
+    assert response.status_code == 502
+    assert response.json()["code"] == "interview_unavailable"
+
+
 # Rate limits (ADR-0011)
 
 
