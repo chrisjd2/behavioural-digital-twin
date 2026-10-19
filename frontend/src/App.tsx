@@ -3,6 +3,7 @@ import { buildPopulation, type ExperimentRequest } from './api/experiment'
 import { defaultRunId, fetchRuns } from './api/runs'
 import { fetchStatus, type Status } from './api/status'
 import HookStep from './HookStep'
+import InterviewStep from './InterviewStep'
 import { SIMULATED_LABEL } from './labels'
 import PopulationStep from './PopulationStep'
 import ReportStep from './ReportStep'
@@ -12,9 +13,9 @@ import SimulationStep from './SimulationStep'
 
 type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; status: Status }
 
-type Placeholder = { name: string; blurb: string; runCentric?: boolean }
+type Step = { name: string; blurb: string; runCentric?: boolean }
 
-const STEPS: Placeholder[] = [
+const STEPS: Step[] = [
   { name: 'Hook', blurb: 'You be the twin: guess a reader’s click, then see their history.' },
   { name: 'Seed', blurb: 'Choose who is in the experiment.' },
   {
@@ -28,13 +29,18 @@ const STEPS: Placeholder[] = [
     runCentric: true,
   },
   { name: 'Report', blurb: 'How each arm did against the real clicks.', runCentric: true },
-  { name: 'Interview', blurb: 'Ask one agent about its news habits.' },
+  {
+    name: 'Interview',
+    blurb: 'Ask one agent about its news habits. It answers only from what it knew.',
+    runCentric: true,
+  },
 ]
 const HOOK_STEP = 0
 const SEED_STEP = 1
 const POPULATION_STEP = 2
 const SIMULATION_STEP = 3
 const REPORT_STEP = 4
+const INTERVIEW_STEP = 5
 
 /** An emptied input is NaN; send the config default for it instead. */
 function withDefaults(request: ExperimentRequest, defaults: ExperimentRequest): ExperimentRequest {
@@ -157,7 +163,7 @@ export default function App() {
               />
             )}
           </>
-        ) : current.runCentric ? (
+        ) : (
           <section className="run-step" aria-labelledby="step-title">
             <div className="run-step-head">
               <div>
@@ -182,17 +188,13 @@ export default function App() {
               />
             )}
             {runId && step === REPORT_STEP && <ReportStep key={runId} runId={runId} />}
-            {step !== POPULATION_STEP && step !== SIMULATION_STEP && step !== REPORT_STEP && (
-              <p className="muted">This step is not built yet.</p>
+            {selectedRun && step === INTERVIEW_STEP && (
+              <InterviewStep
+                key={selectedRun.run_id}
+                run={selectedRun}
+                mockLlm={load.state === 'ready' && load.status.mock}
+              />
             )}
-          </section>
-        ) : (
-          <section className="placeholder" aria-labelledby="step-title">
-            <h2 id="step-title">
-              <span className="step-kicker">Step {step}</span> {current.name}
-            </h2>
-            <p>{current.blurb}</p>
-            <p className="muted">This step is not built yet.</p>
           </section>
         )}
       </main>

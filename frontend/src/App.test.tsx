@@ -25,7 +25,7 @@ describe('App shell', () => {
     expect(screen.getByRole('button', { name: /hook/i })).toHaveAttribute('aria-current', 'step')
     expect(screen.getByRole('heading', { name: /hook/i, level: 2 })).toBeInTheDocument()
   })
-  it('navigates all six steps, with placeholders for unbuilt ones', async () => {
+  it('navigates all six steps', async () => {
     stubApi({ status: statusFixture })
     const user = userEvent.setup()
     render(<App />)
@@ -38,12 +38,7 @@ describe('App shell', () => {
         .map((b) => b.textContent),
     ).toEqual(names.map((name, i) => `${i}${name}`))
 
-    for (const name of ['Interview']) {
-      await user.click(within(stepper).getByRole('button', { name: new RegExp(name) }))
-      expect(screen.getByRole('heading', { level: 2, name: new RegExp(name) })).toBeInTheDocument()
-      expect(screen.getByText(/not built yet/i)).toBeInTheDocument()
-    }
-    for (const name of ['Population', 'Report']) {
+    for (const name of ['Population', 'Report', 'Interview']) {
       await user.click(within(stepper).getByRole('button', { name: new RegExp(name) }))
       expect(screen.getByRole('heading', { level: 2, name: new RegExp(name) })).toBeInTheDocument()
       expect(screen.queryByText(/not built yet/i)).not.toBeInTheDocument()
