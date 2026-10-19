@@ -8,22 +8,17 @@ import asyncio
 import sys
 from pathlib import Path
 
-from backend.config import Settings, get_settings
-from backend.data import date_range, load_behaviors, resolve_data_source
+from backend.config import get_settings
+from backend.data import resolve_data_source
 from backend.experiment import ExperimentConfig
-from backend.freeze import freeze_problem
-from backend.llm import Backend, Cache, LLMClient, mock_backend, openai_backend
+from backend.llm import Cache, LLMClient, mock_backend, openai_backend
 from backend.report import Estimate, Report, build_report
-from backend.runner import LLM_ARMS, RunEvent, run_experiment
+from backend.runner import LLM_ARMS, FreezeError, Run, RunEvent, run_experiment
 from backend.runs import save_run
 
 RUNS_SUBDIR = Path("runs")
 CACHE_FILE = Path("cache.sqlite")
 METRIC_LABELS = {"auc": "AUC", "mrr": "MRR", "ndcg5": "nDCG@5", "hit1": "Hit@1"}
-
-
-def make_backend(settings: Settings) -> Backend:
-    return openai_backend(settings.llm_base_url, settings.llm_api_key)
 
 
 def _ci(e: Estimate, sign: str = "") -> str:
@@ -71,24 +66,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--n-dev", type=int, default=ExperimentConfig.n_dev)
     parser.add_argument("--n-test", type=int, default=ExperimentConfig.n_test)
     parser.add_argument(
-        "--allow-unfrozen", action="store_true", help="Run the test set without the freeze tag"
+        "--allow-unfrozen", action="store_true", help="Run the test set without the freeze"
     )
     args = parser.parse_args(argv)
     settings = get_settings()
     data_dir = args.data_dir or Path(settings.data_dir)
     arms = args.arms.split(",")
+    uses_llm = any(arm in LLM_ARMS for arm in arms)
 
     source = resolve_data_source(data_dir)
     if source.kind == "none":
         print(f"No data in {data_dir}: run scripts.download_mind or scripts.make_sample")
         return 2
-
-    uses_llm = any(arm in LLM_ARMS for arm in arms)
-    if args.population == "test" and uses_llm and not args.allow_unfrozen:
-        problem = freeze_problem()
-        if problem:
-            print(f"Refusing to run the test set: {problem} (ADR-0001).")
-            return 3
 
     if settings.mock_llm:
         backend, model, base_url = mock_backend, "mock", "mock://"
@@ -96,7 +85,8 @@ def main(argv: list[str] | None = None) -> int:
         if uses_llm and not (settings.llm_model and settings.llm_api_key):
             print("Set LLM_MODEL and LLM_API_KEY in .env, or MOCK_LLM=true.")
             return 2
-        backend, model, base_url = make_backend(settings), settings.llm_model, settings.llm_base_url
+        backend = openai_backend(settings.llm_base_url, settings.llm_api_key)
+        model, base_url = settings.llm_model, settings.llm_base_url
     client = LLMClient(
         model=model,
         base_url=base_url,
@@ -111,35 +101,46 @@ def main(argv: list[str] | None = None) -> int:
             print(f"\r  {data['arm']}: {data['done']}/{data['total']}", end="", flush=True)
 
     config = ExperimentConfig(n_dev=args.n_dev, n_test=args.n_test)
-    run = asyncio.run(
-        run_experiment(
-            source,
-            config,
-            population=args.population,
-            arms=arms,
-            client=client,
-            base_rate_hint=settings.base_rate_hint,
-            on_event=progress,
+    try:
+        run = asyncio.run(
+            run_experiment(
+                source,
+                config,
+                population=args.population,
+                arms=arms,
+                client=client,
+                options=settings.llm_options(),
+                allow_unfrozen=args.allow_unfrozen,
+                on_event=progress,
+            )
         )
-    )
-    run.unfrozen_override = args.allow_unfrozen
+    except FreezeError as e:
+        print(e)
+        return 3
     print()
+    print_run(run, uses_llm=uses_llm)
+    print(f"Saved {save_run(run, data_dir / RUNS_SUBDIR)}")
+    return 0
 
+
+def print_run(run: Run, *, uses_llm: bool) -> None:
     if run.mock and uses_llm:
         print("*** MOCK LLM OUTPUT: fake numbers for development, never results ***")
-    label = "SYNTHETIC SAMPLE (fake data)" if source.kind == "synthetic" else "MIND-small"
-    print(f"Data: {label} ({source.root}) | population: {args.population} | model: {run.model}")
-    for split, directory in (("train", source.train_dir), ("dev", source.dev_dir)):
-        start, end = date_range(load_behaviors(directory / "behaviors.tsv"))
-        print(f"  {split} impressions: {start:%Y-%m-%d %H:%M} to {end:%Y-%m-%d %H:%M}")
-    by_arm = {arm: [u for u in run.users if u.arm == arm] for arm in arms}
-    print(format_report(build_report(by_arm, seed=config.bootstrap_seed)))
+    if not run.is_result:
+        print("NOT A RESULT: only the frozen test run on real MIND with a real model counts.")
+    label = "SYNTHETIC SAMPLE (fake data)" if run.data_source == "synthetic" else "MIND-small"
+    print(f"Data: {label} | population: {run.population} | model: {run.model}")
+    for split, (start, end) in run.date_ranges.items():
+        print(f"  {split} impressions: {start[:16]} to {end[:16]}")
+    by_arm = {arm: [u for u in run.users if u.arm == arm] for arm in run.arms}
+    seed = int(str(run.config["bootstrap_seed"]))
+    print(format_report(build_report(by_arm, seed=seed)))
     c = run.counters
     print(
         f"\nLLM calls: {c['calls']} new, {c['cache_hits']} cached, {c['prompt_tokens']} tokens in"
     )
-    print(f"Saved {save_run(run, data_dir / RUNS_SUBDIR)}")
-    return 0
+    if run.unfrozen_override:
+        print("WARNING: test set run with --allow-unfrozen; recorded in the run file.")
 
 
 if __name__ == "__main__":

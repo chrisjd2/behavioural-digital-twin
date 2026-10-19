@@ -6,7 +6,8 @@ only the system prompt (what the agent knows) differs.
 
 import hashlib
 import json
-from collections.abc import Mapping, Sequence
+import math
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 
 from backend.data import CandidateSet, NewsItem
@@ -39,10 +40,12 @@ ARM_A_SYSTEM = (
     "Answer as that reader would, honestly and briefly."
 )
 
+# The first two sentences are ADR-0005's feed framing, verbatim.
 FEED_INSTRUCTIONS = (
     "Each of these headlines appeared in your Microsoft News feed while you were browsing, "
-    "among many others. For each one, give your honest one-sentence first-person gut reaction, "
-    "then the probability (0-100) that you clicked it.\n"
+    "among many others. For each, give your honest one-sentence gut reaction, then the "
+    "probability (0-100) that you clicked it.\n"
+    "Write each reaction in the first person. "
     'Reply with JSON only: {"reactions": [{"id": ..., "reaction": ..., "p_click": ...}]}, '
     "one entry per headline id."
 )
@@ -54,7 +57,14 @@ RETRY_INSTRUCTION = (
     "every headline id listed."
 )
 
-TEMPLATES = {"A": (ARM_A_SYSTEM, FEED_INSTRUCTIONS, BASE_RATE_HINT, RETRY_INSTRUCTION)}
+
+@dataclass(frozen=True)
+class LLMOptions:
+    """Request settings that change predictions; part of the frozen fingerprint (ADR-0001)."""
+
+    reasoning_effort: str  # Gemini accepts none | low | medium | high
+    max_output_tokens: int
+    base_rate_hint: bool
 
 
 @dataclass(frozen=True)
@@ -105,10 +115,12 @@ def retry_messages(messages: list[dict[str, str]], previous: str) -> list[dict[s
     ]
 
 
-def request_payload(messages: list[dict[str, str]]) -> dict[str, object]:
+def request_payload(messages: list[dict[str, str]], options: LLMOptions) -> dict[str, object]:
     return {
         "messages": messages,
         "temperature": 0,
+        "reasoning_effort": options.reasoning_effort,
+        "max_tokens": options.max_output_tokens,
         "response_format": {
             "type": "json_schema",
             "json_schema": {"name": "reactions", "schema": OUTPUT_SCHEMA, "strict": True},
@@ -130,7 +142,7 @@ def parse_reactions(content: str, ids: Sequence[str]) -> ParsedReactions:
         news_id = entry["id"]
         reactions[news_id] = str(entry.get("reaction", ""))
         value = entry.get("p_click")
-        if isinstance(value, int | float) and not isinstance(value, bool):
+        if isinstance(value, int | float) and not isinstance(value, bool) and math.isfinite(value):
             p_click[news_id] = min(max(float(value), 0.0), 100.0)
             valid.add(news_id)
     return ParsedReactions(
@@ -140,9 +152,35 @@ def parse_reactions(content: str, ids: Sequence[str]) -> ParsedReactions:
     )
 
 
-def prompt_hashes() -> dict[str, str]:
-    """Short hash of each arm's prompt templates, recorded in every run file."""
-    return {
-        arm: hashlib.sha256("\n".join(parts).encode("utf-8")).hexdigest()[:12]
-        for arm, parts in TEMPLATES.items()
-    }
+MessageBuilder = Callable[..., list[dict[str, str]]]
+ARM_MESSAGES: dict[str, MessageBuilder] = {"A": arm_a_messages}
+
+# A fixed fake user, rendered through every arm, so the hash covers everything that shapes
+# the request: wording, layout, abstract length, schema, temperature and options.
+_CANONICAL = CandidateSet(
+    user_id="U0",
+    impression_id="0",
+    items=("N1", "N2"),
+    labels={"N1": 1, "N2": 0},
+    tie_rank={"N1": 1, "N2": 0},
+    feed_ctr=0.5,
+    sample_ctr=0.5,
+)
+_CANONICAL_NEWS = {
+    i: NewsItem(i, "news", "world", f"Headline {i}", "x" * (ABSTRACT_CHARS + 10))
+    for i in ("N1", "N2")
+}
+
+
+def prompt_hashes(options: LLMOptions) -> dict[str, str]:
+    """Short hash per arm of a fully rendered request (first attempt and retry)."""
+    hashes = {}
+    for arm, build in ARM_MESSAGES.items():
+        messages = build(_CANONICAL, _CANONICAL_NEWS, base_rate_hint=options.base_rate_hint)
+        rendered = [
+            request_payload(messages, options),
+            request_payload(retry_messages(messages, "<previous>"), options),
+        ]
+        blob = json.dumps(rendered, sort_keys=True).encode("utf-8")
+        hashes[arm] = hashlib.sha256(blob).hexdigest()[:12]
+    return hashes

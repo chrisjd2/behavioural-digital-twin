@@ -8,7 +8,7 @@ import random
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from backend.data import MIND_TIME_FORMAT
+from backend.data import MIND_TIME_FORMAT, SYNTHETIC_MARKER
 
 CATEGORIES = {
     "news": ["politics", "world", "science"],
@@ -22,7 +22,7 @@ CATEGORIES = {
 }
 DEV_DAY = datetime(2019, 11, 15)
 TRAIN_DAYS = 6  # train covers the days before the dev day, as in MIND
-MARKER_FILE = "SYNTHETIC"
+MARKER_FILE = SYNTHETIC_MARKER
 
 
 def is_synthetic(directory: Path) -> bool:

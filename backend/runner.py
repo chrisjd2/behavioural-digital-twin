@@ -7,41 +7,43 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 
-from backend.arms import (
-    arm_a_messages,
-    parse_reactions,
-    prompt_hashes,
-    request_payload,
-    retry_messages,
-)
+from backend.arms import ARM_MESSAGES, LLMOptions, parse_reactions, request_payload, retry_messages
 from backend.data import (
     CandidateSet,
     DataSource,
     build_candidate_set,
+    date_range,
     load_behaviors,
     load_news,
     sample_populations,
 )
 from backend.experiment import ARMS as BASELINES, ExperimentConfig, Population
+from backend.freeze import fingerprint, freeze_problem, tag_sha
 from backend.llm import LLMClient, mock_backend
 from backend.metrics import UserScores
 from backend.report import build_report
 
-LLM_ARMS = {"A": arm_a_messages}
+LLM_ARMS = ARM_MESSAGES
+
+
+class FreezeError(Exception):
+    """The test population was requested without the frozen setup (ADR-0001)."""
 
 
 @dataclass(frozen=True)
 class RunEvent:
+    seq: int
+    at: str  # ISO timestamp, for replay pacing
     kind: str  # call_started | reaction | arm_progress | run_complete
     data: dict[str, object]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class UserResult(UserScores):
     """One user's scores in one arm, plus what the feed and run file show."""
 
-    items: tuple[str, ...] = ()  # display order
-    reactions: dict[str, str] = field(default_factory=dict)
+    items: tuple[str, ...]  # display order
+    reactions: dict[str, str]
 
 
 @dataclass
@@ -53,15 +55,19 @@ class Run:
     config: dict[str, object]
     model: str
     base_url: str
+    options: dict[str, object]
     mock: bool
     data_source: str
-    prompt_hashes: dict[str, str]
+    date_ranges: dict[str, list[str]]
+    fingerprint: dict[str, object]
     git_sha: str
+    freeze_tag_sha: str | None
+    unfrozen_override: bool
+    is_result: bool  # frozen, real model, real MIND, test population
     users: list[UserResult] = field(default_factory=list)
     events: list[RunEvent] = field(default_factory=list)
     counters: dict[str, int] = field(default_factory=dict)
     metrics: dict[str, object] = field(default_factory=dict)  # asdict(report.Report)
-    unfrozen_override: bool = False
 
 
 def git_sha() -> str:
@@ -99,12 +105,21 @@ async def run_experiment(  # noqa: PLR0913 — keyword-only run options
     population: Population,
     arms: list[str],
     client: LLMClient,
-    base_rate_hint: bool,
+    options: LLMOptions,
+    allow_unfrozen: bool = False,
     on_event: Callable[[RunEvent], object] | None = None,
 ) -> Run:
     unknown = sorted(set(arms) - set(LLM_ARMS) - set(BASELINES))
     if unknown:
         raise ValueError(f"Unknown arm(s): {', '.join(unknown)}")
+
+    mock = client.backend is mock_backend
+    current = fingerprint(
+        source, config, model=client.model, base_url=client.base_url, options=options
+    )
+    problem = freeze_problem(current) if population == "test" else "not the test population"
+    if population == "test" and problem and not allow_unfrozen:
+        raise FreezeError(f"Refusing to run the test set: {problem} (ADR-0001).")
 
     created = datetime.now(UTC)
     sets = candidate_sets(source, config, population)
@@ -118,14 +133,22 @@ async def run_experiment(  # noqa: PLR0913 — keyword-only run options
         config=asdict(config),
         model=client.model,
         base_url=client.base_url,
-        mock=client.backend is mock_backend,
+        options=asdict(options),
+        mock=mock,
         data_source=source.kind,
-        prompt_hashes=prompt_hashes(),
+        date_ranges={
+            split: [t.isoformat() for t in date_range(load_behaviors(d / "behaviors.tsv"))]
+            for split, d in (("train", source.train_dir), ("dev", source.dev_dir))
+        },
+        fingerprint=current,
         git_sha=git_sha(),
+        freeze_tag_sha=tag_sha(),
+        unfrozen_override=allow_unfrozen and problem is not None,
+        is_result=problem is None and not mock and source.kind == "mind",
     )
 
     def emit(kind: str, **data: object) -> None:
-        event = RunEvent(kind, data)
+        event = RunEvent(len(run.events), datetime.now(UTC).isoformat(), kind, data)
         run.events.append(event)
         if on_event:
             on_event(event)
@@ -157,11 +180,11 @@ async def run_experiment(  # noqa: PLR0913 — keyword-only run options
         async def score(c: CandidateSet, arm: str = arm) -> UserResult:
             nonlocal done
             emit("call_started", user_id=c.user_id, arm=arm)
-            messages = LLM_ARMS[arm](c, news, base_rate_hint=base_rate_hint)
-            completion = await client.complete(request_payload(messages))
+            messages = LLM_ARMS[arm](c, news, base_rate_hint=options.base_rate_hint)
+            completion = await client.complete(request_payload(messages, options))
             parsed = parse_reactions(completion.content, c.items)
             if not parsed.ok:
-                retry = request_payload(retry_messages(messages, completion.content))
+                retry = request_payload(retry_messages(messages, completion.content), options)
                 parsed = parse_reactions((await client.complete(retry)).content, c.items)
             for news_id in c.items:
                 emit(
@@ -184,7 +207,10 @@ async def run_experiment(  # noqa: PLR0913 — keyword-only run options
                 parse_failures=len(parsed.missing),
             )
 
-        run.users.extend(await asyncio.gather(*(score(c) for c in sets)))
+        # TaskGroup cancels the remaining calls if one fails for good.
+        async with asyncio.TaskGroup() as group:
+            tasks = [group.create_task(score(c)) for c in sets]
+        run.users.extend(task.result() for task in tasks)
 
     run.counters = asdict(client.counters)
     by_arm = {arm: [u for u in run.users if u.arm == arm] for arm in arms}

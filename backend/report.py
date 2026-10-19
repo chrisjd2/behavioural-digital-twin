@@ -9,10 +9,9 @@ import numpy as np
 
 from backend.metrics import UserMetrics, UserScores, user_metrics
 
-BOOTSTRAP_SEED = 20261019
 BOOTSTRAP_RESAMPLES = 10_000
 BUCKET_THRESHOLD = 0.1
-LLM_ARMS = frozenset({"A", "B", "C", "D", "E"})  # scores are p_click 0-100; baselines' are not
+PROBABILITY_ARMS = frozenset({"A", "B", "C", "D", "E"})  # p_click 0-100; baselines are not
 METRICS = ("auc", "mrr", "ndcg5", "hit1")
 
 Verdict = Literal["twins beat plain LLM", "no detectable difference", "plain LLM better"]
@@ -99,7 +98,7 @@ def summarise_arm(arm: str, users: Sequence[UserScores], *, seed: int) -> ArmSum
         metrics={metric: mean_of(metric) for metric in METRICS},
         tie_share=sum(m.n_tied for m in per_user) / n_predictions,
         parse_failure_rate=sum(m.parse_failures for m in per_user) / n_predictions,
-        calibration=_calibration(users, per_user) if arm in LLM_ARMS else None,
+        calibration=_calibration(users, per_user) if arm in PROBABILITY_ARMS else None,
     )
 
 
@@ -138,6 +137,8 @@ def verdict(difference: Estimate) -> Verdict:
 
 
 def outcome_bucket(difference: float) -> Bucket:
+    # AUCs are ratios of small counts; round so 0.8 - 0.7 lands on the boundary, not past it.
+    difference = round(difference, 9)
     if difference > BUCKET_THRESHOLD:
         return "Twin better"
     if difference < -BUCKET_THRESHOLD:
@@ -159,9 +160,7 @@ def _primary(d_minus_a: PairedDifference) -> PrimaryOutcome:
     )
 
 
-def build_report(
-    results: Mapping[str, Sequence[UserScores]], *, seed: int = BOOTSTRAP_SEED
-) -> Report:
+def build_report(results: Mapping[str, Sequence[UserScores]], *, seed: int) -> Report:
     """Summaries per arm, paired AUC differences vs A and D - E, and the primary D - A outcome.
 
     Comparisons whose arms did not run are omitted.

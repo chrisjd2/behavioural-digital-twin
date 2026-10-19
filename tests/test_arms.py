@@ -1,7 +1,11 @@
 import json
 
+import pytest
+
+from backend import arms
 from backend.arms import (
     OUTPUT_SCHEMA,
+    LLMOptions,
     arm_a_messages,
     parse_reactions,
     prompt_hashes,
@@ -9,6 +13,8 @@ from backend.arms import (
 )
 from backend.data import NewsItem, build_candidate_set
 from tests.factories import make_impression
+
+OPTIONS = LLMOptions(reasoning_effort="low", max_output_tokens=4096, base_rate_hint=False)
 
 CANDIDATES = build_candidate_set(make_impression(), seed=1, max_candidates=8, max_clicked=2)
 NEWS = {
@@ -49,9 +55,11 @@ def test_base_rate_hint_only_when_enabled() -> None:
 
 
 def test_request_payload_is_temperature_zero_json_schema() -> None:
-    payload = request_payload(arm_a_messages(CANDIDATES, NEWS, base_rate_hint=False))
+    payload = request_payload(arm_a_messages(CANDIDATES, NEWS, base_rate_hint=False), OPTIONS)
 
     assert payload["temperature"] == 0
+    assert payload["reasoning_effort"] == "low"
+    assert payload["max_tokens"] == 4096
     assert payload["response_format"] == {
         "type": "json_schema",
         "json_schema": {"name": "reactions", "schema": OUTPUT_SCHEMA, "strict": True},
@@ -110,6 +118,37 @@ def test_unparseable_output_scores_everything_zero() -> None:
     assert set(result.missing) == set(CANDIDATES.items)
 
 
-def test_prompt_hashes_are_stable_per_arm() -> None:
-    assert prompt_hashes() == prompt_hashes()
-    assert set(prompt_hashes()) >= {"A"}
+def test_parse_rejects_non_finite_probabilities() -> None:
+    (only, *_) = CANDIDATES.items
+    content = f'{{"reactions": [{{"id": "{only}", "reaction": "!", "p_click": NaN}}]}}'
+
+    result = parse_reactions(content, (only,))
+
+    assert result.missing == (only,)
+    assert result.p_click[only] == 0.0
+
+
+def test_feed_framing_matches_adr_0005_verbatim() -> None:
+    user = user_content(arm_a_messages(CANDIDATES, NEWS, base_rate_hint=False))
+
+    assert user.startswith(
+        "Each of these headlines appeared in your Microsoft News feed while you were browsing, "
+        "among many others. For each, give your honest one-sentence gut reaction, then the "
+        "probability (0-100) that you clicked it."
+    )
+
+
+def test_prompt_hashes_are_stable_and_cover_the_whole_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    base = prompt_hashes(OPTIONS)
+    assert base == prompt_hashes(OPTIONS)
+    assert set(base) >= {"A"}
+
+    assert prompt_hashes(LLMOptions("high", 4096, base_rate_hint=False)) != base
+    assert prompt_hashes(LLMOptions("low", 4096, base_rate_hint=True)) != base
+    monkeypatch.setattr(arms, "ABSTRACT_CHARS", 100)
+    assert prompt_hashes(OPTIONS) != base
+    monkeypatch.undo()
+    monkeypatch.setitem(arms.OUTPUT_SCHEMA, "description", "changed")
+    assert prompt_hashes(OPTIONS) != base

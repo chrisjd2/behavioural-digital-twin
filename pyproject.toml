@@ -11,6 +11,7 @@ dependencies = [
     "openai>=1.55",
     "numpy>=2.1",
     "sse-starlette>=2.1",
+    "httpx>=0.28",
 ]
 
 [dependency-groups]

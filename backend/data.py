@@ -55,12 +55,18 @@ class DataSource:
     train_dir: Path
 
 
+SYNTHETIC_MARKER = "SYNTHETIC"  # written by backend.sample next to generated data
+
+
 def resolve_data_source(data_dir: Path) -> DataSource:
-    """Real MIND (`<data_dir>/mind`) wins over the synthetic sample (`<data_dir>/sample`)."""
-    layouts: tuple[tuple[DataKind, str], ...] = (("mind", "mind"), ("synthetic", "sample"))
-    for kind, folder in layouts:
+    """Real MIND (`<data_dir>/mind`) wins over the synthetic sample (`<data_dir>/sample`).
+
+    Anything carrying the synthetic marker is labelled synthetic wherever it lives.
+    """
+    for folder in ("mind", "sample"):
         root = data_dir / folder
         if all((root / split / "behaviors.tsv").exists() for split in ("dev", "train")):
+            kind: DataKind = "synthetic" if (root / SYNTHETIC_MARKER).exists() else "mind"
             return DataSource(kind, root, root / "dev", root / "train")
     return DataSource("none", data_dir, data_dir / "dev", data_dir / "train")
 

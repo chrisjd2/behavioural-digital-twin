@@ -14,6 +14,7 @@ from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import httpx
 import openai
 
 MAX_ATTEMPTS = 5
@@ -113,8 +114,17 @@ class LLMClient:
         raise AssertionError("unreachable")
 
 
-def openai_backend(base_url: str, api_key: str) -> Backend:
-    client = openai.AsyncOpenAI(base_url=base_url, api_key=api_key, max_retries=0)
+def openai_backend(
+    base_url: str, api_key: str, *, http_client: httpx.AsyncClient | None = None
+) -> Backend:
+    """Retries only rate limits (429), server errors (5xx) and dropped connections; a 4xx such
+    as an unsupported setting is a bug in the request and fails immediately."""
+    client = openai.AsyncOpenAI(
+        base_url=base_url,
+        api_key=api_key,
+        max_retries=0,
+        http_client=http_client,  # pyright: ignore[reportArgumentType] -- reason: same httpx class, resolved via two paths
+    )
 
     async def send(payload: Mapping[str, object]) -> RawResponse:
         try:
@@ -122,8 +132,10 @@ def openai_backend(base_url: str, api_key: str) -> Backend:
         except (openai.RateLimitError, openai.APIConnectionError, openai.InternalServerError) as e:
             raise TransientError(str(e)) from e
         usage = response.usage
+        # No choices (e.g. a safety block) becomes empty text: a parse failure, then the retry.
+        message = response.choices[0].message.content if response.choices else None
         return RawResponse(
-            content=response.choices[0].message.content or "",
+            content=message or "",
             prompt_tokens=usage.prompt_tokens if usage else 0,
             completion_tokens=usage.completion_tokens if usage else 0,
         )

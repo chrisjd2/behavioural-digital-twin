@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from backend.arms import LLMOptions
 from backend.baselines import random_scores
 from backend.data import CandidateSet, DataSource, build_candidate_set
 from backend.experiment import ARMS, ExperimentConfig
@@ -42,7 +43,8 @@ async def by_arm(
         population=population,  # type: ignore[arg-type]
         arms=arms,
         client=client,
-        base_rate_hint=False,
+        options=LLMOptions("medium", 4096, base_rate_hint=False),
+        allow_unfrozen=population == "test",
     )
     return {arm: [u for u in run.users if u.arm == arm] for arm in arms}
 
@@ -96,11 +98,20 @@ async def test_rejects_unknown_arm(sample_source: DataSource, tmp_path: Path) ->
         await by_arm(sample_source, ["Z"], tmp_path)
 
 
+@pytest.fixture
+def isolated_outputs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Keep headless runs and cache out of the session-wide data dir."""
+    monkeypatch.setattr("scripts.run_headless.RUNS_SUBDIR", tmp_path / "runs")
+    monkeypatch.setattr("scripts.run_headless.CACHE_FILE", tmp_path / "cache.sqlite")
+    return tmp_path / "runs"
+
+
+@pytest.mark.usefixtures("isolated_outputs")
 def test_headless_prints_synthetic_banner_and_metrics_with_cis(
     data_dir: Path, sample_source: DataSource, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     results = asyncio.run(by_arm(sample_source, ["random"], tmp_path))
-    summary = build_report(results).arms["random"]
+    summary = build_report(results, seed=CONFIG.bootstrap_seed).arms["random"]
 
     exit_code = main(["--data-dir", str(data_dir), "--population", "dev", "--n-test", "100"])
 
@@ -114,8 +125,12 @@ def test_headless_prints_synthetic_banner_and_metrics_with_cis(
     assert "random   n/a (baseline scores are not probabilities)" in out
     assert "Primary outcome" not in out
     assert "MOCK" not in out  # no LLM arm ran
+    assert "NOT A RESULT" in out
+    assert "train impressions: 2019-11-0" in out
+    assert "dev impressions: 2019-11-15" in out
 
 
+@pytest.mark.usefixtures("isolated_outputs")
 def test_headless_prints_comparisons_and_primary_outcome_when_a_and_d_run(
     data_dir: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:

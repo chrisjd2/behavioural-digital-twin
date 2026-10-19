@@ -1,10 +1,21 @@
+import asyncio
 import json
 from collections.abc import Mapping
 from pathlib import Path
 
+import httpx
+import openai
 import pytest
 
-from backend.llm import Cache, LLMClient, RawResponse, TransientError, cache_key, mock_backend
+from backend.llm import (
+    Cache,
+    LLMClient,
+    RawResponse,
+    TransientError,
+    cache_key,
+    mock_backend,
+    openai_backend,
+)
 
 PAYLOAD = {"messages": [{"role": "user", "content": 'ids: [{"id": "N1"}, {"id": "N2"}]'}]}
 
@@ -26,7 +37,7 @@ async def no_sleep(_: float) -> None:
     return None
 
 
-def make_client(tmp_path: Path, backend: FakeBackend, **kwargs: object) -> LLMClient:
+def make_client(tmp_path: Path, backend: FakeBackend) -> LLMClient:
     return LLMClient(
         model="gemini-test-001",
         base_url="https://example.test/v1/",
@@ -34,8 +45,57 @@ def make_client(tmp_path: Path, backend: FakeBackend, **kwargs: object) -> LLMCl
         backend=backend,
         concurrency=2,
         sleep=no_sleep,
-        **kwargs,  # type: ignore[arg-type]
     )
+
+
+async def test_semaphore_limits_concurrent_calls(tmp_path: Path) -> None:
+    in_flight = peak = 0
+
+    async def slow(_: Mapping[str, object]) -> RawResponse:
+        nonlocal in_flight, peak
+        in_flight += 1
+        peak = max(peak, in_flight)
+        await asyncio.sleep(0.01)
+        in_flight -= 1
+        return RawResponse("{}", 0, 0)
+
+    client = LLMClient(
+        model="m", base_url="u", cache=Cache(tmp_path / "c.sqlite"), backend=slow, concurrency=3
+    )
+
+    await asyncio.gather(*(client.complete({"n": n}) for n in range(12)))
+
+    assert peak == 3
+
+
+def gemini_stub(status: int, body: Mapping[str, object]) -> httpx.AsyncClient:
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(status, json=body)
+
+    return httpx.AsyncClient(transport=httpx.MockTransport(handler))
+
+
+@pytest.mark.parametrize("status", [429, 500, 503])
+async def test_rate_limits_and_server_errors_are_transient(status: int) -> None:
+    send = openai_backend("https://stub.test/v1/", "k", http_client=gemini_stub(status, {}))
+
+    with pytest.raises(TransientError):
+        await send({"model": "m", "messages": []})
+
+
+async def test_bad_requests_fail_immediately_without_retry() -> None:
+    error = {"error": {"message": "Thinking level MINIMAL is not supported"}}
+    send = openai_backend("https://stub.test/v1/", "k", http_client=gemini_stub(400, error))
+
+    with pytest.raises(openai.BadRequestError):
+        await send({"model": "m", "messages": []})
+
+
+async def test_no_choices_becomes_empty_text_for_the_parse_retry() -> None:
+    body = {"id": "x", "object": "chat.completion", "created": 0, "model": "m", "choices": []}
+    send = openai_backend("https://stub.test/v1/", "k", http_client=gemini_stub(200, body))
+
+    assert (await send({"model": "m", "messages": []})).content == ""
 
 
 def test_cache_key_covers_model_base_url_and_payload() -> None:

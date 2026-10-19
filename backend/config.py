@@ -1,6 +1,9 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from backend.arms import LLMOptions
 
 
 class Settings(BaseSettings):
@@ -11,6 +14,9 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
     llm_api_key: str = ""
     llm_model: str = ""
+    # Gemini Flash thinks by default; pin the level explicitly (decided on the dev set, #15).
+    llm_reasoning_effort: Literal["none", "low", "medium", "high"] = "medium"
+    llm_max_output_tokens: int = 4096
     embed_model: str = ""
     concurrency: int = 8
     mock_llm: bool = True
@@ -19,6 +25,13 @@ class Settings(BaseSettings):
     data_dir: str = "data"
     hf_token: str = ""
     frontend_dist: str = "frontend/dist"
+
+    def llm_options(self) -> LLMOptions:
+        return LLMOptions(
+            reasoning_effort=self.llm_reasoning_effort,
+            max_output_tokens=self.llm_max_output_tokens,
+            base_rate_hint=self.base_rate_hint,
+        )
 
 
 @lru_cache(maxsize=1)
