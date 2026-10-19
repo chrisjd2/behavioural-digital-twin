@@ -1,0 +1,562 @@
+/* Step 4 Report. Arm colours come from index.css (--arm-*); baselines are grey and dashed. */
+
+.report {
+  display: grid;
+  /* minmax(0, ...) so wide tables scroll inside their region, not the page. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 40px;
+}
+
+.report-section h3 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.section-note {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin: 4px 0 16px;
+  max-width: 70ch;
+}
+
+/* Anything that is not the frozen run says so before any number. */
+.not-result {
+  border: 3px solid var(--error);
+  border-radius: 10px;
+  padding: 14px 20px;
+  background: repeating-linear-gradient(-45deg, var(--error-wash) 0 14px, var(--paper) 14px 28px);
+}
+
+.not-result-title {
+  color: var(--error);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.not-result p:not(.not-result-title) {
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* The primary outcome: the rule, then its outcome, nothing else. */
+.primary-outcome {
+  border-left: 10px solid var(--arm-d);
+  padding: 4px 0 4px 24px;
+}
+
+.rule {
+  margin: 8px 0 12px;
+  max-width: 75ch;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.outcome {
+  font-size: clamp(1.4rem, 3.2vw, 2.4rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin-bottom: 12px;
+}
+
+/* Bar charts: HTML labels | SVG track | HTML values. */
+.bar-chart {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  column-gap: 14px;
+  align-items: start;
+}
+
+.bar-labels,
+.bar-values {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bar-labels li,
+.bar-values li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.bar-values li {
+  font-weight: 700;
+  font-size: 0.9rem;
+  justify-content: flex-end;
+}
+
+.chip {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 6px;
+  background: var(--arm, var(--baseline));
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.9rem;
+  flex: none;
+}
+
+.chip-baseline {
+  background: transparent;
+  border: 2px dashed var(--baseline);
+  box-sizing: border-box;
+}
+
+.arm-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.bar-track {
+  display: block;
+  overflow: visible;
+}
+
+.bar-track .tick line {
+  stroke: var(--rule);
+  stroke-width: 1;
+}
+
+.bar-track text {
+  font-size: 13px;
+  fill: var(--muted);
+}
+
+.bar-row .hit {
+  fill: transparent;
+}
+
+.bar-row:hover .hit {
+  fill: var(--wash);
+}
+
+.bar-row .bar,
+.bar-row .dot {
+  fill: var(--arm, var(--baseline));
+}
+
+.bar-row .dot {
+  stroke: var(--paper);
+  stroke-width: 2;
+}
+
+.whisker line {
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.zero-line {
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.reference line {
+  stroke-width: 2;
+}
+
+.reference text {
+  font-weight: 700;
+}
+
+.reference-baseline line {
+  stroke: var(--baseline);
+  stroke-dasharray: 6 4;
+}
+
+.reference-feed line {
+  stroke: var(--ink);
+}
+
+.reference-feed text {
+  fill: var(--ink);
+}
+
+.reference-sample line {
+  stroke: var(--muted);
+  stroke-dasharray: 6 4;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px 40px;
+}
+
+.metric-panel {
+  margin: 0;
+}
+
+.metric-panel figcaption {
+  margin-bottom: 4px;
+}
+
+.metric-panel h4 {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.difference-label {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.difference-arms {
+  font-weight: 800;
+  min-width: 6.5em;
+}
+
+.difference-label .arm-name {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+/* Calibration */
+.calibration-key {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+}
+
+.calibration-key li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.key-feed,
+.key-sample {
+  display: inline-block;
+  width: 28px;
+  border-top: 3px solid var(--ink);
+  flex: none;
+}
+
+.key-sample {
+  border-top: 3px dashed var(--muted);
+}
+
+.reliability-details {
+  margin-top: 20px;
+  border-top: 1px solid var(--rule);
+  padding-top: 12px;
+}
+
+.reliability-details summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.reliability {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.reliability-panel {
+  margin: 0;
+}
+
+.reliability-panel figcaption {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 2.8em; /* names wrap to two lines: keep the plots aligned */
+}
+
+.reliability-panel svg {
+  width: 100%;
+  max-width: 240px;
+  display: block;
+}
+
+.reliability-panel .frame {
+  fill: var(--wash);
+}
+
+.reliability-panel .diagonal {
+  stroke: var(--muted);
+  stroke-dasharray: 4 3;
+}
+
+.reliability-panel .curve {
+  fill: none;
+  stroke: var(--arm, var(--baseline));
+  stroke-width: 2;
+}
+
+.reliability-panel .point {
+  fill: var(--arm, var(--baseline));
+  stroke: var(--paper);
+  stroke-width: 1.5;
+}
+
+.reliability-panel text {
+  font-size: 10px;
+  fill: var(--muted);
+}
+
+/* Users by outcome */
+.bucket-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.bucket {
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 16px;
+  border: 2px solid var(--rule);
+  border-radius: 10px;
+  background: var(--paper);
+  cursor: pointer;
+}
+
+.bucket:hover {
+  border-color: var(--ink);
+}
+
+.bucket[aria-pressed='true'] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.bucket[aria-pressed='true'] .bucket-note {
+  color: var(--rule);
+}
+
+.bucket-count {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.bucket-name {
+  font-weight: 800;
+}
+
+.bucket-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.bucket-stepper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.bucket-stepper p {
+  font-weight: 700;
+}
+
+.bucket-stepper .secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rankings {
+  margin-top: 20px;
+}
+
+.rankings h4 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+}
+
+.rankings-meta {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.rankings > p {
+  margin: 4px 0 12px;
+  max-width: 80ch;
+}
+
+.rankings-scroll,
+.table-scroll {
+  overflow-x: auto;
+}
+
+.rankings-table,
+.diagnostics {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.rankings-table th,
+.rankings-table td,
+.diagnostics th,
+.diagnostics td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.rankings-table thead th,
+.diagnostics thead th {
+  font-size: 0.8rem;
+  color: var(--muted);
+  border-bottom: 2px solid var(--ink);
+  white-space: nowrap;
+}
+
+.th-arm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rankings-table thead .arm-name {
+  display: none;
+}
+
+.rankings-table thead .chip-baseline + .arm-name {
+  display: inline;
+}
+
+.rankings-table tbody th {
+  font-weight: 600;
+  min-width: 18em;
+  line-height: 1.3;
+}
+
+.rankings-table tbody th .headline-category {
+  display: block;
+}
+
+.rankings-table tr.clicked {
+  background: color-mix(in srgb, var(--ink) 6%, var(--paper));
+}
+
+.rankings-table tr.clicked th {
+  font-weight: 800;
+}
+
+.reality {
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+tr.clicked .reality {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+tr.clicked .reality::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ink);
+  margin-right: 6px;
+}
+
+.rank-cell {
+  text-align: center;
+  min-width: 3.2em;
+}
+
+.rank-cell .rank {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.rank-cell .p-click {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.rank-cell.top-pick {
+  box-shadow: inset 0 0 0 3px var(--arm, var(--baseline));
+}
+
+.rankings-table tfoot th,
+.rankings-table tfoot td {
+  font-weight: 800;
+  border-bottom: 0;
+}
+
+.rankings-table tfoot td {
+  text-align: center;
+}
+
+.diagnostics tbody th {
+  font-weight: 600;
+}
+
+.diagnostics + p {
+  margin-top: 8px;
+}
+
+@media (max-width: 1100px) {
+  .metric-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bucket-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .primary-outcome {
+    padding-left: 14px;
+    border-left-width: 6px;
+  }
+  .bar-chart {
+    column-gap: 8px;
+  }
+  .bar-labels .arm-name,
+  .bar-labels .control-tag {
+    display: none;
+  }
+  .difference-label .arm-name {
+    display: none;
+  }
+  .difference-arms {
+    min-width: 0;
+  }
+  .bar-values li {
+    font-size: 0.75rem;
+  }
+  /* Narrow tracks: label every other tick so labels never collide. */
+  .bar-track .tick:nth-child(even) text {
+    display: none;
+  }
+  .bucket-stepper {
+    flex-wrap: wrap;
+  }
+  .rankings-table tbody th {
+    min-width: 12em;
+  }
+}
