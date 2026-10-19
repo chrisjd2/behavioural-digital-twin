@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -6,7 +7,9 @@ from backend.data import (
     build_candidate_set,
     is_eligible,
     load_behaviors,
+    load_behaviors_cached,
     load_news,
+    load_news_cached,
     sample_populations,
 )
 from backend.sample import is_synthetic
@@ -155,3 +158,19 @@ def test_tie_break_order_is_independent_of_display_order() -> None:
     for slot in range(8):
         mean_rank = sum(c.tie_rank[c.items[slot]] for c in sets) / len(sets)
         assert 2.8 < mean_rank < 4.2
+
+
+def test_cached_loaders_reuse_the_parse_until_the_file_changes(tmp_path: Path) -> None:
+    behaviors = tmp_path / "behaviors.tsv"
+    news = tmp_path / "news.tsv"
+    row = "1\tU1\t11/15/2019 9:00:00 AM\tN1\tN2-1 N3-0\n"
+    behaviors.write_text(row, encoding="utf-8")
+    news.write_text("N1\tnews\tworld\tTitle\tAbstract\n", encoding="utf-8")
+
+    first = load_behaviors_cached(behaviors)
+    assert load_behaviors_cached(behaviors) is first
+    assert load_news_cached(news) is load_news_cached(news)
+
+    behaviors.write_text(row + row.replace("1\tU1", "2\tU2"), encoding="utf-8")
+    os.utime(behaviors, ns=(1, behaviors.stat().st_mtime_ns + 1_000_000))
+    assert [i.user_id for i in load_behaviors_cached(behaviors)] == ["U1", "U2"]

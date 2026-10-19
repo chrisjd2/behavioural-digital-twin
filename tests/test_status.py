@@ -28,6 +28,7 @@ def test_status_reports_mock_model_and_demo_flags() -> None:
         "model": "gemini-test-001",
         "data_source": "none",
         "call_count": 0,
+        "experiment_defaults": {"n_users": 30, "seed": 20261019, "max_candidates": 8},
     }
 
 

@@ -7,8 +7,10 @@ deterministically, so results are stable across runs and machines.
 import csv
 import random
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
@@ -119,6 +121,27 @@ def load_behaviors(path: Path) -> list[Impression]:
     return impressions
 
 
+def load_behaviors_cached(path: Path) -> tuple[Impression, ...]:
+    """`load_behaviors`, reused while the file is unchanged (real MIND dev takes seconds)."""
+    return _behaviors(path, path.stat().st_mtime_ns)
+
+
+def load_news_cached(path: Path) -> dict[str, NewsItem]:
+    """`load_news`, reused while the file is unchanged. Treat the result as read-only."""
+    return _news(path, path.stat().st_mtime_ns)
+
+
+# maxsize=1: a changed file evicts the stale parse instead of keeping both in memory.
+@lru_cache(maxsize=1)
+def _behaviors(path: Path, _mtime_ns: int) -> tuple[Impression, ...]:
+    return tuple(load_behaviors(path))
+
+
+@lru_cache(maxsize=1)
+def _news(path: Path, _mtime_ns: int) -> dict[str, NewsItem]:
+    return load_news(path)
+
+
 def date_range(impressions: list[Impression]) -> tuple[datetime, datetime]:
     times = [impression.time for impression in impressions]
     return min(times), max(times)
@@ -135,7 +158,7 @@ def is_eligible(impression: Impression) -> bool:
 
 
 def sample_populations(
-    impressions: list[Impression], *, n_dev: int, n_test: int, dev_seed: int, test_seed: int
+    impressions: Iterable[Impression], *, n_dev: int, n_test: int, dev_seed: int, test_seed: int
 ) -> Populations:
     """One eligible impression per user; test drawn first so it never depends on the dev seed."""
     by_user: dict[str, list[Impression]] = defaultdict(list)

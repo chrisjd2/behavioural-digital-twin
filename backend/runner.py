@@ -24,6 +24,7 @@ from backend.data import (
     build_candidate_set,
     date_range,
     load_behaviors,
+    load_behaviors_cached,
     load_news,
     sample_populations,
 )
@@ -94,7 +95,7 @@ def git_sha() -> str:
 
 def sampled_populations(source: DataSource, config: ExperimentConfig) -> Populations:
     return sample_populations(
-        load_behaviors(source.dev_dir / "behaviors.tsv"),
+        load_behaviors_cached(source.dev_dir / "behaviors.tsv"),
         n_dev=config.n_dev,
         n_test=config.n_test,
         dev_seed=config.dev_seed,

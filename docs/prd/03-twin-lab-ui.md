@@ -50,6 +50,7 @@ A FastAPI backend serving a React app with a MiroFish-style stepper: **Step 0 Ho
 - Typed API client in `frontend/src/api/` with TS types mirroring pydantic models.
 - **Design:** light theme, projector-legible type, arm colours A slate, B amber, C blue, D violet, E muted teal with "control" tag; baselines grey/dashed. Fonts bundled locally.
 - No auto-generated conclusions anywhere; Report shows numbers and the pre-registered rule's outcome only.
+- **Steps 2–4 are run-centric (decided on #17):** Population, Simulation and Report show the users, knowledge and results of one selected run file. By default this is the newest run with `is_result` true, or else the newest run. Their endpoints take a run id (`GET /api/population` and `GET /api/agent/{user_id}` gain a run id; #18–#20). Step 1's "Build population" (`POST /api/experiment`) is a stateless **dev-set preview** only. There is no server-side population state.
 
 ## Testing Decisions
 
