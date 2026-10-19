@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from backend.config import Settings, get_settings
+from backend.data import resolve_data_source
 
 
 class AppError(Exception):
@@ -41,7 +42,7 @@ def build_app(settings: Settings) -> FastAPI:
             mock=settings.mock_llm,
             demo_mode=settings.demo_mode,
             model=settings.llm_model,
-            data_source="none",
+            data_source=resolve_data_source(Path(settings.data_dir)).kind,
             call_count=0,
         )
 

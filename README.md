@@ -48,7 +48,14 @@ just serve                # build and run the production image on :8080
 
 ### Reproduce the experiment
 
-*Instructions for downloading MIND and running the headless experiment, to follow.*
+MIND is linked from its [official homepage](https://msnews.github.io) to a gated Hugging Face copy. Accept the Microsoft Research License at [huggingface.co/datasets/yjw1029/MIND](https://huggingface.co/datasets/yjw1029/MIND), create a read token, and set `HF_TOKEN` in `.env`. Then:
+
+```bash
+uv run python -m scripts.download_mind     # MIND-small dev + train into data/mind/
+uv run python -m scripts.run_headless --population dev
+```
+
+Without MIND, `uv run python -m scripts.make_sample` writes a clearly labelled synthetic sample for development.
 
 ## How AI was used
 
