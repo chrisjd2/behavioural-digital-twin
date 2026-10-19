@@ -277,7 +277,7 @@ async def _knows_nothing(_: CandidateSet, __: ArmResources) -> Knowledge:
 async def _retrieve_memories(candidates: CandidateSet, resources: ArmResources) -> Knowledge:
     assert resources.retriever is not None, "This arm needs a retriever"
     memories = resources.retriever.memories(candidates.history, candidates.items)
-    return {"memories": [asdict(m) for m in memories], "retrieval": resources.retriever.method}
+    return {"memories": [asdict(m) for m in memories]}
 
 
 async def _profile_and_memories(candidates: CandidateSet, resources: ArmResources) -> Knowledge:

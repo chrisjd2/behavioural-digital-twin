@@ -3,7 +3,7 @@
 import asyncio
 import hashlib
 import subprocess
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 
@@ -18,6 +18,7 @@ from backend.arms import (
 from backend.data import (
     CandidateSet,
     DataSource,
+    NewsItem,
     build_candidate_set,
     date_range,
     load_behaviors,
@@ -54,6 +55,7 @@ class UserResult(UserScores):
     items: tuple[str, ...]  # display order
     reactions: dict[str, str]
     knowledge: dict[str, object]  # what this agent knew (memories, persona, profile)
+    history: tuple[str, ...]  # the user's clicks before the impression, for the UI panel
 
 
 @dataclass
@@ -111,6 +113,42 @@ def candidate_sets(
     ]
 
 
+def check_embeddings(
+    options: LLMOptions, embeddings: EmbeddingStore | None, *, base_url: str
+) -> None:
+    """The retrieval actually used must be the one the options (and fingerprint) describe."""
+    wanted = (base_url, options.embed_model, options.embed_dimensions)
+    if not options.embed_model:
+        if embeddings is not None:
+            raise ValueError("An embedding store was given but EMBED_MODEL is empty (TF-IDF)")
+        return
+    if embeddings is None:
+        raise ValueError(f"EMBED_MODEL={options.embed_model} but no embedding store was given")
+    if (embeddings.base_url, embeddings.model, embeddings.dimensions) != wanted:
+        raise ValueError("The embedding store does not match the embedding options")
+
+
+async def make_retriever(  # noqa: PLR0913 - the run's pieces retrieval depends on
+    arms: list[str],
+    sets: list[CandidateSet],
+    news: Mapping[str, NewsItem],
+    *,
+    client: LLMClient,
+    options: LLMOptions,
+    embeddings: EmbeddingStore | None,
+    mock: bool,
+) -> Retriever | None:
+    """One retriever per run; every item the population needs is embedded up front."""
+    if not RETRIEVAL_ARMS & set(arms):
+        return None
+    if not mock:
+        check_embeddings(options, embeddings, base_url=client.base_url)
+    # Mock runs never call the embedding API: TF-IDF instead (ADR-0006).
+    retriever = Retriever(news, None if mock else embeddings)
+    await retriever.prepare([i for c in sets for i in (*c.history, *c.items)])
+    return retriever
+
+
 def check_freeze(
     current: dict[str, object],
     source: DataSource,
@@ -155,11 +193,9 @@ async def run_experiment(  # noqa: PLR0913 — keyword-only run options
     created = datetime.now(UTC)
     sets = candidate_sets(source, config, population)
     news = load_news(source.dev_dir / "news.tsv")
-    retriever = None
-    if RETRIEVAL_ARMS & set(arms):
-        # Mock runs never call the embedding API: TF-IDF instead (ADR-0006).
-        retriever = Retriever(news, None if mock else embeddings)
-        await retriever.prepare([i for c in sets for i in (*c.history, *c.items)])
+    retriever = await make_retriever(
+        arms, sets, news, client=client, options=options, embeddings=embeddings, mock=mock
+    )
     resources = ArmResources(retriever=retriever, client=client, options=options, news=news)
     digest = hashlib.sha256(f"{created.isoformat()}{arms}".encode()).hexdigest()[:6]
     run = Run(
@@ -201,6 +237,7 @@ async def run_experiment(  # noqa: PLR0913 — keyword-only run options
             tie_rank=c.tie_rank,
             feed_ctr=c.feed_ctr,
             sample_ctr=c.sample_ctr,
+            history=c.history,
             **extra,  # pyright: ignore[reportArgumentType]
         )
 
@@ -256,6 +293,8 @@ async def run_experiment(  # noqa: PLR0913 — keyword-only run options
         run.users.extend(task.result() for task in tasks)
 
     run.counters = asdict(client.counters)
+    if retriever and retriever.store:
+        run.counters["embedding_calls"] = retriever.store.calls
     run.identity_screen = identity_summary(run.users)
     by_arm = {arm: [u for u in run.users if u.arm == arm] for arm in arms}
     run.metrics = asdict(build_report(by_arm, seed=config.bootstrap_seed))
