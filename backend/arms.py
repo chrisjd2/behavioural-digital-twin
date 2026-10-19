@@ -11,6 +11,7 @@ from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 
 from backend.data import CandidateSet, NewsItem
+from backend.personas import invent_persona
 from backend.retrieval import Retriever
 
 ABSTRACT_CHARS = 300
@@ -39,6 +40,12 @@ OUTPUT_SCHEMA: dict[str, object] = {
 ARM_A_SYSTEM = (
     "You are a typical Microsoft News reader. You have no other information about yourself. "
     "Answer as that reader would, honestly and briefly."
+)
+
+ARM_B_SYSTEM = (
+    "You are {name}, a {age}-year-old {job} living in {location}. "
+    "Your personality: {big_five}. What you value most: {values}. {news_habit} "
+    "Answer as yourself, honestly and briefly."
 )
 
 ARM_C_SYSTEM = (
@@ -164,6 +171,31 @@ def parse_reactions(content: str, ids: Sequence[str]) -> ParsedReactions:
 Knowledge = dict[str, object]  # what one agent knows; shown in the UI and saved per user
 
 
+def arm_b_messages(
+    candidates: CandidateSet,
+    news: Mapping[str, NewsItem],
+    knowledge: Knowledge,
+    *,
+    base_rate_hint: bool,
+) -> list[dict[str, str]]:
+    big_five, values = knowledge["big_five"], knowledge["values"]
+    assert isinstance(big_five, dict)
+    assert isinstance(values, list)
+    system = ARM_B_SYSTEM.format(
+        name=knowledge["name"],
+        age=knowledge["age"],
+        job=knowledge["job"],
+        location=knowledge["location"],
+        big_five=", ".join(f"{level} {trait}" for trait, level in big_five.items()),
+        values=" and ".join(values),
+        news_habit=knowledge["news_habit"],
+    )
+    return [
+        {"role": "system", "content": system},
+        {"role": "user", "content": feed_message(candidates, news, base_rate_hint=base_rate_hint)},
+    ]
+
+
 def memories_block(memories: Sequence[Mapping[str, object]]) -> str:
     return "\n".join(f"- [{m['category']}] {m['headline']}" for m in memories)
 
@@ -195,6 +227,10 @@ async def _knows_nothing(_: CandidateSet, __: ArmResources) -> Knowledge:
     return {}
 
 
+async def _invent_persona(candidates: CandidateSet, _: ArmResources) -> Knowledge:
+    return invent_persona(candidates.user_id)  # the user ID only: never history or labels
+
+
 async def _retrieve_memories(candidates: CandidateSet, resources: ArmResources) -> Knowledge:
     assert resources.retriever is not None, "Arm C needs a retriever"
     memories = resources.retriever.memories(candidates.history, candidates.items)
@@ -211,6 +247,7 @@ class ArmSpec:
 
 ARM_SPECS: dict[str, ArmSpec] = {
     "A": ArmSpec(_knows_nothing, lambda c, n, _k, **kw: arm_a_messages(c, n, **kw)),
+    "B": ArmSpec(_invent_persona, arm_b_messages),
     "C": ArmSpec(_retrieve_memories, arm_c_messages),
 }
 
@@ -232,6 +269,7 @@ _CANONICAL_NEWS = {
 }
 _CANONICAL_KNOWLEDGE: dict[str, Knowledge] = {
     "A": {},
+    "B": invent_persona(_CANONICAL.user_id),
     "C": {"memories": [{"news_id": "H1", "headline": "Headline H1", "category": "news"}]},
 }
 

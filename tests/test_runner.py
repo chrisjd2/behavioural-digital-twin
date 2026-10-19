@@ -9,6 +9,7 @@ from backend.arms import LLMOptions
 from backend.data import DataSource
 from backend.experiment import ExperimentConfig
 from backend.llm import Cache, LLMClient, RawResponse, TransientError, mock_backend
+from backend.personas import invent_persona
 from backend.runner import FreezeError, RunEvent, run_experiment
 from backend.runs import load_run, save_run
 
@@ -169,3 +170,15 @@ async def test_run_file_round_trips_with_provenance(
     assert run.data_source == "synthetic"
     assert run.users[0].reactions
     assert "A" in run.metrics["arms"]  # type: ignore[operator]
+
+
+async def test_arm_b_stores_the_invented_persona_per_user(
+    sample_source: DataSource, tmp_path: Path
+) -> None:
+    run = await run_dev(sample_source, mock_client(tmp_path), arms=["A", "B"])
+
+    b_users = [u for u in run.users if u.arm == "B"]
+    assert len(b_users) == 10
+    assert all(u.knowledge == invent_persona(u.user_id) for u in b_users)
+    assert all(u.knowledge["invented"] is True for u in b_users)
+    assert load_run(save_run(run, tmp_path / "runs")) == run
