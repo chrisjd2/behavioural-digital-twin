@@ -72,6 +72,8 @@ describe('Simulation replay', () => {
     await advance(600)
 
     const card = within(feed()).getByRole('listitem')
+    expect(card).toHaveClass('arm-a') // the arm's colour
+    expect(within(card).getByText('Plain LLM')).toBeInTheDocument()
     expect(within(card).getByText('How to get a six-pack in 30 days')).toBeInTheDocument()
     expect(within(card).getByText(/A U1: I would definitely read this/)).toBeInTheDocument()
     expect(within(card).getByText('70%')).toBeInTheDocument()
