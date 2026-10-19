@@ -102,6 +102,7 @@ describe('Step 0 Hook', () => {
     ).toHaveClass('arm-d')
     expect(screen.getByText(LABEL)).toBeInTheDocument()
     expect(screen.queryByText('Impeachment moves on')).not.toBeInTheDocument() // room to read
+    expect(screen.getByText(/simulated from anonymised research data/i)).toBeInTheDocument()
 
     await user.keyboard('{ArrowLeft}')
     expect(screen.getByText('Impeachment moves on')).toBeInTheDocument()

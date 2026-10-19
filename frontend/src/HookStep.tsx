@@ -4,6 +4,7 @@ import type { Headline } from './api/runs'
 import { ARMS } from './arms'
 import './hook.css'
 import { commandFor, INITIAL, step } from './hookState'
+import { SIMULATED_LABEL } from './labels'
 
 type Load =
   | { state: 'loading' }
@@ -109,6 +110,8 @@ export default function HookStep() {
             ))}
           </div>
           {state.history && !revealed && <History history={load.example.history} />}
+          {/* ADR-0007: the reveal shows agent reactions, also in full screen without the footer. */}
+          {revealed && <p className="hook-simulated">{SIMULATED_LABEL}</p>}
         </div>
       )}
 

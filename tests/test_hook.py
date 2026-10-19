@@ -364,6 +364,29 @@ def test_pick_hook_writes_the_chosen_candidate_only_when_asked(tmp_path: Path) -
     }
 
 
+def test_pick_hook_prints_only_the_top_candidates(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    save_picker_run(tmp_path)
+
+    assert pick_hook.main(["--data-dir", str(tmp_path), "--top", "1"]) == 0
+
+    out = capsys.readouterr().out
+    assert "2 candidates" in out
+    assert "1. U1" in out
+    assert "2. U2" not in out
+
+
+def test_pick_hook_never_writes_a_candidate_that_does_not_exist(tmp_path: Path) -> None:
+    save_picker_run(tmp_path)
+    config = tmp_path / "hook.json"
+
+    assert (
+        pick_hook.main(["--data-dir", str(tmp_path), "--config", str(config), "--write", "9"]) == 1
+    )
+    assert not config.exists()
+
+
 @pytest.mark.parametrize(
     "change", [{"population": "test"}, {"is_result": True}], ids=["test-run", "result-run"]
 )

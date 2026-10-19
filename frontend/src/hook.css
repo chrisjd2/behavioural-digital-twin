@@ -204,6 +204,11 @@
   font-style: italic;
 }
 
+.hook-simulated {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
 .hook-history {
   border-top: 2px solid var(--ink);
   padding-top: 18px;
