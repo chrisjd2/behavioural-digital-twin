@@ -26,21 +26,21 @@ def _ci(e: Estimate, sign: str = "") -> str:
 
 
 def format_report(report: Report) -> str:
-    header = f"{'arm':<8} {'n':>4}  " + "  ".join(f"{m:<20}" for m in METRIC_LABELS.values())
+    header = f"{'arm':<10} {'n':>4}  " + "  ".join(f"{m:<20}" for m in METRIC_LABELS.values())
     lines = ["Per-arm means [95% bootstrap CI]", header + f"  {'ties':>6} {'parse fail':>10}"]
     for s in report.arms.values():
         cells = "  ".join(f"{_ci(s.metrics[m]):<20}" for m in METRIC_LABELS)
         lines.append(
-            f"{s.arm:<8} {s.n:>4}  {cells}  {s.tie_share:>6.1%} {s.parse_failure_rate:>10.1%}"
+            f"{s.arm:<10} {s.n:>4}  {cells}  {s.tie_share:>6.1%} {s.parse_failure_rate:>10.1%}"
         )
 
     lines += ["", "Calibration: mean p_click | feed CTR | sample CTR (inflated by design)"]
     for s in report.arms.values():
         c = s.calibration
         lines.append(
-            f"{s.arm:<8} {c.mean_p_click:.3f} | {c.feed_ctr:.3f} | {c.sample_ctr:.3f}"
+            f"{s.arm:<10} {c.mean_p_click:.3f} | {c.feed_ctr:.3f} | {c.sample_ctr:.3f}"
             if c
-            else f"{s.arm:<8} n/a (baseline scores are not probabilities)"
+            else f"{s.arm:<10} n/a (baseline scores are not probabilities)"
         )
 
     if report.differences:

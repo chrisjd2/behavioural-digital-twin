@@ -8,9 +8,11 @@ from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 
 from backend.arms import ARM_MESSAGES, LLMOptions, parse_reactions, request_payload, retry_messages
+from backend.baselines import BaselineContext
 from backend.data import (
     CandidateSet,
     DataSource,
+    Populations,
     build_candidate_set,
     date_range,
     load_behaviors,
@@ -77,16 +79,19 @@ def git_sha() -> str:
     return result.stdout.strip() if result.returncode == 0 else "unknown (not a git checkout)"
 
 
-def candidate_sets(
-    source: DataSource, config: ExperimentConfig, population: Population
-) -> list[CandidateSet]:
-    populations = sample_populations(
+def sampled_populations(source: DataSource, config: ExperimentConfig) -> Populations:
+    return sample_populations(
         load_behaviors(source.dev_dir / "behaviors.tsv"),
         n_dev=config.n_dev,
         n_test=config.n_test,
         dev_seed=config.dev_seed,
         test_seed=config.test_seed,
     )
+
+
+def candidate_sets(
+    populations: Populations, config: ExperimentConfig, population: Population
+) -> list[CandidateSet]:
     return [
         build_candidate_set(
             imp,
@@ -125,7 +130,9 @@ async def run_experiment(  # noqa: PLR0913 — keyword-only run options
         raise FreezeError("--allow-unfrozen is refused on real MIND until the freeze tag exists.")
 
     created = datetime.now(UTC)
-    sets = candidate_sets(source, config, population)
+    populations = sampled_populations(source, config)
+    sets = candidate_sets(populations, config, population)
+    baseline_context = BaselineContext(source, populations)
     news = load_news(source.dev_dir / "news.tsv")
     digest = hashlib.sha256(f"{created.isoformat()}{arms}".encode()).hexdigest()[:6]
     run = Run(
@@ -171,8 +178,14 @@ async def run_experiment(  # noqa: PLR0913 — keyword-only run options
 
     for arm in arms:
         if arm in BASELINES:
+            scorer = BASELINES[arm]
             run.users.extend(
-                result(arm, c, BASELINES[arm](c, seed=config.baseline_seed), reactions={})
+                result(
+                    arm,
+                    c,
+                    scorer(c, seed=config.baseline_seed, context=baseline_context),
+                    reactions={},
+                )
                 for c in sets
             )
             emit("arm_progress", arm=arm, done=len(sets), total=len(sets))

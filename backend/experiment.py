@@ -4,13 +4,13 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal
 
-from backend.baselines import random_scores
+from backend.baselines import popularity_scores, random_scores
 
 Population = Literal["dev", "test"]
 Scorer = Callable[..., dict[str, float]]
 
-# Arm name -> scorer(candidates, *, seed) returning a score per candidate news ID.
-ARMS: dict[str, Scorer] = {"random": random_scores}
+# Arm name -> scorer(candidates, *, seed, context: BaselineContext) -> score per candidate ID.
+ARMS: dict[str, Scorer] = {"popularity": popularity_scores, "random": random_scores}
 
 
 @dataclass(frozen=True)

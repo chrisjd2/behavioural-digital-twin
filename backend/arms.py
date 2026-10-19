@@ -9,6 +9,7 @@ import json
 import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import datetime
 
 from backend.data import CandidateSet, NewsItem
 
@@ -160,6 +161,7 @@ ARM_MESSAGES: dict[str, MessageBuilder] = {"A": arm_a_messages}
 _CANONICAL = CandidateSet(
     user_id="U0",
     impression_id="0",
+    time=datetime(2019, 11, 15),
     items=("N1", "N2"),
     labels={"N1": 1, "N2": 0},
     tie_rank={"N1": 1, "N2": 0},
