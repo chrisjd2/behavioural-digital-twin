@@ -5,6 +5,7 @@ import { fetchStatus, type Status } from './api/status'
 import HookStep from './HookStep'
 import { SIMULATED_LABEL } from './labels'
 import PopulationStep from './PopulationStep'
+import ReportStep from './ReportStep'
 import RunPicker, { type Runs } from './RunPicker'
 import SeedStep, { type Build } from './SeedStep'
 import SimulationStep from './SimulationStep'
@@ -33,6 +34,7 @@ const HOOK_STEP = 0
 const SEED_STEP = 1
 const POPULATION_STEP = 2
 const SIMULATION_STEP = 3
+const REPORT_STEP = 4
 
 /** An emptied input is NaN; send the config default for it instead. */
 function withDefaults(request: ExperimentRequest, defaults: ExperimentRequest): ExperimentRequest {
@@ -179,7 +181,8 @@ export default function App() {
                 }}
               />
             )}
-            {step !== POPULATION_STEP && step !== SIMULATION_STEP && (
+            {runId && step === REPORT_STEP && <ReportStep key={runId} runId={runId} />}
+            {step !== POPULATION_STEP && step !== SIMULATION_STEP && step !== REPORT_STEP && (
               <p className="muted">This step is not built yet.</p>
             )}
           </section>
