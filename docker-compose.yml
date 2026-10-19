@@ -1,0 +1,37 @@
+# Local development with hot reload: `just dev`, then open http://localhost:5173
+services:
+  api:
+    build:
+      context: .
+      target: dev
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Bind mounts from Windows/OneDrive do not deliver inotify events; poll instead.
+      WATCHFILES_FORCE_POLLING: "true"
+    volumes:
+      - ./backend:/app/backend
+      - ./tests:/app/tests
+      - ./scripts:/app/scripts
+      - ./data:/app/data
+    ports:
+      - "8000:8000"
+
+  web:
+    image: node:24-alpine
+    working_dir: /app/frontend
+    command: sh -c "npm ci && npm run dev"
+    environment:
+      API_PROXY_TARGET: http://api:8000
+      VITE_POLL: "1"
+    volumes:
+      - ./frontend:/app/frontend
+      - web-node-modules:/app/frontend/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+
+volumes:
+  web-node-modules:

@@ -1,0 +1,26 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.13
+    hooks:
+      - id: ruff-format
+        types_or: [python, pyi]
+      - id: ruff-check
+        args: [--fix]
+        types_or: [python, pyi]
+
+  # Secret scanning on staged changes. The repo is public (ADR-0010).
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.3
+    hooks:
+      - id: gitleaks
+
+  # Local hook so basedpyright sees the project's venv.
+  - repo: local
+    hooks:
+      - id: basedpyright
+        name: basedpyright
+        entry: uv run basedpyright
+        language: system
+        types_or: [python, pyi]
+        pass_filenames: false
+        require_serial: true
