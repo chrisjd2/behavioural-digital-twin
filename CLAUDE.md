@@ -36,15 +36,16 @@ Three labels only: `ready-for-agent` → `in-review` → `done`.
 
 ## Skills (`.claude/skills/`)
 
-- Implement: `fastapi-implement`, `react-implement` (spine: `_shared/implementer-protocol.md`)
+- Implement: `fastapi-implement`, `react-implement` (spine: `.claude/skills/_shared/implementer-protocol.md`)
 - Gates: `run-lint`, `run-typecheck`, `run-tests`, `coverage-delta`
-- Review (`_shared/review-protocol.md`, output `.reviews/<N>/review-<name>.json`): `review-implementation`, `review-quality`, `review-architecture`, `review-experiment`
+- Review (`.claude/skills/_shared/review-protocol.md`, output `.reviews/<N>/review-<name>.json`): `review-implementation`, `review-quality`, `review-architecture`, `review-experiment`
 
 Ported lightly from the owner's `kleisi-ops-server` workflow (ADR-0009), with its stack-specific conventions removed.
 
 ## Hard rules
 
-- **Never commit** `data/` (MIND, `cache.sqlite`, runs), `.env`, `brief.md`, `AI_USAGE.md` or talk notes. The repo is public (ADR-0010). gitleaks runs in pre-commit and CI.
+- **Never commit** `data/` (MIND, `cache.sqlite`, runs), `.env`, `brief.md` or talk notes. The repo is public (ADR-0010). gitleaks runs in pre-commit and CI.
+- `AI_USAGE.md` is gitignored until Chris has reviewed and approved it; never force-add it.
 - **Never skip hooks** (`--no-verify`) or weaken a gate to get green.
 - **Tests run in mock mode** (`MOCK_LLM=true`) on the synthetic sample: no API key, no network, no real MIND. Mock output is labelled `MOCK` and never presented as a result.
 - **A failed read is not an empty result.** A failed fetch, file read or LLM call is an error state, never `[]`, `None` or a blank screen. (Only unparseable `p_click` → 0, and it is counted as a parse failure.)

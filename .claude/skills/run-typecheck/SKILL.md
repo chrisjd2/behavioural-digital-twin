@@ -5,7 +5,7 @@ description: Run basedpyright (backend) and tsc -b (frontend) and return the gat
 
 # run-typecheck
 
-Read `.claude/skills/_shared/gate-protocol.md` first. Verbs map to tools via `_shared/tool-mapping.md`.
+Read `.claude/skills/_shared/gate-protocol.md` first. Verbs map to tools via `.claude/skills/_shared/tool-mapping.md`.
 
 ## Invoke
 

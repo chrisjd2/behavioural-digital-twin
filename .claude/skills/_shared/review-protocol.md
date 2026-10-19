@@ -28,7 +28,7 @@ Write to `.reviews/<N>/review-<name>.json` (gitignored) and print it:
   "reviewer": "review-quality",
   "applied": true,
   "exit": 1,
-  "summary": "1 blocker, 0 majors, 2 minors",
+  "summary": "1 blocker, 0 majors, 2 minors, 0 nits",
   "findings": [
     {
       "severity": "blocker",
@@ -44,6 +44,13 @@ Write to `.reviews/<N>/review-<name>.json` (gitignored) and print it:
 ```
 
 All six finding fields are required. `line` is 0 for a file-level finding. Optional details go in a per-finding `extra` object.
+
+`summary` is always the four counts: `"<B> blockers, <M> majors, <K> minors, <N> nits"`.
+
+**Categories** are snake_case. Use your skill's own categories first. Any reviewer may also use:
+
+- `correctness`: the code does the wrong thing (wrong result, crash, wrong exit code, broken contract), when no more specific category fits.
+- `docs_drift`: code, skills, `CLAUDE.md`, `CONTEXT.md` or an ADR disagree with each other. Recommend which one to change; an ADR changes only by amendment or a superseding ADR.
 
 ## Severity and exit codes
 

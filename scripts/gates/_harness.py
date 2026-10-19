@@ -19,7 +19,11 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FRONTEND = REPO_ROOT / "frontend"
 TREES = ("backend", "frontend")
-ANSI = re.compile(r"\x1b\[[0-9;]*m")
+# SGR colour codes and OSC-8 hyperlinks (`ESC ] 8 ; ; url ESC \`), which some tools emit.
+ANSI = re.compile(r"\x1b\[[0-9;]*m|\x1b\]8;[^\x07\x1b]*(?:\x07|\x1b\\)")
+# NO_COLOR only: some tools (ruff) treat FORCE_COLOR as set whatever its value. Tests run
+# in mock mode, as in CI (ADR-0010).
+TOOL_ENV = {"NO_COLOR": "1", "MOCK_LLM": "true"}
 
 
 @dataclass
@@ -69,7 +73,7 @@ def run(cmd: list[str], cwd: Path = REPO_ROOT) -> tuple[int, str]:
         text=True,
         encoding="utf-8",
         errors="replace",
-        env={**os.environ, "NO_COLOR": "1", "FORCE_COLOR": "0"},
+        env={k: v for k, v in os.environ.items() if k != "FORCE_COLOR"} | TOOL_ENV,
     )
     return proc.returncode, ANSI.sub("", proc.stdout + proc.stderr)
 
@@ -145,8 +149,11 @@ def run_checks(gate: str, checks: list[Check], args: argparse.Namespace) -> int:
     parts: list[str] = []
     errors: list[str] = []
     for check in selected:
-        code, out = run(check.cmd, check.cwd)
-        found = check.parse(out) if code != 0 else []
+        try:
+            code, out = run(check.cmd, check.cwd)
+            found = check.parse(out) if code != 0 else []
+        except Exception as exc:  # a crash is still an envelope, never a traceback
+            code, out, found = 2, repr(exc), []
         prefix = check.cwd.relative_to(REPO_ROOT)
         for f in found:
             f.extra.setdefault("tool", check.label)

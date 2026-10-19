@@ -17,7 +17,9 @@ CHECKS = [
         "backend",
         "ruff check",
         ["uv", "run", "ruff", "check", "--output-format", "concise", "."],
-        regex_parser(r"^(?P<file>[^\s:]+):(?P<line>\d+):\d+: (?P<rule>[A-Z]+\d+) (?P<msg>.+)$"),
+        regex_parser(
+            r"^(?P<file>[^\s:]+):(?P<line>\d+):\d+: (?P<rule>[A-Z]+\d+) (?:\[\*\] )?(?P<msg>.+)$"
+        ),
     ),
     Check(
         "frontend",

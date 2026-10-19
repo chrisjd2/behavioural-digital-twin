@@ -1,6 +1,6 @@
 # review-experiment
 
-Read `_shared/review-protocol.md` first. This file adds what this reviewer looks for.
+Read `.claude/skills/_shared/review-protocol.md` first. This file adds what this reviewer looks for.
 
 **Question:** could this diff make a reported number wrong, unfair between arms, or chosen after seeing results? The talk's credibility rests on the experiment being honest. Read **ADR-0001 to ADR-0007** and `CONTEXT.md` §2–4 in full first.
 
@@ -46,4 +46,4 @@ For each check that the diff touches, look for the test that proves the property
 
 1. Freeze status checked and stated in `extra.freeze` (`"not tagged"` or the tag's SHA).
 2. Each checklist row the diff touches has been checked, with its ADR cited in `message`.
-3. `summary` counts by severity.
+3. `summary` is the four counts from `.claude/skills/_shared/review-protocol.md`.

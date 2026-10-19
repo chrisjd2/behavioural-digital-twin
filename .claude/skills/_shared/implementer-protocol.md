@@ -1,6 +1,6 @@
 # Implementer protocol (shared)
 
-The workflow every implement skill (`fastapi-implement`, `react-implement`) follows. Stack rules live in each skill; this file is the spine. Verbs ("read the file", "run command") map to tools via `_shared/tool-mapping.md`.
+The workflow every implement skill (`fastapi-implement`, `react-implement`) follows. Stack rules live in each skill; this file is the spine. Verbs ("read the file", "run command") map to tools via `.claude/skills/_shared/tool-mapping.md`.
 
 ## 1. Load the ticket
 
@@ -39,7 +39,7 @@ Tests run in **mock mode** with the synthetic sample. Never call a real LLM or r
 
 ## 5. Run gates
 
-Follow `_shared/gate-protocol.md`, in this order: `run-lint` → `run-typecheck` → `run-tests` → `coverage-delta`, each with `--issue <N>`.
+Follow `.claude/skills/_shared/gate-protocol.md`, in this order: `run-lint` → `run-typecheck` → `run-tests` → `coverage-delta`, each with `--issue <N>`.
 
 - `exit 0` → next gate.
 - `exit 1` → fix (step 4) and re-run from the first gate.

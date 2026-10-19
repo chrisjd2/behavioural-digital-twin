@@ -20,7 +20,7 @@ Trees:
 | `backend` (`backend/`, `scripts/`, `tests/`) | `uv run ruff format --check`, `uv run ruff check` | `uv run basedpyright` | `uv run pytest` |
 | `frontend` (`frontend/`) | `npm run -s lint` (oxlint), `npm run -s format:check` (prettier) | `npm run -s typecheck` (`tsc -b`) | `npm run -s test` (Vitest) |
 
-The gates run the same commands as CI, so a green gate means a green CI job.
+The gates run the same tools and checks as CI, with `MOCK_LLM=true` and `NO_COLOR=1` set for every tool (output flags differ so it can be parsed). A green gate is strong evidence CI will pass, not a guarantee: CI also builds the frontend and the Docker image.
 
 ## Output envelope (frozen)
 

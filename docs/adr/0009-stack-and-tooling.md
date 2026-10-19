@@ -49,3 +49,7 @@ CONTEXT.md README.md AI_USAGE.md .env.example justfile
 - **Full Kleisi workflow (six-state labels, all reviewers):** too heavy for five days.
 - **JavaScript frontend:** faster to start, but the API shapes are the riskiest seam.
 - **basedpyright `all`:** numpy noise not worth fighting this week.
+
+## Amendments
+
+- **Amendment 2026-10-19:** frontend lint uses oxlint (Vite template default) instead of typescript-eslint; the app error class is `AppError` (ruff N818), not `AppException`.

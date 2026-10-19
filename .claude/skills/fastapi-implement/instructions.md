@@ -1,6 +1,6 @@
 # fastapi-implement
 
-Backend implementation. The workflow is `_shared/implementer-protocol.md`; this file adds the backend rules.
+Backend implementation. The workflow is `.claude/skills/_shared/implementer-protocol.md`; this file adds the backend rules.
 
 ## Always read
 
@@ -28,7 +28,7 @@ Add a new module only when a concern doesn't fit an existing one. Say so in the 
 - **Settings:** `Settings` (pydantic-settings) + cached `get_settings()` in `backend/config.py`. New config goes there and in `.env.example`, with a safe default. Never read `os.environ` elsewhere.
 - **App factory:** `build_app(settings)` in `backend/main.py`. Tests build their own app with explicit settings; never rely on the module-level `app` or a real `.env`.
 - **Errors:** raise `AppError(status_code, code, detail)`; the single handler returns `{"code", "detail"}`. No other error shape, no per-route `try/except` translating errors.
-- **Responses:** route handlers return Pydantic models directly (no envelope). Every response model has a matching TypeScript type in `frontend/src/api/` with a `/** Mirrors backend.main.X */` comment. Change both in the same PR.
+- **Responses:** route handlers return Pydantic models directly (no envelope). Every response model has a matching TypeScript type in `frontend/src/api/` with a ``/** Mirrors `backend.main.X`. */`` comment. Change both in the same PR.
 - **`DEMO_MODE` (ADR-0011):** when on, `POST /api/run` and `POST /api/experiment` are disabled, and the interview is the only LLM caller, rate-limited. Any new write or LLM-calling endpoint must say what it does in demo mode, with a test for both modes.
 
 ## Stack rules

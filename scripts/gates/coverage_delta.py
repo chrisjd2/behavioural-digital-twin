@@ -19,9 +19,18 @@ GATE = "coverage-delta"
 HUNK = re.compile(r"^@@ -\S+ \+(\d+)(?:,(\d+))? @@", re.MULTILINE)
 
 
+class GateError(Exception):
+    def __init__(self, code: int, summary: str, failures: list[Failure] | None = None) -> None:
+        super().__init__(summary)
+        self.code, self.summary, self.failures = code, summary, failures
+
+
 def threshold() -> float:
-    raw = os.environ.get("GATE_COVERAGE_MIN", "80").rstrip("%")
-    value = float(raw)
+    raw = os.environ.get("GATE_COVERAGE_MIN", "80")
+    try:
+        value = float(raw.rstrip("%"))
+    except ValueError:
+        raise GateError(2, f"harness error: GATE_COVERAGE_MIN={raw!r} is not a number") from None
     return value / 100 if value > 1 else value
 
 
@@ -52,18 +61,14 @@ def ranges(lines: list[int]) -> list[list[int]]:
     return out
 
 
-class GateError(Exception):
-    def __init__(self, code: int, summary: str, failures: list[Failure] | None = None) -> None:
-        super().__init__(summary)
-        self.code, self.summary, self.failures = code, summary, failures
-
-
 def coverage_report() -> dict[str, Any]:
     """Run pytest under coverage; return coverage.py's per-file JSON keyed by posix path."""
     code, out = run(["uv", "run", "coverage", "run", "-m", "pytest", "-q", "--no-header"])
     if code != 0:
         failed = parse_pytest(out)
         if failed:
+            for f in failed:
+                f.extra["tool"] = "pytest"
             raise GateError(1, f"{len(failed)} test(s) failed under coverage", failed)
         raise GateError(2, f"harness error: coverage run failed: {tail(out)}")
     with tempfile.TemporaryDirectory() as tmp:
@@ -93,11 +98,13 @@ def check_file(name: str, lines: set[int], data: dict[str, Any], minimum: float)
             "coverage_pct": round(pct, 3),
             "threshold": minimum,
             "uncovered_ranges": ranges(uncovered),
+            "tool": "coverage",
         },
     )
 
 
 def measure(base: str) -> tuple[str, list[Failure]]:
+    minimum = threshold()
     try:
         changed = changed_lines(base)
     except RuntimeError as exc:
@@ -105,7 +112,6 @@ def measure(base: str) -> tuple[str, list[Failure]]:
     if not changed:
         return "no-op: no backend Python changed", []
     measured = coverage_report()
-    minimum = threshold()
     failures = []
     for name, lines in sorted(changed.items()):
         # A changed file no test imports is entirely uncovered.
@@ -119,15 +125,18 @@ def measure(base: str) -> tuple[str, list[Failure]]:
 def main(argv: list[str]) -> int:
     args = parse_args(argv, with_base=True)
     if "backend" not in args.tree:
-        return emit(GATE, trees=args.tree, exit_code=0, summary="no-op: only backend is measured")
-    try:
-        summary, failures = measure(args.base)
-        code = 1 if failures else 0
-    except GateError as err:
-        code, summary, failures = err.code, err.summary, err.failures
+        code, summary, failures = 0, "no-op: only backend is measured", []
+    else:
+        try:
+            summary, failures = measure(args.base)
+            code = 1 if failures else 0
+        except GateError as err:
+            code, summary, failures = err.code, err.summary, err.failures
+        except Exception as exc:  # an unexpected crash is still an envelope, never a traceback
+            code, summary, failures = 2, f"harness error: {exc!r}", []
     return emit(
         GATE,
-        trees=["backend"],
+        trees=["backend"] if "backend" in args.tree else args.tree,
         exit_code=code,
         summary=summary,
         failures=failures,

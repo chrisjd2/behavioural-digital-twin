@@ -1,6 +1,6 @@
 # react-implement
 
-Frontend implementation. The workflow is `_shared/implementer-protocol.md`; this file adds the frontend rules.
+Frontend implementation. The workflow is `.claude/skills/_shared/implementer-protocol.md`; this file adds the frontend rules.
 
 ## Always read
 
@@ -23,7 +23,7 @@ frontend/
 ## Stack rules
 
 - **React + TypeScript**, function components and hooks only. No `any` in new code; narrow `unknown` at the API boundary.
-- **API types mirror the backend.** Each backend response model has a TypeScript type in `frontend/src/api/` with a `/** Mirrors backend.main.X */` comment. Change both sides in the same PR. Components never call `fetch` directly; they call the functions in `src/api/`.
+- **API types mirror the backend.** Each backend response model has a TypeScript type in `frontend/src/api/` with a ``/** Mirrors `backend.main.X`. */`` comment. Change both sides in the same PR. Components never call `fetch` directly; they call the functions in `src/api/`.
 - **A failed read is not an empty state.** A fetch that fails (network error, non-2xx, bad JSON) shows an error state; it never renders as "no runs" / "no users" / an empty chart. Loading, error and empty are three different states, each tested.
 - **No CDN assets** (ADR-0008). Fonts, scripts, icons and data are bundled or served by the app. The UI must work with no internet beyond the API.
 - **Charts:** hand-rolled SVG; d3-force only for the population graph (ADR-0009). No chart library.

@@ -1,6 +1,6 @@
 # review-implementation
 
-Read `_shared/review-protocol.md` first. This file adds what this reviewer looks for.
+Read `.claude/skills/_shared/review-protocol.md` first. This file adds what this reviewer looks for.
 
 **Question:** does the diff implement what the issue asked, no more, no less, with tests that prove it?
 
@@ -11,6 +11,8 @@ Read `_shared/review-protocol.md` first. This file adds what this reviewer looks
 ### Unimplemented acceptance criteria
 
 For each `- [ ]` bullet under **Acceptance criteria**, find the change that implements it **and** the test that proves it. If the bullet says "endpoint returns Y", look for the route, its response model, the matching type in `frontend/src/api/`, and a test asserting the shape.
+
+For a criterion about docs, skills or config only (e.g. "CLAUDE.md points to X", "skill Y exists"), no test is needed: the evidence is a `file:line` plus a command anyone can run to check it (e.g. `grep -n CONTEXT.md CLAUDE.md`). Put it in the finding's or the envelope's `extra.evidence`.
 
 `unimplemented_ac` · `blocker` · name the bullet; recommend the missing piece (route, test, type, UI state).
 
@@ -48,4 +50,4 @@ Work described in **What to build** that neither the ACs nor the diff cover.
 1. Every AC bullet is matched to a change or flagged.
 2. Every significant change is traced or flagged.
 3. Every new test is judged deep enough or flagged.
-4. `summary` is counts: "<N> blockers, <M> majors, <K> minors".
+4. `summary` is the four counts from `.claude/skills/_shared/review-protocol.md` ("<B> blockers, <M> majors, <K> minors, <N> nits").

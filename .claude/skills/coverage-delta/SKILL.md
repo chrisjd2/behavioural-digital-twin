@@ -5,7 +5,7 @@ description: Measure coverage of the backend Python lines changed on this branch
 
 # coverage-delta
 
-Read `.claude/skills/_shared/gate-protocol.md` first. Verbs map to tools via `_shared/tool-mapping.md`.
+Read `.claude/skills/_shared/gate-protocol.md` first. Verbs map to tools via `.claude/skills/_shared/tool-mapping.md`.
 
 ## Why changed lines, per file
 
@@ -23,7 +23,7 @@ A repo can sit at 90% total and still ship an untested new function. This gate m
 
 ## Threshold
 
-80% per changed file. Override for one run with `GATE_COVERAGE_MIN=70` (accepts `70`, `0.7`, `70%`). Lower it only deliberately, and say so in the PR.
+80% per changed file. Override for one run with `GATE_COVERAGE_MIN=70` (accepts `70`, `0.7`, `70%`; anything else is exit 2). Lower it only deliberately, and say so in the PR.
 
 ## Failure shapes
 
@@ -31,12 +31,12 @@ Coverage miss:
 
 ```json
 {"file": "backend/metrics.py", "line": 42, "message": "60% of changed lines covered (threshold 80%)",
- "changed_lines": 5, "covered_lines": 3, "coverage_pct": 0.6, "threshold": 0.8, "uncovered_ranges": [[42, 43]]}
+ "changed_lines": 5, "covered_lines": 3, "coverage_pct": 0.6, "threshold": 0.8, "uncovered_ranges": [[42, 43]], "tool": "coverage"}
 ```
 
 Point at `uncovered_ranges` when reporting. A changed file no test imports shows as 0%.
 
-Test failure during the coverage run: the entry has a `test` field and no `coverage_pct`. Report it as a failing test, not a coverage gap.
+Test failure during the coverage run: the entry has a `test` field, `"tool": "pytest"` and no `coverage_pct`. Report it as a failing test, not a coverage gap.
 
 ## Reporting
 

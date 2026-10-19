@@ -5,7 +5,7 @@ description: Run ruff format/check (backend) and oxlint + prettier (frontend) an
 
 # run-lint
 
-Read `.claude/skills/_shared/gate-protocol.md` first. Verbs map to tools via `_shared/tool-mapping.md`.
+Read `.claude/skills/_shared/gate-protocol.md` first. Verbs map to tools via `.claude/skills/_shared/tool-mapping.md`.
 
 ## Invoke
 

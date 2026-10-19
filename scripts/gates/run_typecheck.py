@@ -2,18 +2,36 @@
 
 from __future__ import annotations
 
+import json
 import sys
 
-from _harness import FRONTEND, Check, parse_args, regex_parser, run_checks
+from _harness import FRONTEND, Check, Failure, parse_args, regex_parser, run_checks
+
+
+def parse_basedpyright(out: str) -> list[Failure]:
+    """Errors from `basedpyright --outputjson`; warnings don't fail the gate."""
+    start = out.find("{")
+    if start < 0:
+        return []
+    try:
+        report = json.loads(out[start:])
+    except json.JSONDecodeError:
+        return []
+    return [
+        Failure(
+            d["file"],
+            d["range"]["start"]["line"] + 1,
+            d["message"],
+            {"rule": d["rule"]} if d.get("rule") else {},
+        )
+        for d in report.get("generalDiagnostics", [])
+        if d.get("severity") == "error"
+    ]
+
 
 CHECKS = [
     Check(
-        "backend",
-        "basedpyright",
-        ["uv", "run", "basedpyright"],
-        regex_parser(
-            r"^\s*(?P<file>\S.*?\.pyi?):(?P<line>\d+):\d+ - error: (?P<msg>.+?)(?: \((?P<rule>\w+)\))?$"
-        ),
+        "backend", "basedpyright", ["uv", "run", "basedpyright", "--outputjson"], parse_basedpyright
     ),
     Check(
         "frontend",

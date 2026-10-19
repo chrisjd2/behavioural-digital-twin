@@ -1,6 +1,6 @@
 # review-quality
 
-Read `_shared/review-protocol.md` first. This file adds what this reviewer looks for.
+Read `.claude/skills/_shared/review-protocol.md` first. This file adds what this reviewer looks for.
 
 The anti-bloat reviewer: keep new code lean, honest and free of premature complexity. Take the "do not flag" list as seriously as the catalogue; noisy reviews hide real findings.
 
@@ -41,4 +41,4 @@ The anti-bloat reviewer: keep new code lean, honest and free of premature comple
 
 1. Each category considered against the diff.
 2. Each finding survives the "do not flag" list.
-3. `summary` counts by severity; recommendations are one actionable sentence.
+3. `summary` is the four counts from `.claude/skills/_shared/review-protocol.md`; recommendations are one actionable sentence.

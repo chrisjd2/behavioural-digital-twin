@@ -5,7 +5,7 @@ description: Run pytest (backend) and Vitest (frontend) and return the gate JSON
 
 # run-tests
 
-Read `.claude/skills/_shared/gate-protocol.md` first. Verbs map to tools via `_shared/tool-mapping.md`.
+Read `.claude/skills/_shared/gate-protocol.md` first. Verbs map to tools via `.claude/skills/_shared/tool-mapping.md`.
 
 ## Invoke
 
