@@ -7,7 +7,7 @@ from typing import Literal
 
 from backend.baselines import random_scores
 from backend.data import CandidateSet, build_candidate_set, load_behaviors, sample_populations
-from backend.metrics import auc
+from backend.metrics import UserScores
 
 Population = Literal["dev", "test"]
 Scorer = Callable[..., dict[str, float]]
@@ -32,8 +32,8 @@ class ExperimentConfig:
 
 def evaluate(
     data_dir: Path, config: ExperimentConfig, *, population: Population, arms: list[str]
-) -> dict[str, list[float]]:
-    """Per-user AUC for each arm, in population order."""
+) -> dict[str, list[UserScores]]:
+    """Each arm's scores per user, with the labels and references needed to evaluate them."""
     unknown = sorted(set(arms) - set(ARMS))
     if unknown:
         raise ValueError(f"Unknown arm(s): {', '.join(unknown)}")
@@ -55,6 +55,17 @@ def evaluate(
         for imp in (populations.dev if population == "dev" else populations.test)
     ]
     return {
-        arm: [auc(ARMS[arm](c, seed=config.baseline_seed), c.labels) for c in candidate_sets]
+        arm: [
+            UserScores(
+                user_id=c.user_id,
+                arm=arm,
+                scores=ARMS[arm](c, seed=config.baseline_seed),
+                labels=c.labels,
+                tie_rank=c.tie_rank,
+                feed_ctr=c.feed_ctr,
+                sample_ctr=c.sample_ctr,
+            )
+            for c in candidate_sets
+        ]
         for arm in arms
     }
