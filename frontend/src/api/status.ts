@@ -1,16 +1,19 @@
+import { requestJson } from './client'
+import type { ExperimentRequest } from './experiment'
+
+/** Mirrors `backend.data.DataKind`. */
+export type DataSource = 'mind' | 'synthetic' | 'none'
+
 /** Mirrors `backend.main.Status`. */
 export type Status = {
   mock: boolean
   demo_mode: boolean
   model: string
-  data_source: string
+  data_source: DataSource
   call_count: number
+  experiment_defaults: ExperimentRequest
 }
 
-export async function fetchStatus(): Promise<Status> {
-  const response = await fetch('/api/status')
-  if (!response.ok) {
-    throw new Error(`GET /api/status failed with ${response.status}`)
-  }
-  return (await response.json()) as Status
+export function fetchStatus(): Promise<Status> {
+  return requestJson<Status>('/api/status')
 }

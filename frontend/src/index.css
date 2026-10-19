@@ -1,68 +1,524 @@
-/* Light, projector-legible theme. Arm colours per PRD-03. */
+/* Light, projector-legible theme (PRD-03). Font bundled locally: no CDN (ADR-0008). */
+@import '@fontsource-variable/atkinson-hyperlegible-next';
+
 :root {
-  --bg: #ffffff;
-  --ink: #1b1f24;
-  --muted: #5b6470;
+  --paper: #ffffff;
+  --wash: #f2f4f8;
+  --ink: #172033;
+  --muted: #586174;
+  --rule: #d9dee7;
   --error: #b42318;
+  --error-wash: #fdf0ee;
+
   --arm-a: #64748b;
   --arm-b: #d97706;
   --arm-c: #2563eb;
   --arm-d: #7c3aed;
   --arm-e: #4d9a94;
-  --baseline: #9ca3af;
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  --baseline: #8a919c;
+
+  font-family: 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
   font-size: 20px;
+  line-height: 1.5;
   color: var(--ink);
-  background: var(--bg);
+  background: var(--paper);
+  font-variant-numeric: tabular-nums;
 }
 
 body {
   margin: 0;
+  background: var(--paper);
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+:focus-visible {
+  outline: 3px solid var(--arm-c);
+  outline-offset: 3px;
 }
 
 .shell {
-  max-width: 1200px;
+  max-width: 1360px;
+  min-height: 100vh;
   margin: 0 auto;
-  padding: 32px 16px;
+  padding: 0 48px;
+  display: flex;
+  flex-direction: column;
 }
 
+/* Masthead: the question is the hero. */
 .masthead {
+  padding: 32px 0 24px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.masthead-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
 }
 
-h1 {
-  font-size: 2.2rem;
-  margin: 0;
+.wordmark {
+  font-weight: 700;
+  color: var(--muted);
 }
 
 .badge-mock {
   background: var(--error);
   color: #fff;
-  font-weight: 700;
-  padding: 4px 10px;
+  font-weight: 800;
+  font-size: 1.1rem;
+  padding: 4px 16px;
   border-radius: 6px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
+}
+
+h1 {
+  font-size: clamp(2.2rem, 4.6vw, 3.6rem);
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: -0.025em;
+  margin: 8px 0 20px;
+}
+
+/* Stepper: a real sequence, so numbered. */
+.stepper ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+.stepper button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.stepper button:hover {
+  background: var(--wash);
+  color: var(--ink);
+}
+
+.step-number {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.9em;
+  height: 1.9em;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  font-weight: 800;
+}
+
+.stepper button[aria-current='step'] {
+  color: var(--ink);
+}
+
+.stepper button[aria-current='step'] .step-number {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+/* Stage */
+.stage {
+  flex: 1;
+  padding: 32px 0 56px;
+}
+
+h2 {
+  font-size: 2.1rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+
+.step-kicker {
+  color: var(--muted);
+  font-weight: 600;
+  margin-right: 0.25em;
+}
+
+.lede {
+  font-size: 1.2rem;
+  max-width: 52ch;
+  margin-top: 8px;
+}
+
+.muted {
+  color: var(--muted);
 }
 
 .error {
   color: var(--error);
+  background: var(--error-wash);
+  border-left: 6px solid var(--error);
+  padding: 16px 20px;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 24px;
+  font-weight: 600;
 }
 
-.status {
+.placeholder p {
+  font-size: 1.2rem;
+  margin-top: 12px;
+  max-width: 52ch;
+}
+
+/* Seed */
+.seed-grid {
   display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 4px 16px;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 24px;
+  margin-top: 32px;
+}
+
+.seed h3 {
+  font-size: 1rem;
+  font-weight: 700;
   color: var(--muted);
 }
 
-.status dd {
-  margin: 0;
+.source,
+.settings {
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.source {
+  border-left-width: 10px;
+}
+
+.source-mind {
+  border-left-color: var(--ink);
+}
+
+/* Fake data gets a hatched edge so nobody mistakes it for the real thing. */
+.source-synthetic {
+  border-left-color: transparent;
+  border-image: repeating-linear-gradient(-45deg, var(--arm-b) 0 8px, var(--paper) 8px 14px) 0 0 0
+    10 / 0 0 0 10px;
+}
+
+.source-none {
+  border-left-color: var(--error);
+}
+
+.source-title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  margin: 4px 0 8px;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 12px 0 20px;
+}
+
+.fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-label {
+  font-weight: 700;
+}
+
+.field-hint {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.fields input {
+  font: inherit;
+  font-size: 1.4rem;
+  font-weight: 700;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border: 2px solid var(--rule);
+  border-radius: 6px;
   color: var(--ink);
+  background: var(--paper);
+}
+
+.fields input:read-only {
+  background: var(--wash);
+}
+
+.primary {
+  font: inherit;
+  font-weight: 800;
+  font-size: 1.1rem;
+  padding: 14px 28px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.primary:disabled {
+  background: var(--rule);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.result {
+  margin-top: 24px;
+}
+
+.result-empty {
+  padding: 20px 24px;
+  border: 2px dashed var(--rule);
+  border-radius: 12px;
+  color: var(--muted);
+}
+
+.result-error {
+  color: var(--error);
+  background: var(--error-wash);
+  border-left: 6px solid var(--error);
+  padding: 16px 20px;
+  border-radius: 0 8px 8px 0;
+  font-weight: 600;
+}
+
+.result-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 32px;
+  padding: 24px;
+  background: var(--wash);
+  border-radius: 12px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: start;
+  gap: 24px;
+  margin: 0;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.stat dt {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.stat dd {
+  margin: 0;
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.categories h4 {
+  font-size: 1rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.categories ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.categories li {
+  display: grid;
+  grid-template-columns: 9em 1fr 2.5em;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+}
+
+.category-bar {
+  height: 12px;
+  border-radius: 6px;
+  background: var(--ink);
+}
+
+.category-count {
+  text-align: right;
+  font-weight: 700;
+}
+
+/* Arm cards: each arm keeps its colour on every screen. */
+.section-title {
+  margin: 40px 0 16px;
+}
+
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.card {
+  --arm: var(--baseline);
+  position: relative;
+  border: 1px solid var(--rule);
+  border-top: 10px solid var(--arm);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.arm-a {
+  --arm: var(--arm-a);
+}
+.arm-b {
+  --arm: var(--arm-b);
+}
+.arm-c {
+  --arm: var(--arm-c);
+}
+.arm-d {
+  --arm: var(--arm-d);
+}
+.arm-e {
+  --arm: var(--arm-e);
+}
+
+.arm-letter {
+  display: grid;
+  place-items: center;
+  width: 1.8em;
+  height: 1.8em;
+  border-radius: 8px;
+  background: var(--arm);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.3rem;
+}
+
+.card h4 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.knows {
+  font-weight: 700;
+  color: var(--arm);
+}
+
+.card p:not(.knows) {
+  font-size: 0.9rem;
+}
+
+.cards-baseline {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cards-baseline .card {
+  border: 2px dashed var(--baseline);
+}
+
+.cards-baseline .knows {
+  color: var(--muted);
+}
+
+.control {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.control-tag {
+  background: var(--arm-e);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+/* Footer: the ADR-0007 label stays visible. */
+.footer {
+  border-top: 1px solid var(--rule);
+  padding: 20px 0 28px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 1100px) {
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .seed-grid,
+  .result-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    font-size: 17px;
+  }
+  .shell {
+    padding: 0 16px;
+  }
+  .stepper ol {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .stepper button {
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+    padding: 8px 4px;
+    font-size: 0.85rem;
+  }
+  .cards,
+  .cards-baseline,
+  .fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .categories li {
+    grid-template-columns: 7em 1fr 2em;
+  }
 }
