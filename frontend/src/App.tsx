@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { buildPopulation, type ExperimentRequest } from './api/experiment'
 import { defaultRunId, fetchRuns } from './api/runs'
 import { fetchStatus, type Status } from './api/status'
+import HookStep from './HookStep'
 import { SIMULATED_LABEL } from './labels'
 import PopulationStep from './PopulationStep'
 import RunPicker, { type Runs } from './RunPicker'
@@ -27,6 +28,7 @@ const STEPS: Placeholder[] = [
   { name: 'Report', blurb: 'How each arm did against the real clicks.', runCentric: true },
   { name: 'Interview', blurb: 'Ask one agent about its news habits.' },
 ]
+const HOOK_STEP = 0
 const SEED_STEP = 1
 const POPULATION_STEP = 2
 
@@ -127,7 +129,9 @@ export default function App() {
             Cannot reach the Twin Lab API. Check the server is running, then reload.
           </p>
         )}
-        {step === SEED_STEP ? (
+        {step === HOOK_STEP ? (
+          <HookStep />
+        ) : step === SEED_STEP ? (
           <>
             {load.state === 'loading' && <p className="muted">Checking the data source…</p>}
             {load.state === 'ready' && (
