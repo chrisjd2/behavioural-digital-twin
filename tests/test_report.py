@@ -93,6 +93,13 @@ def test_paired_difference_rejects_mismatched_users() -> None:
         paired_difference([user("U1", "D", 100)], [user("U2", "A", 0)], seed=1)
 
 
+def test_arm_with_no_users_is_an_error_not_an_empty_result() -> None:
+    with pytest.raises(ValueError, match="no users"):
+        paired_difference([], [], seed=1)
+    with pytest.raises(ValueError, match="no users"):
+        summarise_arm("D", [], seed=1)
+
+
 def test_duplicate_user_in_an_arm_is_rejected() -> None:
     with pytest.raises(ValueError, match="U1"):
         summarise_arm("D", [user("U1", "D", 100), user("U1", "D", 0)], seed=1)

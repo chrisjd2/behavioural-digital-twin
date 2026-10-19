@@ -122,11 +122,9 @@ def paired_difference(
         user_id: user_metrics(arm_users[user_id]).auc - user_metrics(ref_users[user_id]).auc
         for user_id in sorted(arm_users)
     }
+    estimate = bootstrap_mean(list(per_user.values()), seed=seed)
     return PairedDifference(
-        arm=arm[0].arm,
-        reference=reference[0].arm,
-        auc=bootstrap_mean(list(per_user.values()), seed=seed),
-        per_user=per_user,
+        arm=arm[0].arm, reference=reference[0].arm, auc=estimate, per_user=per_user
     )
 
 
