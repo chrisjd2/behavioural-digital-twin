@@ -44,6 +44,7 @@ Twin Lab asks: **can an LLM agent impersonate a real news reader and predict whi
 | **Arm D — Twin + profile + memory** | Arm C plus a **distilled profile**. The primary arm. |
 | **Arm E — Wrong twin** | Arm D given a *different* user's profile and memories. A **control**: tests whether gains are personal or just "realism". |
 | **Twin** | An agent grounded in a real user's behaviour (arms C, D). *Avoid:* calling arm B a twin. |
+| **Knowledge** | What one agent knew in one arm: nothing (A), an invented persona (B), memories (C), a distilled profile plus memories (D), another user's profile plus memories (E). Saved per user in the run file and shown in the Population panel. |
 | **Memory** | A past-click news item shown to a twin, with a **retrieval reason** ("similar to: …" or "recent"). |
 | **Distilled profile** | A ≤120-word, structured, evidence-cited summary of a user's last ≤50 clicks. No demographics, personality or identity inference. |
 | **Baseline** | A non-AI ranker: **popularity** or **random**. |

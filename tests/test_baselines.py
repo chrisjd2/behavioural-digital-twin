@@ -1,4 +1,6 @@
+from dataclasses import replace
 from datetime import datetime
+from types import SimpleNamespace
 
 import pytest
 
@@ -8,10 +10,12 @@ from backend.baselines import (
     PopularityIndex,
     build_popularity_index,
     fit_beta_prior,
+    popularity_scores,
 )
-from backend.data import DataSource, Impression, load_behaviors
+from backend.data import DataSource, Impression, build_candidate_set, load_behaviors
 from backend.experiment import ExperimentConfig
 from backend.runner import sampled_populations
+from tests.factories import make_impression
 
 TEST_TIME = datetime(2019, 11, 15, 9, 0)
 
@@ -98,3 +102,24 @@ def test_run_context_excludes_every_dev_and_test_user(sample_source: DataSource)
     dev_shows = sum(len(times) for times in popularity.dev_times.values())
     assert dev_shows == sum(len(imp.shown) for imp in dev if imp.user_id not in sampled)
     assert dev_shows < sum(len(imp.shown) for imp in dev)
+
+
+def test_popularity_scores_each_candidate_at_its_own_impression_time() -> None:
+    dev = [shown_at("O", datetime(2019, 11, 15, 8, 0), ("C0", 1), ("N0", 0))]
+    context = SimpleNamespace(popularity=index(dev))
+    candidates = build_candidate_set(make_impression(), seed=1, max_candidates=8, max_clicked=2)
+
+    before_the_click = popularity_scores(
+        replace(candidates, time=datetime(2019, 11, 15, 7, 0)),
+        seed=0,
+        context=context,  # type: ignore[arg-type]
+    )
+    after_the_click = popularity_scores(
+        replace(candidates, time=datetime(2019, 11, 15, 9, 0)),
+        seed=0,
+        context=context,  # type: ignore[arg-type]
+    )
+
+    assert before_the_click["C0"] == pytest.approx(0.2)  # the prior: nothing earlier yet
+    assert after_the_click["C0"] == pytest.approx((1 + 3) / (1 + 15))
+    assert after_the_click["N0"] == pytest.approx((0 + 3) / (1 + 15))

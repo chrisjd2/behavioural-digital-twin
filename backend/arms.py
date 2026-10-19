@@ -7,11 +7,12 @@ only the system prompt (what the agent knows) differs.
 import hashlib
 import json
 import math
-from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from collections.abc import Awaitable, Callable, Mapping, Sequence
+from dataclasses import asdict, dataclass
 from datetime import datetime
 
 from backend.data import CandidateSet, NewsItem
+from backend.retrieval import Retriever
 
 ABSTRACT_CHARS = 300
 
@@ -41,6 +42,12 @@ ARM_A_SYSTEM = (
     "Answer as that reader would, honestly and briefly."
 )
 
+ARM_C_SYSTEM = (
+    "You are one specific Microsoft News reader. Below are headlines you really clicked on "
+    "before this moment. Let these interests guide your reactions; where they say nothing "
+    "about a headline, say so rather than inventing a preference. Answer honestly and briefly."
+)
+
 # The first two sentences are ADR-0005's feed framing, verbatim.
 FEED_INSTRUCTIONS = (
     "Each of these headlines appeared in your Microsoft News feed while you were browsing, "
@@ -66,6 +73,8 @@ class LLMOptions:
     reasoning_effort: str  # Gemini accepts none | low | medium | high
     max_output_tokens: int
     base_rate_hint: bool
+    embed_model: str = ""  # retrieval for twins; "" means TF-IDF (ADR-0006)
+    embed_dimensions: int = 768
 
 
 @dataclass(frozen=True)
@@ -153,8 +162,58 @@ def parse_reactions(content: str, ids: Sequence[str]) -> ParsedReactions:
     )
 
 
-MessageBuilder = Callable[..., list[dict[str, str]]]
-ARM_MESSAGES: dict[str, MessageBuilder] = {"A": arm_a_messages}
+Knowledge = dict[str, object]  # what one agent knows; shown in the UI and saved per user
+
+
+def memories_block(memories: Sequence[Mapping[str, object]]) -> str:
+    return "\n".join(f"- [{m['category']}] {m['headline']}" for m in memories)
+
+
+def arm_c_messages(
+    candidates: CandidateSet,
+    news: Mapping[str, NewsItem],
+    knowledge: Knowledge,
+    *,
+    base_rate_hint: bool,
+) -> list[dict[str, str]]:
+    memories = knowledge["memories"]
+    assert isinstance(memories, list)
+    system = f"{ARM_C_SYSTEM}\n\nYour past clicks:\n{memories_block(memories)}"
+    return [
+        {"role": "system", "content": system},
+        {"role": "user", "content": feed_message(candidates, news, base_rate_hint=base_rate_hint)},
+    ]
+
+
+@dataclass(frozen=True)
+class ArmResources:
+    """Per-run helpers an arm may need to work out what its agent knows."""
+
+    retriever: Retriever | None = None
+
+
+async def _knows_nothing(_: CandidateSet, __: ArmResources) -> Knowledge:
+    return {}
+
+
+async def _retrieve_memories(candidates: CandidateSet, resources: ArmResources) -> Knowledge:
+    assert resources.retriever is not None, "Arm C needs a retriever"
+    memories = resources.retriever.memories(candidates.history, candidates.items)
+    return {"memories": [asdict(m) for m in memories]}
+
+
+@dataclass(frozen=True)
+class ArmSpec:
+    """`prepare` works out what the agent knows (may be async); `render` builds the prompt."""
+
+    prepare: Callable[[CandidateSet, ArmResources], Awaitable[Knowledge]]
+    render: Callable[..., list[dict[str, str]]]  # (candidates, news, knowledge, *, base_rate_hint)
+
+
+ARM_SPECS: dict[str, ArmSpec] = {
+    "A": ArmSpec(_knows_nothing, lambda c, n, _k, **kw: arm_a_messages(c, n, **kw)),
+    "C": ArmSpec(_retrieve_memories, arm_c_messages),
+}
 
 # A fixed fake user, rendered through every arm, so the hash covers everything that shapes
 # the request: wording, layout, abstract length, schema, temperature and options.
@@ -167,18 +226,28 @@ _CANONICAL = CandidateSet(
     tie_rank={"N1": 1, "N2": 0},
     feed_ctr=0.5,
     sample_ctr=0.5,
+    history=("H1",),
 )
 _CANONICAL_NEWS = {
     i: NewsItem(i, "news", "world", f"Headline {i}", "x" * (ABSTRACT_CHARS + 10))
-    for i in ("N1", "N2")
+    for i in ("N1", "N2", "H1")
+}
+_CANONICAL_KNOWLEDGE: dict[str, Knowledge] = {
+    "A": {},
+    "C": {"memories": [{"news_id": "H1", "headline": "Headline H1", "category": "news"}]},
 }
 
 
 def prompt_hashes(options: LLMOptions) -> dict[str, str]:
     """Short hash per arm of a fully rendered request (first attempt and retry)."""
     hashes = {}
-    for arm, build in ARM_MESSAGES.items():
-        messages = build(_CANONICAL, _CANONICAL_NEWS, base_rate_hint=options.base_rate_hint)
+    for arm, spec in ARM_SPECS.items():
+        messages = spec.render(
+            _CANONICAL,
+            _CANONICAL_NEWS,
+            _CANONICAL_KNOWLEDGE[arm],
+            base_rate_hint=options.base_rate_hint,
+        )
         rendered = [
             request_payload(messages, options),
             request_payload(retry_messages(messages, "<previous>"), options),

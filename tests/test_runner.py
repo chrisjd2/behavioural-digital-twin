@@ -159,6 +159,8 @@ async def test_run_file_round_trips_with_provenance(
         "reasoning_effort": "low",
         "max_output_tokens": 512,
         "base_rate_hint": True,
+        "embed_model": "",
+        "embed_dimensions": 768,
     }
     assert run.fingerprint["options"] == run.options
     assert set(run.date_ranges) == {"train", "dev"}
