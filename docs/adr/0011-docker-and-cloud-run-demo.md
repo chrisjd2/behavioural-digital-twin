@@ -17,6 +17,7 @@ Chris wants to give panel members a link to the running app, live for a few days
   - **`DEMO_MODE=1`:** the app is read-only. Replay, Hook, Seed, Population and Report work. `POST /api/run` and `POST /api/experiment` are disabled and the UI hides them.
   - **The interview is the only Gemini caller.** It is rate-limited in the app: 30 messages per IP per hour, and 500 per day overall. Past those limits it falls back to the recorded exchanges (ADR-0008).
   - **Data:** the frozen run, the MIND news items needed by the frozen run's users, and `cache.sqlite` are copied into a **demo image** pushed to a **private Artifact Registry** repository. They are never committed to git (ADR-0010 still holds for the repo).
+  - **Hook data (amendment, #22):** the demo image also includes the dev run file named in `config/hook.json` and the MIND news items for its reader's candidates and recent history, or `GET /api/hook` returns an error in the hosted demo.
   - **Secrets:** `LLM_API_KEY` comes from Secret Manager, never from the image.
   - **Teardown:** `just deploy` and `just teardown` (which deletes the service and the image). The README states the hosted demo was temporary.
 - **CI** builds the image without data to check that the Dockerfile works. It never pushes.

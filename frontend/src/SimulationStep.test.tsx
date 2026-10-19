@@ -20,7 +20,14 @@ async function openReplay(
 ) {
   const fetchMock = stubApi({ status: statusFixture, urls: { [eventsUrl]: reply } })
   const onLiveRunSaved = vi.fn()
-  render(<SimulationStep runId={RUN_ID} liveRuns={liveRuns} onLiveRunSaved={onLiveRunSaved} />)
+  render(
+    <SimulationStep
+      runId={RUN_ID}
+      liveRuns={liveRuns}
+      mockLlm={false}
+      onLiveRunSaved={onLiveRunSaved}
+    />,
+  )
   await advance(0)
   const radio = screen.queryByRole('radio', { name: order })
   if (radio) fireEvent.click(radio)
@@ -271,7 +278,7 @@ describe('Live dev run', () => {
         },
       },
     })
-    render(<SimulationStep runId={RUN_ID} liveRuns onLiveRunSaved={vi.fn()} />)
+    render(<SimulationStep runId={RUN_ID} liveRuns mockLlm={false} onLiveRunSaved={vi.fn()} />)
     await advance(0)
 
     fireEvent.click(screen.getByRole('button', { name: 'Start a live dev run' }))
@@ -283,9 +290,9 @@ describe('Live dev run', () => {
 })
 
 describe('Simulation step in the app', () => {
-  async function openStep(demoMode: boolean) {
+  async function openStep(demoMode: boolean, mock = false) {
     stubApi({
-      status: { ...statusFixture, demo_mode: demoMode },
+      status: { ...statusFixture, demo_mode: demoMode, mock },
       runs: { runs: [runEventsFixture.run], problems: [] },
       urls: { [eventsUrl]: runEventsFixture },
     })
@@ -300,6 +307,18 @@ describe('Simulation step in the app', () => {
 
     expect(screen.getByText(/recorded run, sped up/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start a live dev run' })).toBeInTheDocument()
+  })
+
+  it('notes beside the live-run control that live runs use the MOCK LLM on a mock server', async () => {
+    await openStep(false, true)
+
+    expect(screen.getByText('Live runs use the MOCK LLM')).toBeInTheDocument()
+  })
+
+  it('has no live-run note on a real server', async () => {
+    await openStep(false)
+
+    expect(screen.queryByText('Live runs use the MOCK LLM')).not.toBeInTheDocument()
   })
 
   it('hides live runs in DEMO_MODE', async () => {

@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import type { PopulationSummary } from './api/experiment'
+import type { HookExample } from './api/hook'
 import type { AgentDetail, Headline, Profile, RunPopulation, RunSummary } from './api/runs'
 import type { RunEvent, RunEvents } from './api/simulation'
 import type { Status } from './api/status'
@@ -211,6 +212,41 @@ export type Reply = object | number | ErrorReply
  * Stub `fetch` per endpoint: an object is a 200 JSON body, a number an `AppError` with that
  * status, `{errorStatus, body}` an exact error reply. `urls` holds any other endpoint by URL.
  */
+/** A real (non-mock) dev run's hook example. */
+export const hookFixture: HookExample = {
+  run_id: '20261019-152445-dev-5c2e8d',
+  user_id: 'U1',
+  mock: false,
+  data_source: 'mind',
+  headlines: [
+    { news_id: 'N1', category: 'health', subcategory: 'medical', title: 'Pharmacy recall widens' },
+    { news_id: 'N2', category: 'news', subcategory: 'newsus', title: 'Senate vote delayed' },
+  ],
+  history: [
+    { news_id: 'H1', category: 'news', subcategory: 'newspolitics', title: 'Impeachment moves on' },
+    { news_id: 'H2', category: 'travel', subcategory: 'travelnews', title: 'Order ginger ale' },
+  ],
+  reveal: {
+    clicked_id: 'N2',
+    predictions: [
+      {
+        arm: 'A',
+        calls: [
+          { news_id: 'N1', p_click: 65, reaction: 'I need to check my medicine cabinet.' },
+          { news_id: 'N2', p_click: 40, reaction: 'Politics again, maybe later.' },
+        ],
+      },
+      {
+        arm: 'D',
+        calls: [
+          { news_id: 'N1', p_click: 30, reaction: 'Not really my kind of story.' },
+          { news_id: 'N2', p_click: 72.4, reaction: 'I follow every twist in Washington.' },
+        ],
+      },
+    ],
+  },
+}
+
 export function stubApi(routes: {
   status: Reply
   experiment?: Reply

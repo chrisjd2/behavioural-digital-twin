@@ -26,6 +26,7 @@ CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--re
 FROM python-base AS runtime
 RUN uv sync --frozen --no-dev --no-install-project
 COPY backend/ backend/
+COPY config/ config/
 COPY --from=frontend /app/frontend/dist frontend/dist
 RUN useradd --create-home app
 USER app

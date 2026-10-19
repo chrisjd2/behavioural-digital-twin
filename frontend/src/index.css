@@ -80,6 +80,13 @@ p {
   letter-spacing: 0.06em;
 }
 
+/* Beside live-run controls: the server's LLM, not the run on screen. */
+.live-runs-note {
+  margin-left: 16px;
+  font-weight: 700;
+  color: var(--error);
+}
+
 h1 {
   font-size: clamp(2.2rem, 4.6vw, 3.6rem);
   font-weight: 800;
@@ -932,6 +939,13 @@ h2 {
   padding: 20px 0 28px;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+/* Projector screens: use the width rather than a narrow column. */
+@media (min-width: 1600px) {
+  .shell {
+    max-width: 1760px;
+  }
 }
 
 @media (max-width: 1100px) {

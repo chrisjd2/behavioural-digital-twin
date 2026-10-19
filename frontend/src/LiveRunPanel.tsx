@@ -16,7 +16,13 @@ type Live =
  * Developers only: run every arm on a few dev readers and watch it over SSE. Hidden in
  * DEMO_MODE (ADR-0011); the API never runs the test population here. A saved run is replayed.
  */
-export default function LiveRunPanel({ onSaved }: { onSaved: (runId: string) => void }) {
+export default function LiveRunPanel({
+  onSaved,
+  mockLlm,
+}: {
+  onSaved: (runId: string) => void
+  mockLlm: boolean // the server's MOCK_LLM: what a new run would use
+}) {
   const [live, setLive] = useState<Live>({ state: 'idle' })
   const stop = useRef<() => void>(undefined)
   useEffect(() => () => stop.current?.(), [])
@@ -68,6 +74,7 @@ export default function LiveRunPanel({ onSaved }: { onSaved: (runId: string) => 
           Start a live dev run
         </button>
       )}
+      {mockLlm && <span className="live-runs-note">Live runs use the MOCK LLM</span>}
       {live.state === 'starting' && <p className="muted">Starting the live run…</p>}
       {events.length > 0 && (
         <div className="live-feed">

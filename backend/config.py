@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     data_dir: str = "data"
     hf_token: str = ""
     frontend_dist: str = "frontend/dist"
+    hook_config: str = "config/hook.json"  # Step 0's dev-set example (scripts.pick_hook)
 
     def llm_options(self) -> LLMOptions:
         return LLMOptions(

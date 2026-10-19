@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { buildPopulation, type ExperimentRequest } from './api/experiment'
 import { defaultRunId, fetchRuns } from './api/runs'
 import { fetchStatus, type Status } from './api/status'
+import HookStep from './HookStep'
 import { SIMULATED_LABEL } from './labels'
 import PopulationStep from './PopulationStep'
+import ReportStep from './ReportStep'
 import RunPicker, { type Runs } from './RunPicker'
 import SeedStep, { type Build } from './SeedStep'
 import SimulationStep from './SimulationStep'
@@ -28,9 +30,11 @@ const STEPS: Placeholder[] = [
   { name: 'Report', blurb: 'How each arm did against the real clicks.', runCentric: true },
   { name: 'Interview', blurb: 'Ask one agent about its news habits.' },
 ]
+const HOOK_STEP = 0
 const SEED_STEP = 1
 const POPULATION_STEP = 2
 const SIMULATION_STEP = 3
+const REPORT_STEP = 4
 
 /** An emptied input is NaN; send the config default for it instead. */
 function withDefaults(request: ExperimentRequest, defaults: ExperimentRequest): ExperimentRequest {
@@ -41,11 +45,12 @@ function withDefaults(request: ExperimentRequest, defaults: ExperimentRequest): 
 
 export default function App() {
   const [load, setLoad] = useState<Load>({ state: 'loading' })
-  const [step, setStep] = useState(SEED_STEP)
+  const [step, setStep] = useState(HOOK_STEP)
   const [request, setRequest] = useState<ExperimentRequest | null>(null)
   const [build, setBuild] = useState<Build>({ state: 'idle' })
   const [runs, setRuns] = useState<Runs>({ state: 'idle' })
   const [runId, setRunId] = useState<string>()
+  const [hookRunMock, setHookRunMock] = useState(false)
 
   useEffect(() => {
     fetchStatus()
@@ -68,6 +73,11 @@ export default function App() {
   }
 
   const current = STEPS[step]
+  // The MOCK badge describes the run on screen, not the server's LLM (ADR-0001, ADR-0008).
+  const selectedRun =
+    runs.state === 'ready' ? runs.list.runs.find((r) => r.run_id === runId) : undefined
+  const shownRunIsMock =
+    step === HOOK_STEP ? hookRunMock : current.runCentric ? selectedRun?.mock === true : false
 
   function goTo(index: number) {
     setStep(index)
@@ -98,8 +108,11 @@ export default function App() {
       <header className="masthead">
         <div className="masthead-row">
           <p className="wordmark">Twin Lab</p>
-          {load.state === 'ready' && load.status.mock && (
-            <span className="badge-mock" title="Fake LLM output for development, not results">
+          {shownRunIsMock && (
+            <span
+              className="badge-mock"
+              title="This run is fake LLM output for development, not results"
+            >
               MOCK
             </span>
           )}
@@ -129,7 +142,9 @@ export default function App() {
             Cannot reach the Twin Lab API. Check the server is running, then reload.
           </p>
         )}
-        {step === SEED_STEP ? (
+        {step === HOOK_STEP ? (
+          <HookStep onRunMock={setHookRunMock} />
+        ) : step === SEED_STEP ? (
           <>
             {load.state === 'loading' && <p className="muted">Checking the data source…</p>}
             {load.state === 'ready' && (
@@ -159,13 +174,15 @@ export default function App() {
                 key={runId ?? 'none'}
                 runId={runId}
                 liveRuns={load.state === 'ready' && !load.status.demo_mode}
+                mockLlm={load.state === 'ready' && load.status.mock}
                 onLiveRunSaved={(saved) => {
                   setRunId(saved)
                   loadRuns()
                 }}
               />
             )}
-            {step !== POPULATION_STEP && step !== SIMULATION_STEP && (
+            {runId && step === REPORT_STEP && <ReportStep key={runId} runId={runId} />}
+            {step !== POPULATION_STEP && step !== SIMULATION_STEP && step !== REPORT_STEP && (
               <p className="muted">This step is not built yet.</p>
             )}
           </section>
