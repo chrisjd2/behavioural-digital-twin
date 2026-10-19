@@ -112,5 +112,5 @@ async def test_run_file_round_trips_with_provenance(
     assert saved["users"][0]["reactions"]
     assert saved["users"][0]["labels"]
     assert saved["events"]
-    assert "A" in saved["metrics"]
+    assert "A" in saved["metrics"]["arms"]
     assert load_run(path).run_id == run.run_id

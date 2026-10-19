@@ -2,7 +2,6 @@
 
 import asyncio
 import hashlib
-import statistics
 import subprocess
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
@@ -25,7 +24,8 @@ from backend.data import (
 )
 from backend.experiment import ARMS as BASELINES, ExperimentConfig, Population
 from backend.llm import LLMClient, mock_backend
-from backend.metrics import auc
+from backend.metrics import UserScores
+from backend.report import build_report
 
 LLM_ARMS = {"A": arm_a_messages}
 
@@ -37,17 +37,11 @@ class RunEvent:
 
 
 @dataclass(frozen=True)
-class UserResult:
-    user_id: str
-    arm: str
-    items: tuple[str, ...]
-    scores: dict[str, float]
-    reactions: dict[str, str]
-    labels: dict[str, int]
-    tie_rank: dict[str, int]
-    feed_ctr: float
-    sample_ctr: float
-    parse_failures: int = 0
+class UserResult(UserScores):
+    """One user's scores in one arm, plus what the feed and run file show."""
+
+    items: tuple[str, ...] = ()  # display order
+    reactions: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -66,7 +60,7 @@ class Run:
     users: list[UserResult] = field(default_factory=list)
     events: list[RunEvent] = field(default_factory=list)
     counters: dict[str, int] = field(default_factory=dict)
-    metrics: dict[str, dict[str, float]] = field(default_factory=dict)
+    metrics: dict[str, object] = field(default_factory=dict)  # asdict(report.Report)
     unfrozen_override: bool = False
 
 
@@ -193,20 +187,7 @@ async def run_experiment(  # noqa: PLR0913 — keyword-only run options
         run.users.extend(await asyncio.gather(*(score(c) for c in sets)))
 
     run.counters = asdict(client.counters)
-    run.metrics = summarise(run.users)
+    by_arm = {arm: [u for u in run.users if u.arm == arm] for arm in arms}
+    run.metrics = asdict(build_report(by_arm, seed=config.bootstrap_seed))
     emit("run_complete", run_id=run.run_id)
     return run
-
-
-def summarise(users: list[UserResult]) -> dict[str, dict[str, float]]:
-    """Interim per-arm summary; the full report (CIs, comparisons) comes from #7."""
-    summary: dict[str, dict[str, float]] = {}
-    for arm in dict.fromkeys(u.arm for u in users):
-        rows = [u for u in users if u.arm == arm]
-        predictions = sum(len(u.items) for u in rows)
-        summary[arm] = {
-            "n": len(rows),
-            "mean_auc": statistics.fmean(auc(u.scores, u.labels) for u in rows),
-            "parse_failure_rate": sum(u.parse_failures for u in rows) / predictions,
-        }
-    return summary

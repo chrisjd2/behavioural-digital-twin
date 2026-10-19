@@ -1,4 +1,4 @@
-"""Run the experiment from the command line, print the metrics table and save the run file.
+"""Run the experiment from the command line, print the report and save the run file.
 
 uv run python -m scripts.run_headless --population dev --arms A,random
 """
@@ -13,15 +13,54 @@ from backend.data import date_range, load_behaviors, resolve_data_source
 from backend.experiment import ExperimentConfig
 from backend.freeze import freeze_problem
 from backend.llm import Backend, Cache, LLMClient, mock_backend, openai_backend
+from backend.report import Estimate, Report, build_report
 from backend.runner import LLM_ARMS, RunEvent, run_experiment
 from backend.runs import save_run
 
 RUNS_SUBDIR = Path("runs")
 CACHE_FILE = Path("cache.sqlite")
+METRIC_LABELS = {"auc": "AUC", "mrr": "MRR", "ndcg5": "nDCG@5", "hit1": "Hit@1"}
 
 
 def make_backend(settings: Settings) -> Backend:
     return openai_backend(settings.llm_base_url, settings.llm_api_key)
+
+
+def _ci(e: Estimate, sign: str = "") -> str:
+    return f"{e.mean:{sign}.3f} [{e.low:{sign}.3f}, {e.high:{sign}.3f}]"
+
+
+def format_report(report: Report) -> str:
+    header = f"{'arm':<8} {'n':>4}  " + "  ".join(f"{m:<20}" for m in METRIC_LABELS.values())
+    lines = ["Per-arm means [95% bootstrap CI]", header + f"  {'ties':>6} {'parse fail':>10}"]
+    for s in report.arms.values():
+        cells = "  ".join(f"{_ci(s.metrics[m]):<20}" for m in METRIC_LABELS)
+        lines.append(
+            f"{s.arm:<8} {s.n:>4}  {cells}  {s.tie_share:>6.1%} {s.parse_failure_rate:>10.1%}"
+        )
+
+    lines += ["", "Calibration: mean p_click | feed CTR | sample CTR (inflated by design)"]
+    for s in report.arms.values():
+        c = s.calibration
+        lines.append(
+            f"{s.arm:<8} {c.mean_p_click:.3f} | {c.feed_ctr:.3f} | {c.sample_ctr:.3f}"
+            if c
+            else f"{s.arm:<8} n/a (baseline scores are not probabilities)"
+        )
+
+    if report.differences:
+        lines += ["", "Paired AUC differences (mean [95% CI])"]
+        lines += [f"{d.arm} - {d.reference:<6} {_ci(d.auc, '+')}" for d in report.differences]
+
+    if p := report.primary:
+        buckets = " | ".join(f"{name}: {count}" for name, count in p.buckets.items())
+        lines += [
+            "",
+            f"Primary outcome, D - A AUC {_ci(p.difference, '+')}: {p.verdict}",
+            f"Outcome buckets: {buckets}",
+            f"Median user: {p.median_user}",
+        ]
+    return "\n".join(lines)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -93,11 +132,12 @@ def main(argv: list[str] | None = None) -> int:
     for split, directory in (("train", source.train_dir), ("dev", source.dev_dir)):
         start, end = date_range(load_behaviors(directory / "behaviors.tsv"))
         print(f"  {split} impressions: {start:%Y-%m-%d %H:%M} to {end:%Y-%m-%d %H:%M}")
-    print(f"{'arm':<10} {'users':>6} {'mean AUC':>9} {'parse fail':>11}")
-    for arm, m in run.metrics.items():
-        print(f"{arm:<10} {m['n']:>6.0f} {m['mean_auc']:>9.3f} {m['parse_failure_rate']:>11.1%}")
+    by_arm = {arm: [u for u in run.users if u.arm == arm] for arm in arms}
+    print(format_report(build_report(by_arm, seed=config.bootstrap_seed)))
     c = run.counters
-    print(f"LLM calls: {c['calls']} new, {c['cache_hits']} cached, {c['prompt_tokens']} tokens in")
+    print(
+        f"\nLLM calls: {c['calls']} new, {c['cache_hits']} cached, {c['prompt_tokens']} tokens in"
+    )
     print(f"Saved {save_run(run, data_dir / RUNS_SUBDIR)}")
     return 0
 

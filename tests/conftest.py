@@ -2,8 +2,17 @@ from pathlib import Path
 
 import pytest
 
+from backend.config import get_settings
 from backend.data import DataSource, resolve_data_source
 from backend.sample import write_synthetic_sample
+
+
+@pytest.fixture(autouse=True)
+def force_mock_llm(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Tests never call a real LLM, whatever a local .env says (env vars beat .env)."""
+    monkeypatch.setenv("MOCK_LLM", "true")
+    monkeypatch.setenv("LLM_API_KEY", "")
+    get_settings.cache_clear()
 
 
 @pytest.fixture(scope="session")
