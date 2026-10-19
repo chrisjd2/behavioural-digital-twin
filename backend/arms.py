@@ -355,11 +355,11 @@ _CANONICAL = CandidateSet(
     sample_ctr=0.5,
     # 51 clicks including a candidate, so the 50-click cut and the exclusion of the
     # headlines being predicted both shape the profile hash.
-    history=("N1", *(f"H{i}" for i in range(1, 51))),
+    history=(*(f"H{i}" for i in range(1, 61)), "N1"),  # the candidate is the newest click
 )
 _CANONICAL_NEWS = {
     i: NewsItem(i, "news", "world", f"Headline {i}", "x" * (ABSTRACT_CHARS + 10))
-    for i in ("N1", "N2", *(f"H{i}" for i in range(1, 51)))
+    for i in ("N1", "N2", *(f"H{i}" for i in range(1, 61)))
 }
 _CANONICAL_KNOWLEDGE: dict[str, Knowledge] = {
     "A": {},

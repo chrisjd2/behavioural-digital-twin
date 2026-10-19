@@ -2,6 +2,9 @@ import json
 from collections.abc import Mapping
 from pathlib import Path
 
+import pytest
+
+from backend import arms
 from backend.arms import (
     ARM_C_SYSTEM,
     ARM_SPECS,
@@ -245,3 +248,11 @@ async def test_arm_d_runs_and_reports_the_identity_screen(
         "unusable_profiles": 0,
         "dropped_items": 0,
     }
+
+
+def test_profile_hash_covers_the_50_click_cut_and_the_candidate_exclusion(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    base = prompt_hashes(OPTIONS)["profile"]
+    monkeypatch.setattr(arms, "_PROFILE_HISTORY", list(arms._CANONICAL.history)[-50:])
+    assert prompt_hashes(OPTIONS)["profile"] != base  # candidate no longer excluded
