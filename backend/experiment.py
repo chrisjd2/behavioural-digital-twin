@@ -18,7 +18,7 @@ class ExperimentConfig:
     """Pre-registered defaults; changing any of these after the freeze is a new experiment."""
 
     n_dev: int = 30
-    n_test: int = 200
+    n_test: int = 300  # raised from 200 by the ADR-0001 power rule (dev SD of D - A = 0.48)
     dev_seed: int = 20261019
     test_seed: int = 20261020
     candidate_seed: int = 1

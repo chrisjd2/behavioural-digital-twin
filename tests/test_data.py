@@ -12,7 +12,7 @@ from backend.data import (
     load_news_cached,
     sample_populations,
 )
-from backend.sample import is_synthetic
+from backend.sample import is_synthetic, write_synthetic_sample
 from tests.factories import make_impression
 
 
@@ -174,3 +174,14 @@ def test_cached_loaders_reuse_the_parse_until_the_file_changes(tmp_path: Path) -
     behaviors.write_text(row + row.replace("1\tU1", "2\tU2"), encoding="utf-8")
     os.utime(behaviors, ns=(1, behaviors.stat().st_mtime_ns + 1_000_000))
     assert [i.user_id for i in load_behaviors_cached(behaviors)] == ["U1", "U2"]
+
+
+def test_dev_users_do_not_depend_on_the_test_size(tmp_path: Path) -> None:
+    write_synthetic_sample(tmp_path, n_users=3000, n_news=300, seed=2)
+    behaviors = load_behaviors(tmp_path / "dev" / "behaviors.tsv")
+
+    small = sample_populations(behaviors, n_dev=30, n_test=200, dev_seed=1, test_seed=2)
+    large = sample_populations(behaviors, n_dev=30, n_test=300, dev_seed=1, test_seed=2)
+
+    assert [i.user_id for i in large.test][:200] == [i.user_id for i in small.test]
+    assert [i.user_id for i in large.dev] == [i.user_id for i in small.dev]

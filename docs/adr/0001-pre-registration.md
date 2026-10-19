@@ -36,3 +36,9 @@ This ADR is committed **before** the test run; git history is the proof.
 - **N=60 (brief default):** too underpowered; likely "inconclusive".
 - **Hit@1 as primary:** easier to explain but much noisier with 1–2 positives per user. Kept as the plain-English secondary.
 - **Random "show another" example:** replaced by outcome buckets, which show the distribution honestly.
+
+## Amendment (2026-10-19, before the freeze): power check triggered, N = 300
+
+The dev run (30 users, all arms, `gemini-3.7-flash`, thinking `medium`) gave a per-user SD of the D − A AUC difference of **0.48**, above this ADR's 0.4 threshold. As pre-registered in Decision 6, the test N is raised **from 200 to 300** before the freeze. Expected 95% CI half-width on D − A: about ±0.055 (it would have been about ±0.067 at N = 200).
+
+Raising N exposed a coupling: dev users were drawn from everyone outside the test set, so a larger test set changed the dev set. Sampling now sets aside a fixed reserve of 1,000 users (drawn with the test seed); the test set is a prefix of that reserve and the dev set is drawn from outside it. Verified on real MIND: the first 200 test users are identical to the previous rule, the 300 extend them, and the dev set no longer depends on N. The dev users change once as a result; the dev checks used for the freeze are re-run on the new dev set.

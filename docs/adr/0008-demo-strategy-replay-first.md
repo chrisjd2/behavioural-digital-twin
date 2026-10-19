@@ -7,7 +7,7 @@
 
 ## Context
 
-The app is shown in a 10-minute panel presentation. A full test run (200 users × 5 arms) takes 10+ minutes and depends on network and API availability. Venue Wi-Fi and rate-limit blips are the usual demo killers.
+The app is shown in a 10-minute panel presentation. A full test run (300 users × 5 arms; 200 before the ADR-0001 power check) takes 10+ minutes and depends on network and API availability. Venue Wi-Fi and rate-limit blips are the usual demo killers.
 
 ## Decision
 
