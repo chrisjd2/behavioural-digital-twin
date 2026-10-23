@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import App from './App'
+import Explorer from './Explorer'
 import { defaultRunId, type RunList } from './api/runs'
 import {
   agentFixture,
@@ -37,7 +37,7 @@ async function openPopulation(
 ) {
   const fetchMock = stubApi({ status: statusFixture, runs, urls })
   const user = userEvent.setup()
-  render(<App />)
+  render(<Explorer onPresent={() => {}} />)
   await user.click(screen.getByRole('button', { name: /population/i }))
   return { user, fetchMock }
 }

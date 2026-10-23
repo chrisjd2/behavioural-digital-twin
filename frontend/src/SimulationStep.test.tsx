@@ -4,7 +4,7 @@ import type { RunEvent } from './api/simulation'
 import { SIMULATED_LABEL } from './labels'
 import { ARM_BEAT_MS } from './byReader'
 import { REVEAL_MS } from './replay'
-import App from './App'
+import Explorer from './Explorer'
 import SimulationStep from './SimulationStep'
 import { runEventsFixture, statusFixture, stubApi, type Reply } from './test-fixtures'
 
@@ -302,7 +302,7 @@ describe('Simulation step in the app', () => {
       runs: { runs: [runEventsFixture.run], problems: [] },
       urls: { [eventsUrl]: runEventsFixture },
     })
-    render(<App />)
+    render(<Explorer onPresent={() => {}} />)
     await advance(0)
     fireEvent.click(screen.getByRole('button', { name: /simulation/i }))
     await advance(0)

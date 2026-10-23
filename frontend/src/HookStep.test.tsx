@@ -105,6 +105,22 @@ describe('Step 0 Hook', () => {
     expect(screen.getByText('Can an AI impersonate a customer?')).toBeInTheDocument()
   })
 
+  it('leaves keys it has no stage for to the presenter deck', async () => {
+    const user = setup()
+    const used: boolean[] = []
+    const record = (event: KeyboardEvent) => used.push(event.defaultPrevented)
+    window.addEventListener('keydown', record)
+
+    await user.keyboard('{ArrowLeft}') // on the title: nothing before it
+    await user.keyboard('{ArrowRight}')
+    await screen.findByText('Pharmacy recall widens')
+    await user.keyboard('{ArrowRight}{ArrowRight}') // history, then reveal
+    await user.keyboard('{ArrowRight}') // revealed: nothing after it
+    window.removeEventListener('keydown', record)
+
+    expect(used).toEqual([false, true, true, true, false])
+  })
+
   it('shows the error, not an empty example, when the hook cannot load', async () => {
     const user = setup(404)
 

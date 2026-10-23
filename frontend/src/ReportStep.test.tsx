@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import App from './App'
+import Explorer from './Explorer'
 import type { ArmReport, RunReport, UserPredictions } from './api/report'
 import ReportStep from './ReportStep'
 import { runFixture, statusFixture, stubApi, type Reply } from './test-fixtures'
@@ -331,7 +331,7 @@ describe('App', () => {
       urls: { [reportUrl]: reportFixture, [predictionsUrl('U3')]: predictions('U3') },
     })
     const user = userEvent.setup()
-    render(<App />)
+    render(<Explorer onPresent={() => {}} />)
 
     await user.click(screen.getByRole('button', { name: /report/i }))
 

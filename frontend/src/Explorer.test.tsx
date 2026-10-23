@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import App from './App'
+import Explorer from './Explorer'
 import {
   hookFixture,
   runFixture,
@@ -14,10 +14,10 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('App shell', () => {
+describe('Explorer', () => {
   it('poses the question and opens on Step 0 Hook', async () => {
     stubApi({ status: statusFixture, urls: { '/api/hook': hookFixture } })
-    render(<App />)
+    render(<Explorer onPresent={() => {}} />)
 
     expect(
       screen.getByRole('heading', { level: 1, name: /can an ai impersonate a customer/i }),
@@ -28,7 +28,7 @@ describe('App shell', () => {
   it('navigates all six steps', async () => {
     stubApi({ status: statusFixture })
     const user = userEvent.setup()
-    render(<App />)
+    render(<Explorer onPresent={() => {}} />)
 
     const stepper = screen.getByRole('navigation', { name: /steps/i })
     const names = ['Hook', 'Seed', 'Population', 'Simulation', 'Report', 'Interview']
@@ -64,7 +64,7 @@ describe('App shell', () => {
     it('no badge for a real hook run on a mock server', async () => {
       stubApi({ status: mockServer, urls: { '/api/hook': hookFixture } })
       const user = userEvent.setup()
-      render(<App />)
+      render(<Explorer onPresent={() => {}} />)
 
       await user.keyboard('{ArrowRight}')
       await screen.findByText(hookFixture.headlines[0].title ?? '')
@@ -73,7 +73,7 @@ describe('App shell', () => {
 
     it('a badge for a mock hook run on a real server', async () => {
       stubApi({ status: statusFixture, urls: { '/api/hook': { ...hookFixture, mock: true } } })
-      render(<App />)
+      render(<Explorer onPresent={() => {}} />)
 
       await shows(true)
     })
@@ -81,7 +81,7 @@ describe('App shell', () => {
     it('follows the selected run on Steps 2-4, and Seed has none', async () => {
       stubApi({ status: statusFixture, runs: runs(true), urls: population })
       const user = userEvent.setup()
-      render(<App />)
+      render(<Explorer onPresent={() => {}} />)
 
       await user.click(screen.getByRole('button', { name: /population/i }))
       await shows(true)
@@ -92,7 +92,7 @@ describe('App shell', () => {
     it('no badge for a real selected run on a mock server', async () => {
       stubApi({ status: mockServer, runs: runs(false), urls: population })
       const user = userEvent.setup()
-      render(<App />)
+      render(<Explorer onPresent={() => {}} />)
 
       await user.click(screen.getByRole('button', { name: /population/i }))
       await screen.findByRole('combobox')
@@ -103,7 +103,7 @@ describe('App shell', () => {
   it('notes beside the build button that live runs use the MOCK LLM on a mock server', async () => {
     stubApi({ status: { ...statusFixture, mock: true } })
     const user = userEvent.setup()
-    render(<App />)
+    render(<Explorer onPresent={() => {}} />)
 
     await user.click(screen.getByRole('button', { name: /seed/i }))
     expect(await screen.findByText('Live runs use the MOCK LLM')).toBeInTheDocument()
@@ -112,7 +112,7 @@ describe('App shell', () => {
   it('has no live-run note on a real server', async () => {
     stubApi({ status: statusFixture })
     const user = userEvent.setup()
-    render(<App />)
+    render(<Explorer onPresent={() => {}} />)
 
     await user.click(screen.getByRole('button', { name: /seed/i }))
     await screen.findByText(/real mind data/i)
@@ -120,7 +120,7 @@ describe('App shell', () => {
   })
   it('always carries the simulated-data label', () => {
     stubApi({ status: statusFixture })
-    render(<App />)
+    render(<Explorer onPresent={() => {}} />)
 
     expect(
       screen.getByText(
@@ -131,7 +131,7 @@ describe('App shell', () => {
 
   it('shows an error rather than an empty state when /api/status fails', async () => {
     stubApi({ status: 500 })
-    render(<App />)
+    render(<Explorer onPresent={() => {}} />)
 
     expect(await screen.findByTestId('status-error')).toHaveTextContent(/cannot reach/i)
     expect(screen.queryByText('MOCK')).not.toBeInTheDocument()

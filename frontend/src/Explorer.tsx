@@ -49,7 +49,8 @@ function withDefaults(request: ExperimentRequest, defaults: ExperimentRequest): 
   return { n_users: pick('n_users'), seed: pick('seed'), max_candidates: pick('max_candidates') }
 }
 
-export default function App() {
+/** The free stepper, for reviewers and the hosted demo; the talk uses the presenter deck. */
+export default function Explorer({ onPresent }: { onPresent: () => void }) {
   const [load, setLoad] = useState<Load>({ state: 'loading' })
   const [step, setStep] = useState(HOOK_STEP)
   const [request, setRequest] = useState<ExperimentRequest | null>(null)
@@ -114,6 +115,9 @@ export default function App() {
       <header className="masthead">
         <div className="masthead-row">
           <p className="wordmark">Twin Lab</p>
+          <button type="button" className="mode-switch" onClick={onPresent}>
+            Presenter
+          </button>
           {shownRunIsMock && (
             <span
               className="badge-mock"

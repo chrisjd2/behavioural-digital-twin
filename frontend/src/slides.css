@@ -1,0 +1,87 @@
+/* Presenter slides (ADR-0012): big type for a shared screen. */
+.slide {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.slide-kicker {
+  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+
+.slide h2 {
+  font-size: clamp(2.4rem, 4vw, 3.4rem);
+  line-height: 1.08;
+}
+
+.slide-body {
+  font-size: 1.3rem;
+}
+
+.reveal-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reveal-items li {
+  border-left: 6px solid var(--ink);
+  padding: 4px 0 4px 20px;
+}
+
+.reveal-next {
+  margin-top: 20px;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: 2px dashed var(--rule);
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+.reveal-next:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+.media {
+  display: block;
+  max-width: 100%;
+  max-height: 60vh;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.media-missing {
+  margin: 0;
+  min-width: 16rem;
+  min-height: 12rem;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  background: var(--wash);
+  border: 2px dashed var(--rule);
+  color: var(--muted);
+  text-align: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.media-missing-mark {
+  width: 48px;
+  height: 36px;
+  border: 3px solid currentColor;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
