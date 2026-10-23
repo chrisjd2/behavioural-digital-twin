@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import App from './App'
+import Explorer from './Explorer'
 import type { Status } from './api/status'
 import { populationFixture, statusFixture, stubApi, type Reply } from './test-fixtures'
 
@@ -13,7 +13,7 @@ afterEach(() => {
 async function renderSeed(status: Status = statusFixture, experiment?: Reply) {
   const fetchMock = stubApi({ status, experiment })
   const user = userEvent.setup()
-  render(<App />)
+  render(<Explorer onPresent={() => {}} />)
   await user.click(screen.getByRole('button', { name: /seed/i }))
   await screen.findByRole('heading', { level: 2, name: /seed/i })
   return { fetchMock, user }

@@ -3,6 +3,7 @@ import { fetchHook, type HookExample } from './api/hook'
 import type { Headline } from './api/runs'
 import { ARMS } from './arms'
 import './hook.css'
+import { isTyping } from './deck'
 import { commandFor, INITIAL, step } from './hookState'
 import { SIMULATED_LABEL } from './labels'
 
@@ -57,17 +58,23 @@ export default function HookStep({ onRunMock }: { onRunMock: (mock: boolean) => 
       )
   }, [onRunMock])
 
+  const stateRef = useRef(state)
+  stateRef.current = state
+
   useEffect(() => {
+    // On document, so it runs before the presenter deck's window listener (ADR-0012).
     function onKey(event: KeyboardEvent) {
-      if (event.target instanceof Element && event.target.closest('input, textarea, select')) return
+      if (isTyping(event.target)) return
       const command = commandFor(event)
       if (!command) return
-      event.preventDefault()
       if (command === 'fullscreen') toggleFullscreen(stageRef.current)
+      // A key with no stage to go to is left for the deck: the slide before or after.
+      else if (step(stateRef.current, command) === stateRef.current) return
       else dispatch(command)
+      event.preventDefault()
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
   }, [])
 
   const revealed = state.stage === 'reveal'

@@ -35,3 +35,6 @@ AI_USAGE.md
 
 # Playwright MCP snapshots
 .playwright-mcp/
+
+# Personal photos and screenshots for the presenter deck (ADR-0012)
+frontend/public/private/

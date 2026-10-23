@@ -987,3 +987,84 @@ h2 {
     grid-template-columns: 7em 1fr 2em;
   }
 }
+
+/* Presenter deck (ADR-0012): a slim bar, then the screen fills a shared 1920x1080 view. */
+.deck {
+  max-width: 1600px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 0 48px;
+  display: flex;
+  flex-direction: column;
+}
+
+.deck-bar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 0;
+  border-bottom: 2px solid var(--ink);
+}
+
+.deck-sections {
+  flex: 1;
+}
+
+.deck-sections ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.deck-sections button {
+  width: 100%;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-top: 4px solid var(--rule);
+  padding: 6px 0 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.deck-sections button[aria-current='step'] {
+  color: var(--ink);
+  border-top-color: var(--ink);
+}
+
+.deck-counter {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.mode-switch {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+
+.mode-switch:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+.deck-stage {
+  flex: 1;
+  padding: 32px 0 40px;
+}
+
+.deck-stage .run-step > h2 {
+  margin-bottom: 20px;
+}

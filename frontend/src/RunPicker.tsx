@@ -13,7 +13,8 @@ type Props = {
   onRefresh: () => void
 }
 
-const KIND_NOTES: Record<string, string> = {
+/** Said beside any run that is not a reported result (ADR-0001). */
+export const KIND_NOTES: Record<string, string> = {
   MOCK: 'MOCK run: fake LLM output. Not a reported result.',
   'Unfrozen test': 'Test run made without the freeze. Not a reported result.',
   'Synthetic test': 'Test run on the synthetic sample. Not a reported result.',

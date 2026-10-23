@@ -45,6 +45,7 @@ Ported lightly from the owner's `kleisi-ops-server` workflow (ADR-0009), with it
 ## Hard rules
 
 - **Never commit** `data/` (MIND, `cache.sqlite`, runs), `.env`, `brief.md` or talk notes. The repo is public (ADR-0010). gitleaks runs in pre-commit and CI.
+- **Never commit** `frontend/public/private/`: personal photos and screenshots for the presenter deck (ADR-0012). Slides must render a placeholder when a file is missing.
 - `AI_USAGE.md` is gitignored until Chris has reviewed and approved it; never force-add it.
 - **Never skip hooks** (`--no-verify`) or weaken a gate to get green.
 - **Tests run in mock mode** (`MOCK_LLM=true`) on the synthetic sample: no API key, no network, no real MIND. Mock output is labelled `MOCK` and never presented as a result.
