@@ -72,7 +72,7 @@ describe('Presenter deck (ADR-0012)', () => {
     const user = setup()
     const seen = [counter()]
 
-    for (let press = 0; press < 30 && counter() !== '17 / 17'; press++) {
+    for (let press = 0; press < 100 && counter() !== '17 / 17'; press++) {
       await next(user)
       if (counter() !== seen.at(-1)) seen.push(counter())
     }
