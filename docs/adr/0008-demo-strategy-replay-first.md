@@ -33,3 +33,7 @@ The recorded exchanges live in `config/interview_recorded.json`, not in the run 
 
 - **Live simulation at small N:** shows a different, noisier result than the reported one.
 - **Interview in the scripted talk:** unscripted, network-dependent, and not budgeted in the 10 minutes.
+
+## Amendment (#52)
+
+The talk is now 15 minutes over a video call, with an About me part before the experiment. The Hook vote is verbal, and the Hook sits inside Teach rather than opening the talk. The running order, the presenter deck and the hosted demo's About me rule are in [ADR-0012](0012-talk-structure-presenter-deck.md). Replay-first, offline-capable and Interview-as-bonus still stand.
