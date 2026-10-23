@@ -141,7 +141,7 @@ function RunScreen({ screen, runs }: { screen: Screen; runs: Runs }) {
       ) : screen.id === 'simulation' ? (
         <SimulationStep runId={runId} liveRuns={false} mockLlm={false} onLiveRunSaved={() => {}} />
       ) : (
-        <ReportStep runId={runId} />
+        <ReportStep runId={runId} paged />
       )}
     </>
   )
