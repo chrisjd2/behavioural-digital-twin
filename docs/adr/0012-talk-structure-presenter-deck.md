@@ -25,7 +25,7 @@ The panel format changed from ADR-0008's 10-minute in-room talk. It is now **15 
   | 14 | Report | Teach |
   | 15 | ★ Check-in question (calibration) | Teach |
   | 16 | ★ Takeaways | Teach |
-  | 17 | ★ Thanks / questions (Interview as a Q&A bonus) | Close |
+  | 17 | ★ Thanks / questions (Interview as a Q&A bonus) | Teach |
 
 - **Teach is woven in.** The Hook moves from the opening into Teach: Learn's MiroFish question opens Part 2 instead.
 - **Audience interaction is verbal.** The Hook vote and the check-in question have no on-screen tally or phone voting.
@@ -38,7 +38,7 @@ The panel format changed from ADR-0008's 10-minute in-room talk. It is now **15 
 - **Personal media is never committed:**
   - Photos and screenshots live in `frontend/public/private/`, which is gitignored and dockerignored (ADR-0010).
   - Each media slot shows a placeholder when its file is missing.
-- **About me is hidden in `DEMO_MODE`.** The hosted demo (ADR-0011) starts at Learn.
+- **About me is hidden in `DEMO_MODE`.** The hosted demo (ADR-0011) starts at Learn. (Built with the About me slides in #53; until then the deck always opens on screen 1.)
 - **No speaker notes in the app.**
 
 ## Consequences

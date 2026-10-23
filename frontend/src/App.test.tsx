@@ -5,6 +5,7 @@ import App from './App'
 import { SCREENS } from './deck'
 import {
   hookFixture,
+  runEventsFixture,
   runFixture,
   runPopulationFixture,
   statusFixture,
@@ -18,11 +19,11 @@ afterEach(() => {
 const RUNS = { runs: [runFixture], problems: [] }
 const POPULATION = { [`/api/run/${runFixture.run_id}/population`]: runPopulationFixture }
 
-function setup(runs: unknown = RUNS) {
+function setup(runs: unknown = RUNS, urls: Record<string, unknown> = {}) {
   stubApi({
     status: statusFixture,
     runs: runs as never,
-    urls: { '/api/hook': hookFixture, ...POPULATION },
+    urls: { '/api/hook': hookFixture, ...POPULATION, ...(urls as Record<string, never>) },
   })
   const user = userEvent.setup()
   render(<App />)
@@ -111,6 +112,33 @@ describe('Presenter deck (ADR-0012)', () => {
     expect(await screen.findByRole('group', { name: /readers around/i })).toBeInTheDocument()
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
     expect(screen.getByText(/simulated from anonymised research data/i)).toBeInTheDocument()
+  })
+
+  it('replays the default run on Simulation, with no live-run or run controls', async () => {
+    const user = setup(RUNS, { [`/api/run/${runFixture.run_id}/events`]: runEventsFixture })
+
+    await goTo(user, 'simulation')
+    expect(await screen.findByText(/recorded run, sped up/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /live dev run/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /refresh/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: /run/i })).not.toBeInTheDocument()
+  })
+
+  it("asks for the default run's report on Report, with no run picker", async () => {
+    const user = setup()
+
+    await goTo(user, 'report')
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(`/api/run/${runFixture.run_id}/report`, undefined),
+    )
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+  })
+
+  it('says when the run on screen is not a reported result', async () => {
+    const user = setup()
+
+    await goTo(user, 'population')
+    expect(screen.getByText('Dev run. Not a reported result.')).toBeInTheDocument()
   })
 
   it('shows the MOCK badge for a mock run on the run screens only', async () => {

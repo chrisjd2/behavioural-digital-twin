@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { defaultRunId, fetchRuns, type RunSummary } from './api/runs'
-import { deckCommand, move, SCREENS, SECTIONS, type Screen } from './deck'
+import { defaultRunId, fetchRuns, runKind, type RunSummary } from './api/runs'
+import { deckCommand, move, SCREENS, SECTIONS, type Screen, type ScreenId } from './deck'
 import HookStep from './HookStep'
 import { SIMULATED_LABEL } from './labels'
 import PopulationStep from './PopulationStep'
 import ReportStep from './ReportStep'
+import { KIND_NOTES } from './RunPicker'
 import SimulationStep from './SimulationStep'
 import { Slide } from './slides'
 
@@ -13,7 +14,7 @@ type Runs =
   | { state: 'error'; message: string }
   | { state: 'ready'; run: RunSummary | undefined }
 
-const RUN_SCREENS = new Set(['population', 'simulation', 'report'])
+const RUN_SCREENS = new Set<ScreenId>(['population', 'simulation', 'report'])
 
 /** The talk (ADR-0012): one running order, the default run, no developer controls. */
 export default function Presenter({
@@ -129,11 +130,19 @@ function RunScreen({ screen, runs }: { screen: Screen; runs: Runs }) {
     )
   }
   if (!runs.run) return <p className="muted">No saved run yet. Make one in Explore.</p>
-  const { run_id: runId } = runs.run
-  if (screen.id === 'population') return <PopulationStep runId={runId} />
-  if (screen.id === 'simulation')
-    return (
-      <SimulationStep runId={runId} liveRuns={false} mockLlm={false} onLiveRunSaved={() => {}} />
-    )
-  return <ReportStep runId={runId} />
+  const runId = runs.run.run_id
+  const note = KIND_NOTES[runKind(runs.run)]
+  return (
+    <>
+      {/* The deck has no run picker, so it says here what Explore says beside it. */}
+      {note && <p className="run-kind">{note}</p>}
+      {screen.id === 'population' ? (
+        <PopulationStep runId={runId} />
+      ) : screen.id === 'simulation' ? (
+        <SimulationStep runId={runId} liveRuns={false} mockLlm={false} onLiveRunSaved={() => {}} />
+      ) : (
+        <ReportStep runId={runId} />
+      )}
+    </>
+  )
 }
