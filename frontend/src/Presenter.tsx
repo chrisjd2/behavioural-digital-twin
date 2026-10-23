@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import BuildSlide from './BuildSlide'
 import { defaultRunId, fetchRuns, runKind, type RunSummary } from './api/runs'
 import { deckCommand, move, SCREENS, SECTIONS, type Screen, type ScreenId } from './deck'
 import HookStep from './HookStep'
@@ -105,6 +106,8 @@ export default function Presenter({
             <h2 id="step-title">{screen.title}</h2>
             <RunScreen screen={screen} runs={runs} />
           </section>
+        ) : screen.id === 'build' ? (
+          <BuildSlide />
         ) : (
           <Slide kicker={screen.section} title={screen.title} />
         )}

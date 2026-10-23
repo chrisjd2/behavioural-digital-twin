@@ -1,0 +1,71 @@
+/* Screen 10, How I built it: sized for a 1920×1080 shared screen. */
+.build-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.build-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 2px solid var(--rule);
+  border-radius: 12px;
+  padding: 12px 18px;
+}
+
+.build-stage .muted {
+  font-size: 1rem;
+}
+
+.build-arrow {
+  font-size: 1.8rem;
+  color: var(--muted);
+}
+
+.build-arms {
+  list-style: none;
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.build-arm {
+  --arm: var(--baseline);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-left: 6px solid var(--arm);
+  padding-left: 10px;
+}
+
+.build-arm .arm-letter {
+  width: 1.5em;
+  height: 1.5em;
+  border-radius: 6px;
+}
+
+.build-part h3 {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+}
+
+.build-part ul {
+  margin: 0;
+  padding-left: 1.2em;
+}
+
+.build-who dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 24px;
+  margin: 0;
+}
+
+.build-who dt {
+  font-weight: 800;
+}
+
+.build-who dd {
+  margin: 0;
+}
