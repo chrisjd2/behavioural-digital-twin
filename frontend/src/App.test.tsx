@@ -56,10 +56,12 @@ async function goTo(user: User, id: string) {
 }
 
 describe('Presenter deck (ADR-0012)', () => {
-  it('opens on the first slide of About me', () => {
+  it('opens on the first slide of About me', async () => {
     setup()
 
-    expect(screen.getByRole('heading', { level: 2, name: 'Chris Davies' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Chris Davies' }),
+    ).toBeInTheDocument()
     expect(counter()).toBe('1 / 17')
     const sections = screen.getByRole('navigation', { name: /sections/i })
     expect(within(sections).getByRole('button', { name: 'About me' })).toHaveAttribute(
@@ -72,7 +74,7 @@ describe('Presenter deck (ADR-0012)', () => {
     const user = setup()
     const seen = [counter()]
 
-    for (let press = 0; press < 30 && counter() !== '17 / 17'; press++) {
+    for (let press = 0; press < 40 && counter() !== '17 / 17'; press++) {
       await next(user)
       if (counter() !== seen.at(-1)) seen.push(counter())
     }
@@ -174,5 +176,36 @@ describe('Presenter deck (ADR-0012)', () => {
     await user.click(screen.getByRole('button', { name: 'Presenter' }))
     expect(screen.getByRole('heading', { level: 2, name: 'How I built it' })).toBeInTheDocument()
     expect(counter()).toBe('10 / 17')
+  })
+  it('leaves About me out in DEMO_MODE: opens on The brief and cannot go back', async () => {
+    stubApi({
+      status: { ...statusFixture, demo_mode: true },
+      runs: RUNS,
+      urls: { '/api/hook': hookFixture, ...POPULATION },
+    })
+    const user = userEvent.setup()
+    render(<App />)
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'The brief' })).toBeInTheDocument()
+    expect(counter()).toBe('6 / 17')
+    const sections = screen.getByRole('navigation', { name: /sections/i })
+    expect(within(sections).queryByRole('button', { name: 'About me' })).not.toBeInTheDocument()
+
+    await user.keyboard('{ArrowLeft}{PageUp}')
+    expect(counter()).toBe('6 / 17')
+    await user.keyboard('{ArrowRight}')
+    expect(counter()).toBe('7 / 17')
+    await user.click(within(sections).getByRole('button', { name: 'Learn' }))
+    await user.keyboard('{ArrowLeft}')
+    expect(counter()).toBe('6 / 17')
+    expect(screen.queryByRole('heading', { name: 'Chris Davies' })).not.toBeInTheDocument()
+  })
+
+  it('shows an error, not a slide, when the status cannot be loaded', async () => {
+    stubApi({ status: 500, runs: RUNS, urls: { '/api/hook': hookFixture } })
+    render(<App />)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/server said 500/i)
+    expect(screen.queryByRole('heading', { name: 'Chris Davies' })).not.toBeInTheDocument()
   })
 })
