@@ -349,6 +349,7 @@ describe('Paged report (presenter mode, #57)', () => {
     'nDCG@5 and Hit@1',
     'Paired differences',
     'Calibration',
+    'Reliability diagram',
     'Users by outcome',
     'Diagnostics',
   ]
@@ -406,6 +407,18 @@ describe('Paged report (presenter mode, #57)', () => {
     await screen.findByTestId('outcome')
 
     expect(press('ArrowLeft')).toBe(false)
+  })
+
+  it('gives the reliability diagram its own page, open, rather than a disclosure', async () => {
+    const user = renderPaged()
+
+    await user.click(await screen.findByRole('tab', { name: 'Calibration' }))
+    expect(screen.getByRole('img', { name: /mean p_click per arm/i })).toBeInTheDocument()
+    expect(screen.queryByText('Reliability diagram', { selector: 'summary' })).toBeNull()
+
+    await user.click(screen.getByRole('tab', { name: 'Reliability diagram' }))
+    expect(screen.getByRole('img', { name: /arm a reliability/i })).toBeInTheDocument()
+    expect(screen.getByText(/on the dashed diagonal, predictions match that share/i)).toBeVisible()
   })
 
   it('keeps the not-a-result banner on every page', async () => {

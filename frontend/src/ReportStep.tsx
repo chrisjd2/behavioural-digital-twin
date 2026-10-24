@@ -128,22 +128,31 @@ export default function ReportStep({ runId, paged = false }: { runId: string; pa
     </section>
   )
 
-  const calibration = llm.some((a) => a.calibration) && (
+  const calibrated = llm.some((a) => a.calibration)
+  const reliability = (
+    <>
+      <p className="small muted">
+        Predictions grouped by <code>p_click</code> in steps of 10, against the share really clicked
+        within our candidate sets, a share inflated by design like sample CTR. On the dashed
+        diagonal, predictions match that share.
+      </p>
+      <ReliabilityDiagrams reliability={report.reliability} />
+    </>
+  )
+  // `withReliability`: the diagram behind a disclosure; paged mode gives it a page of its own.
+  const calibration = (withReliability: boolean) => (
     <section className="report-section" aria-labelledby="calibration-title">
       <h3 id="calibration-title">Calibration</h3>
       <p className="section-note">
         Mean <code>p_click</code> per arm against how often readers really clicked.
       </p>
       <CalibrationChart arms={llm} />
-      <details className="reliability-details">
-        <summary>Reliability diagram</summary>
-        <p className="small muted">
-          Predictions grouped by <code>p_click</code> in steps of 10, against the share really
-          clicked within our candidate sets, a share inflated by design like sample CTR. On the
-          dashed diagonal, predictions match that share.
-        </p>
-        <ReliabilityDiagrams reliability={report.reliability} />
-      </details>
+      {withReliability && (
+        <details className="reliability-details">
+          <summary>Reliability diagram</summary>
+          {reliability}
+        </details>
+      )}
     </section>
   )
 
@@ -169,7 +178,20 @@ export default function ReportStep({ runId, paged = false }: { runId: string; pa
       { tab: 'AUC and MRR', content: metrics(METRICS.slice(0, 2)) },
       { tab: 'nDCG@5 and Hit@1', content: metrics(METRICS.slice(2)) },
       { tab: 'Paired differences', content: differences },
-      ...(calibration ? [{ tab: 'Calibration', content: calibration }] : []),
+      ...(calibrated
+        ? [
+            { tab: 'Calibration', content: calibration(false) },
+            {
+              tab: 'Reliability diagram',
+              content: (
+                <section className="report-section" aria-labelledby="reliability-title">
+                  <h3 id="reliability-title">Reliability diagram</h3>
+                  {reliability}
+                </section>
+              ),
+            },
+          ]
+        : []),
       ...(users ? [{ tab: 'Users by outcome', content: users }] : []),
       { tab: 'Diagnostics', content: diagnostics },
     ]
@@ -182,7 +204,7 @@ export default function ReportStep({ runId, paged = false }: { runId: string; pa
       {primary}
       {metrics(METRICS)}
       {differences}
-      {calibration}
+      {calibrated && calibration(true)}
       {users}
       {diagnostics}
     </div>
