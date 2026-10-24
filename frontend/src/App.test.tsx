@@ -1,6 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { RunReport } from './api/report'
 import App from './App'
 import { SCREENS } from './deck'
 import {
@@ -150,6 +151,43 @@ describe('Presenter deck (ADR-0012)', () => {
     await waitFor(() => expect(screen.getByText('MOCK')).toBeInTheDocument())
     await goTo(user, 'brief')
     expect(screen.queryByText('MOCK')).not.toBeInTheDocument()
+  })
+
+  it('treats the check-in like a run screen: MOCK badge and labelled numbers', async () => {
+    const estimate = { mean: 0.6, low: 0.5, high: 0.7 }
+    const report: RunReport = {
+      run_id: runFixture.run_id,
+      population: 'dev',
+      data_source: 'mind',
+      model: 'gemini-test-001',
+      mock: true,
+      is_result: false,
+      not_result_reasons: ['mock', 'dev'],
+      n_users: 2,
+      arms: [
+        {
+          arm: 'D',
+          kind: 'llm',
+          n: 2,
+          metrics: { auc: estimate, mrr: estimate, ndcg5: estimate, hit1: estimate },
+          tie_share: 0,
+          parse_failure_rate: 0,
+          calibration: { mean_p_click: 0.4, feed_ctr: 0.04, sample_ctr: 0.2 },
+        },
+      ],
+      differences: [],
+      primary: null,
+      reliability: [],
+      identity_screen: {},
+    }
+    const user = setup(
+      { runs: [{ ...runFixture, mock: true }], problems: [] },
+      { [`/api/run/${runFixture.run_id}/report`]: report },
+    )
+
+    await goTo(user, 'checkin')
+    expect(await screen.findByText(/chance of a click/i)).toHaveTextContent('40.0%MOCK')
+    expect(screen.getByTitle(/fake LLM output/i)).toHaveTextContent('MOCK')
   })
 
   it('shows an error, not an empty step, when the runs cannot be loaded', async () => {

@@ -11,8 +11,9 @@ import ReportStep from './ReportStep'
 import { KIND_NOTES } from './RunPicker'
 import SimulationStep from './SimulationStep'
 import { Slide } from './slides'
+import { TEACH_SLIDES, TeachSlide } from './TeachSlides'
 
-type Runs =
+export type Runs =
   | { state: 'loading' }
   | { state: 'error'; message: string }
   | { state: 'ready'; run: RunSummary | undefined }
@@ -67,7 +68,9 @@ export default function Presenter({
   const shownRunIsMock =
     screen.id === 'hook'
       ? hookRunMock
-      : RUN_SCREENS.has(screen.id) && runs.state === 'ready' && runs.run?.mock === true
+      : (RUN_SCREENS.has(screen.id) || TEACH_SLIDES.has(screen.id)) &&
+        runs.state === 'ready' &&
+        runs.run?.mock === true
 
   return (
     <div className="deck">
@@ -124,6 +127,8 @@ export default function Presenter({
           <LearnSlide screen={screen} />
         ) : screen.id === 'build' ? (
           <BuildSlide />
+        ) : TEACH_SLIDES.has(screen.id) ? (
+          <TeachSlide screen={screen} runs={runs} mockLlm={start.mockLlm} />
         ) : (
           <Slide kicker={screen.section} title={screen.title} />
         )}

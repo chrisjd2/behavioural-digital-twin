@@ -16,7 +16,9 @@ export function isAboutMe(id: ScreenId): id is AboutMeId {
 }
 
 export type DeckStart =
-  { state: 'loading' } | { state: 'error'; message: string } | { state: 'ready'; first: number }
+  | { state: 'loading' }
+  | { state: 'error'; message: string }
+  | { state: 'ready'; first: number; mockLlm: boolean }
 
 /** The first screen the deck may show: past About me when `/api/status` reports `demo_mode`. */
 export function useDeckStart(): DeckStart {
@@ -27,6 +29,7 @@ export function useDeckStart(): DeckStart {
         setStart({
           state: 'ready',
           first: status.demo_mode ? SCREENS.findIndex((s) => s.section !== KICKER) : 0,
+          mockLlm: status.mock,
         }),
       )
       .catch((error: unknown) =>
