@@ -1,0 +1,44 @@
+/* Learn slides (screens 6-9): sized for a 1920×1080 shared screen. */
+.learn-quote {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.learn-lede {
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.learn-split {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.learn-media {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.learn-media-small .media {
+  max-height: 18vh;
+}
+
+.learn-change {
+  font-weight: 700;
+}
+
+.learn-footnote {
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.learn-question {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+}
