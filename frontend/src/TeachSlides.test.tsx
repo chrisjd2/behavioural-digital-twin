@@ -61,10 +61,10 @@ const ARMS = [
 
 const ready = (run: RunSummary | undefined): Runs => ({ state: 'ready', run })
 
-function show(id: ScreenId, runs: Runs, urls: Record<string, Reply> = {}) {
+function show(id: ScreenId, runs: Runs, urls: Record<string, Reply> = {}, mockLlm = false) {
   stubApi({ status: statusFixture, urls })
   const user = userEvent.setup()
-  render(<TeachSlide screen={SCREENS.find((s) => s.id === id)!} runs={runs} />)
+  render(<TeachSlide screen={SCREENS.find((s) => s.id === id)!} runs={runs} mockLlm={mockLlm} />)
   return user
 }
 
@@ -159,7 +159,21 @@ describe('Thanks (screen 17)', () => {
 
     await user.click(screen.getByRole('button', { name: /interview a twin/i }))
     expect(await screen.findByText(SIMULATED_LABEL)).toBeInTheDocument()
-    expect(fetch).toHaveBeenCalledWith(`/api/run/${RUN}/population`, undefined)
+    const reader = runPopulationFixture.agents[0].user_id
+    expect(await screen.findByRole('option', { name: new RegExp(reader) })).toBeInTheDocument()
+    expect(screen.queryByText('Interview replies use the MOCK LLM')).not.toBeInTheDocument()
+  })
+
+  it('notes the MOCK LLM on the Interview when the server runs it', async () => {
+    const user = show(
+      'thanks',
+      ready(runFixture),
+      { [`/api/run/${RUN}/population`]: runPopulationFixture, [REPORT]: reportFixture(ARMS) },
+      true,
+    )
+
+    await user.click(screen.getByRole('button', { name: /interview a twin/i }))
+    expect(await screen.findByText('Interview replies use the MOCK LLM')).toBeInTheDocument()
   })
 
   it('offers no Interview when there is no run, and says why', () => {

@@ -35,7 +35,15 @@ const TAKEAWAYS: ReactNode[] = [
   </q>,
 ]
 
-export function TeachSlide({ screen, runs }: { screen: Screen; runs: Runs }) {
+export function TeachSlide({
+  screen,
+  runs,
+  mockLlm,
+}: {
+  screen: Screen
+  runs: Runs
+  mockLlm: boolean // the server's MOCK_LLM, for the Interview's note
+}) {
   return (
     <Slide kicker={screen.section} title={screen.title}>
       {screen.id === 'takeaways' ? (
@@ -43,7 +51,7 @@ export function TeachSlide({ screen, runs }: { screen: Screen; runs: Runs }) {
       ) : screen.id === 'checkin' ? (
         <WithRun runs={runs}>{(run) => <CheckIn key={run.run_id} run={run} />}</WithRun>
       ) : (
-        <Thanks runs={runs} />
+        <Thanks runs={runs} mockLlm={mockLlm} />
       )}
     </Slide>
   )
@@ -120,7 +128,7 @@ function CheckIn({ run }: { run: RunSummary }) {
 }
 
 /** Screen 17: the question again, then the Interview as a Q&A bonus (ADR-0008). */
-function Thanks({ runs }: { runs: Runs }) {
+function Thanks({ runs, mockLlm }: { runs: Runs; mockLlm: boolean }) {
   const [interview, setInterview] = useState(false)
   return (
     <>
@@ -129,7 +137,7 @@ function Thanks({ runs }: { runs: Runs }) {
       <WithRun runs={runs}>
         {(run) =>
           interview ? (
-            <InterviewStep key={run.run_id} run={run} mockLlm={false} />
+            <InterviewStep key={run.run_id} run={run} mockLlm={mockLlm} />
           ) : (
             <button type="button" className="primary" onClick={() => setInterview(true)}>
               Interview a twin
