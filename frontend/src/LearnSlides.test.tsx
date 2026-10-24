@@ -41,6 +41,10 @@ describe('Learn slides (screens 6-9)', () => {
   it('Back to MiroFish: two screenshot slots fall back to placeholders', async () => {
     const user = userEvent.setup()
     renderScreen('mirofish')
+    expect(screen.getAllByRole('img').map((img) => img.getAttribute('src'))).toEqual([
+      '/private/mirofish-readme.png',
+      '/private/mirofish-ui.png',
+    ])
     for (const img of screen.getAllByRole('img')) fireEvent.error(img)
 
     const placeholders = screen.getAllByRole('img')
