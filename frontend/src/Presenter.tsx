@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import AboutMeSlide, { isAboutMe, useDeckStart } from './AboutMeSlides'
+import BuildSlide from './BuildSlide'
 import { defaultRunId, fetchRuns, runKind, type RunSummary } from './api/runs'
 import { deckCommand, move, SCREENS, SECTIONS, type Screen, type ScreenId } from './deck'
 import HookStep from './HookStep'
@@ -121,6 +122,8 @@ export default function Presenter({
           </section>
         ) : LEARN_SCREENS.has(screen.id) ? (
           <LearnSlide screen={screen} />
+        ) : screen.id === 'build' ? (
+          <BuildSlide />
         ) : (
           <Slide kicker={screen.section} title={screen.title} />
         )}
