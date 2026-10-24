@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
+import AboutMeSlide, { isAboutMe, useDeckStart } from './AboutMeSlides'
 import BuildSlide from './BuildSlide'
 import { defaultRunId, fetchRuns, runKind, type RunSummary } from './api/runs'
 import { deckCommand, move, SCREENS, SECTIONS, type Screen, type ScreenId } from './deck'
 import HookStep from './HookStep'
 import { SIMULATED_LABEL } from './labels'
+import LearnSlide, { LEARN_SCREENS } from './LearnSlides'
 import PopulationStep from './PopulationStep'
 import ReportStep from './ReportStep'
 import { KIND_NOTES } from './RunPicker'
@@ -29,7 +31,11 @@ export default function Presenter({
 }) {
   const [runs, setRuns] = useState<Runs>({ state: 'loading' })
   const [hookRunMock, setHookRunMock] = useState(false)
-  const screen = SCREENS[index]
+  const start = useDeckStart()
+  const first = start.state === 'ready' ? start.first : 0
+  const at = Math.max(index, first)
+  const screen = SCREENS[at]
+  const sections = SECTIONS.filter((s) => SCREENS.findIndex((x) => x.section === s) >= first)
 
   useEffect(() => {
     fetchRuns()
@@ -51,11 +57,11 @@ export default function Presenter({
       const command = deckCommand(event)
       if (!command) return
       event.preventDefault()
-      onIndex((i) => move(i, command, SCREENS.length))
+      onIndex((i) => Math.max(move(Math.max(i, first), command, SCREENS.length), first))
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onIndex])
+  }, [onIndex, first])
 
   const isStep = RUN_SCREENS.has(screen.id) || screen.id === 'hook'
   const shownRunIsMock =
@@ -69,7 +75,7 @@ export default function Presenter({
         <p className="wordmark">Twin Lab</p>
         <nav aria-label="Sections" className="deck-sections">
           <ol>
-            {SECTIONS.map((section) => (
+            {sections.map((section) => (
               <li key={section}>
                 <button
                   type="button"
@@ -91,7 +97,7 @@ export default function Presenter({
           </span>
         )}
         <p className="deck-counter" data-testid="deck-counter">
-          {index + 1} / {SCREENS.length}
+          {at + 1} / {SCREENS.length}
         </p>
         <button type="button" className="mode-switch" onClick={onExplore}>
           Explore
@@ -99,13 +105,23 @@ export default function Presenter({
       </header>
 
       <main className="deck-stage" key={screen.id}>
-        {screen.id === 'hook' ? (
+        {start.state === 'loading' ? (
+          <p className="muted">Loading…</p>
+        ) : start.state === 'error' ? (
+          <p role="alert" className="error">
+            The status could not be loaded: {start.message}
+          </p>
+        ) : isAboutMe(screen.id) ? (
+          <AboutMeSlide id={screen.id} />
+        ) : screen.id === 'hook' ? (
           <HookStep onRunMock={setHookRunMock} />
         ) : RUN_SCREENS.has(screen.id) ? (
           <section className="run-step" aria-labelledby="step-title">
             <h2 id="step-title">{screen.title}</h2>
             <RunScreen screen={screen} runs={runs} />
           </section>
+        ) : LEARN_SCREENS.has(screen.id) ? (
+          <LearnSlide screen={screen} />
         ) : screen.id === 'build' ? (
           <BuildSlide />
         ) : (
