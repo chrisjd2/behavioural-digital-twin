@@ -7,10 +7,12 @@ import './aboutMe.css'
 
 const KICKER = 'About me'
 
-export type AboutMeId = 'title' | 'who' | 'career' | 'life' | 'handoff'
+/** The screens this file draws; any other About me screen falls back to the deck's placeholder. */
+const ABOUT_ME_IDS = ['title', 'who', 'career', 'life', 'handoff'] as const
+export type AboutMeId = (typeof ABOUT_ME_IDS)[number]
 
 export function isAboutMe(id: ScreenId): id is AboutMeId {
-  return SCREENS.some((s) => s.id === id && s.section === KICKER)
+  return (ABOUT_ME_IDS as readonly ScreenId[]).includes(id)
 }
 
 export type DeckStart =
