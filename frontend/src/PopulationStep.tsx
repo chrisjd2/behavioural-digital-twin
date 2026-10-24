@@ -37,7 +37,7 @@ type Load =
  * Step 2: the run's readers linked to the categories they read; select one to see what each
  * arm knew. Render with `key={runId}` so a new run starts from a clean state.
  */
-export default function PopulationStep({ runId }: { runId: string }) {
+export default function PopulationStep({ runId, fit = false }: { runId: string; fit?: boolean }) {
   const [load, setLoad] = useState<Load>({ state: 'loading' })
   const [selected, setSelected] = useState<string | null>(null)
   const graph = useRef<HTMLDivElement>(null)
@@ -105,6 +105,7 @@ export default function PopulationStep({ runId }: { runId: string }) {
           onSelect={setSelected}
           width={width}
           windowHeight={windowHeight}
+          fit={fit}
         />
         {!selected && <p className="muted small">Select a reader to see what each arm knew.</p>}
       </div>
