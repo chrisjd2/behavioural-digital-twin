@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { fetchReport, type MetricName, type RunReport } from './api/report'
 import { deckCommand, move } from './deck'
+import { largestFit } from './fit'
 import { ReliabilityDiagrams } from './ReportCharts'
 import { notResultText, outcomeLine } from './reportModel'
 import { CalibrationChart, DifferenceChart, Diagnostics, MetricPanel } from './ReportSections'
@@ -172,11 +173,10 @@ export default function ReportStep({ runId, paged = false }: { runId: string; pa
   )
 
   if (paged) {
-    // The four metrics take two pages: four panels of five arms do not fit one shared screen.
+    // A page per metric: one chart alone can be enlarged to fill a shared screen.
     const pages: Page[] = [
       { tab: 'Primary outcome', content: primary },
-      { tab: 'AUC and MRR', content: metrics(METRICS.slice(0, 2)) },
-      { tab: 'nDCG@5 and Hit@1', content: metrics(METRICS.slice(2)) },
+      ...METRICS.map((m) => ({ tab: m.title, content: metrics([m]) })),
       { tab: 'Paired differences', content: differences },
       ...(calibrated
         ? [
@@ -192,7 +192,7 @@ export default function ReportStep({ runId, paged = false }: { runId: string; pa
             },
           ]
         : []),
-      ...(users ? [{ tab: 'Users by outcome', content: users }] : []),
+      ...(users ? [{ tab: 'Users by outcome', content: users, fill: false }] : []),
       { tab: 'Diagnostics', content: diagnostics },
     ]
     return <PagedReport banner={banner} pages={pages} />
@@ -211,13 +211,43 @@ export default function ReportStep({ runId, paged = false }: { runId: string; pa
   )
 }
 
-type Page = { tab: string; content: ReactNode }
+/** `fill: false` for a page whose own layout already takes the height left. */
+type Page = { tab: string; content: ReactNode; fill?: boolean }
+
+/** How far a page may be enlarged: past this, a short page's text gets cartoonish. */
+const MAX_ZOOM = 2
+/** The share of a bar chart's width its track keeps: zooming grows the labels beside it. */
+const MIN_TRACK = 0.45
 
 /** One page on screen; the next and previous keys turn pages before the deck moves (ADR-0012). */
 function PagedReport({ banner, pages }: { banner: ReactNode; pages: Page[] }) {
   const [page, setPage] = useState(0)
   const pageRef = useRef(page)
   pageRef.current = page
+  const panelRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const fill = pages[page].fill ?? true
+
+  useLayoutEffect(() => {
+    // The charts are drawn at a fixed size: zoom the page up to fill the screen it is shown on.
+    const panel = panelRef.current
+    const content = contentRef.current
+    if (!fill || !panel || !content || panel.clientHeight === 0) return
+    const fits = (zoom: number) => {
+      content.style.zoom = String(zoom)
+      const tracksKeepRoom = [...content.querySelectorAll('.bar-chart')].every(
+        (chart) =>
+          chart.querySelector('.bar-track')!.getBoundingClientRect().width >=
+          MIN_TRACK * chart.getBoundingClientRect().width,
+      )
+      return (
+        content.getBoundingClientRect().height <= panel.getBoundingClientRect().height &&
+        content.scrollWidth <= content.clientWidth &&
+        tracksKeepRoom
+      )
+    }
+    content.style.zoom = String(largestFit(fits, MAX_ZOOM))
+  }, [page, fill])
 
   useEffect(() => {
     // On document, so it runs before the presenter deck's window listener.
@@ -252,8 +282,14 @@ function PagedReport({ banner, pages }: { banner: ReactNode; pages: Page[] }) {
           </button>
         ))}
       </div>
-      <div role="tabpanel" id="report-page" aria-labelledby={`report-tab-${page}`}>
-        {pages[page].content}
+      <div role="tabpanel" id="report-page" aria-labelledby={`report-tab-${page}`} ref={panelRef}>
+        {fill ? (
+          <div className="report-page" ref={contentRef}>
+            {pages[page].content}
+          </div>
+        ) : (
+          pages[page].content
+        )}
       </div>
     </div>
   )

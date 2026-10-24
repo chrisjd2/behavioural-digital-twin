@@ -169,12 +169,12 @@ describe('Presenter deck (ADR-0012)', () => {
     await goTo(user, 'report')
     const tabs = await screen.findByRole('tablist', { name: /report pages/i })
     await user.keyboard('{PageDown}')
-    expect(within(tabs).getByRole('tab', { name: 'AUC and MRR' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    )
+    expect(within(tabs).getByRole('tab', { name: 'AUC' })).toHaveAttribute('aria-selected', 'true')
     expect(counter()).toBe('14 / 17')
-    await user.keyboard('{PageDown}{PageDown}{PageDown}{PageDown}')
+    // MRR, nDCG@5, Hit@1, paired differences, diagnostics, then the next screen.
+    await user.keyboard('{PageDown}{PageDown}{PageDown}{PageDown}{PageDown}')
+    expect(counter()).toBe('14 / 17')
+    await user.keyboard('{PageDown}')
     expect(counter()).toBe('15 / 17')
   })
 

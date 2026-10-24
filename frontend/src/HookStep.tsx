@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
-import { fetchHook, type HookExample } from './api/hook'
+import { fetchHook, type HookCall, type HookExample, type HookReveal } from './api/hook'
 import type { Headline } from './api/runs'
 import { ARMS } from './arms'
 import './hook.css'
@@ -120,12 +120,12 @@ export default function HookStep({ onRunMock }: { onRunMock: (mock: boolean) => 
                 key={headline.news_id}
                 number={i + 1}
                 headline={headline}
-                example={load.example}
-                revealed={revealed}
+                clicked={revealed ? headline.news_id === load.example.reveal.clicked_id : undefined}
               />
             ))}
           </div>
           {state.history && !revealed && <History history={load.example.history} />}
+          {revealed && <Scores reveal={load.example.reveal} />}
           {/* ADR-0007: the reveal shows agent reactions, also in full screen without the footer. */}
           {revealed && <p className="hook-simulated">{SIMULATED_LABEL}</p>}
         </div>
@@ -164,19 +164,17 @@ export default function HookStep({ onRunMock }: { onRunMock: (mock: boolean) => 
   )
 }
 
+/** `clicked` is undefined until the reveal. */
 function HookCard({
   number,
   headline,
-  example,
-  revealed,
+  clicked,
 }: {
   number: number
   headline: Headline
-  example: HookExample
-  revealed: boolean
+  clicked: boolean | undefined
 }) {
-  const clicked = headline.news_id === example.reveal.clicked_id
-  const verdict = revealed ? (clicked ? ' is-clicked' : ' is-skipped') : ''
+  const verdict = clicked === undefined ? '' : clicked ? ' is-clicked' : ' is-skipped'
   return (
     <article className={`hook-card${verdict}`} aria-label={`Headline ${number}`}>
       <span className="hook-card-number" aria-hidden="true">
@@ -184,28 +182,66 @@ function HookCard({
       </span>
       <p className="hook-card-category">{topic(headline)}</p>
       <p className="hook-card-title">{title(headline)}</p>
-      {revealed && (
-        <>
-          <p className="hook-verdict">{clicked ? 'They clicked this' : 'They skipped this'}</p>
-          <ul className="hook-predictions">
-            {example.reveal.predictions.map(({ arm, calls }) => {
-              const call = calls[number - 1] // calls come in headline order
-              return (
-                <li key={arm} className={`hook-prediction arm-${arm.toLowerCase()}`}>
-                  <span className="hook-arm">
-                    <span className="arm-letter">{arm}</span> {armName(arm)}
-                  </span>
-                  <span className="hook-p">
-                    <strong>{Math.round(call.p_click)}%</strong> chance of a click
-                  </span>
-                  <q className="hook-reaction">{call.reaction}</q>
-                </li>
-              )
-            })}
-          </ul>
-        </>
+      {clicked !== undefined && (
+        <p className="hook-verdict">{clicked ? 'They clicked this' : 'They skipped this'}</p>
       )}
     </article>
+  )
+}
+
+/** The agent's pick is the headline it scored higher; a tie is no pick. */
+function pick(calls: HookCall[]): number | undefined {
+  const [first, second] = calls
+  if (first.p_click === second.p_click) return undefined
+  return first.p_click > second.p_click ? 0 : 1
+}
+
+function Scores({ reveal }: { reveal: HookReveal }) {
+  return (
+    <section className="hook-scores" aria-labelledby="hook-scores-title">
+      <h3 id="hook-scores-title">
+        Each agent scored both headlines. Its pick is the higher score.
+      </h3>
+      <ol>
+        {reveal.predictions.map(({ arm, calls }) => {
+          const picked = pick(calls)
+          const right = picked !== undefined && calls[picked].news_id === reveal.clicked_id
+          return (
+            <li
+              key={arm}
+              aria-label={armName(arm)}
+              className={`hook-score arm-${arm.toLowerCase()}`}
+            >
+              <p className="hook-arm">
+                <span className="arm-letter">{arm}</span> {armName(arm)}
+              </p>
+              <p
+                className={`hook-call${picked === undefined ? '' : right ? ' is-right' : ' is-wrong'}`}
+              >
+                {picked === undefined
+                  ? 'Scored both the same'
+                  : `${right ? '✓' : '✗'} Picked headline ${picked + 1}: ${right ? 'right' : 'wrong'}`}
+              </p>
+              <ul className="hook-bars">
+                {calls.map((call, i) => (
+                  <li
+                    key={call.news_id}
+                    className={call.news_id === reveal.clicked_id ? 'is-clicked' : undefined}
+                  >
+                    <span className="hook-bar-number">{i + 1}</span>
+                    <span className="hook-bar" aria-hidden="true">
+                      <span style={{ width: `${call.p_click}%` }} />
+                    </span>
+                    <strong className="hook-bar-p">{Math.round(call.p_click)}%</strong>
+                    <q className="hook-reaction">{call.reaction}</q>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          )
+        })}
+      </ol>
+    </section>
   )
 }
 

@@ -54,21 +54,19 @@ describe('Step 0 Hook', () => {
     await user.keyboard('r')
     const clicked = screen.getByRole('article', { name: 'Headline 2' })
     expect(within(clicked).getByText('They clicked this')).toBeInTheDocument()
-    expect(within(clicked).getByText('72%')).toBeInTheDocument()
-    expect(within(clicked).getByText('I follow every twist in Washington.')).toBeInTheDocument()
     const skipped = screen.getByRole('article', { name: 'Headline 1' })
     expect(within(skipped).getByText('They skipped this')).toBeInTheDocument()
-    expect(within(skipped).getByText('65%')).toBeInTheDocument()
-    expect(
-      within(skipped)
-        .getByText(/plain llm/i)
-        .closest('li'),
-    ).toHaveClass('arm-a')
-    expect(
-      within(skipped)
-        .getByText(/twin \+ profile/i)
-        .closest('li'),
-    ).toHaveClass('arm-d')
+    // Each agent's two scores side by side, and whether its pick was the real click.
+    const plain = screen.getByRole('listitem', { name: 'Plain LLM' })
+    expect(plain).toHaveClass('arm-a')
+    expect(plain).toHaveTextContent(/picked headline 1: wrong/i)
+    expect(within(plain).getByText('65%')).toBeInTheDocument()
+    expect(within(plain).getByText('40%')).toBeInTheDocument()
+    const twin = screen.getByRole('listitem', { name: 'Twin + profile + memory' })
+    expect(twin).toHaveClass('arm-d')
+    expect(twin).toHaveTextContent(/picked headline 2: right/i)
+    expect(within(twin).getByText('72%')).toBeInTheDocument()
+    expect(within(twin).getByText('I follow every twist in Washington.')).toBeInTheDocument()
     expect(screen.getByText(LABEL)).toBeInTheDocument()
     expect(screen.queryByText('Impeachment moves on')).not.toBeInTheDocument() // room to read
     expect(screen.getByText(/simulated from anonymised research data/i)).toBeInTheDocument()
@@ -139,6 +137,23 @@ describe('Step 0 Hook', () => {
     await user.keyboard('h')
 
     expect(screen.getByText(/no earlier clicks/i)).toBeInTheDocument()
+  })
+
+  it('makes no pick for an agent that scored both headlines the same', async () => {
+    const [plain, twin] = hookFixture.reveal.predictions
+    const tied = { ...plain, calls: plain.calls.map((call) => ({ ...call, p_click: 50 })) }
+    const user = setup({
+      ...hookFixture,
+      reveal: { ...hookFixture.reveal, predictions: [tied, twin] },
+    })
+
+    await user.keyboard('{ArrowRight}')
+    await screen.findByText('Pharmacy recall widens')
+    await user.keyboard('r')
+
+    expect(screen.getByRole('listitem', { name: 'Plain LLM' })).toHaveTextContent(
+      /scored both the same/i,
+    )
   })
 
   it('labels a mock run and synthetic data', async () => {
