@@ -1,5 +1,5 @@
 /*
- * Presenter fit (#57): the four step screens in the deck fit a 1920x1080 shared screen with no
+ * Presenter fit: the four step screens in the deck fit a 1920x1080 shared screen with no
  * page scroll, and their body text is at least 20px (1rem). Scoped to .deck-stage, so the Explore
  * stepper keeps its layout. Imported after the steps' own stylesheets.
  */
@@ -128,12 +128,6 @@
   display: contents;
 }
 
-.deck-stage .feed {
-  grid-column: 1;
-  grid-row: 1 / span 2;
-  min-height: 0;
-}
-
 .deck-stage .replay-panel {
   grid-column: 2;
   grid-row: 1;
@@ -167,6 +161,9 @@
  * does not fit wraps into a second column, which is hidden. Explore keeps them all.
  */
 .deck-stage .feed {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
@@ -276,6 +273,9 @@
 }
 
 .deck-stage .user-browser > .rankings {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  margin-top: 0;
   align-self: stretch;
   min-height: 0;
   display: flex;
@@ -321,12 +321,6 @@
   grid-column: 1;
   flex-wrap: wrap;
   gap: 8px 12px;
-}
-
-.deck-stage .user-browser > .rankings {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  margin-top: 0;
 }
 
 .deck-stage .rankings-table {

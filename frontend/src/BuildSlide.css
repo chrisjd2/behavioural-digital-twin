@@ -24,7 +24,7 @@
   color: var(--muted);
 }
 
-/* Two columns, read down: with every part revealed, one column ran below 1080px (#57). */
+/* Two columns, read down: with every part revealed, one column ran below 1080px. */
 .build-arms {
   list-style: none;
   margin: 0;

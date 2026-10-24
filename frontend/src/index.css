@@ -989,7 +989,7 @@ h2 {
 }
 
 /* Presenter deck (ADR-0012): a slim bar, then the screen fills a shared 1920x1080 view. */
-/* Exactly one screen tall (#57): a screen that is too tall shows as page scroll, never hidden. */
+/* Exactly one screen tall: a screen that is too tall shows as page scroll, never hidden. */
 .deck {
   max-width: 1600px;
   height: 100vh;

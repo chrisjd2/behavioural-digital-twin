@@ -29,6 +29,7 @@ function useBoxHeight(box: HTMLDivElement | null) {
     if (!box || typeof ResizeObserver === 'undefined') return
     const observer = new ResizeObserver(([entry]) => {
       const next = Math.round(entry.contentRect.height)
+      // Ignore a few pixels of jitter: a relayout of the graph must not resize its own box again.
       if (next > 0) setHeight((h) => (h !== undefined && Math.abs(h - next) <= 4 ? h : next))
     })
     observer.observe(box)
