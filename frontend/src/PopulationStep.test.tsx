@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import Explorer from './Explorer'
@@ -73,7 +73,8 @@ describe('Population in presenter mode (#57)', () => {
     render(<PopulationStep runId={runFixture.run_id} fit />)
 
     const graph = await screen.findByRole('group', { name: /readers around/i })
-    expect(graph).toHaveAttribute('viewBox', '0 0 1500 520')
+    // Measured after the first paint, so the viewBox settles on the next render.
+    await waitFor(() => expect(graph).toHaveAttribute('viewBox', '0 0 1500 520'))
   })
 })
 
