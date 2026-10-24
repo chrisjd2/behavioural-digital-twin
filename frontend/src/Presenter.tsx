@@ -8,6 +8,7 @@ import ReportStep from './ReportStep'
 import { KIND_NOTES } from './RunPicker'
 import SimulationStep from './SimulationStep'
 import { Slide } from './slides'
+import './presenter.css'
 
 type Runs =
   | { state: 'loading' }
@@ -137,7 +138,7 @@ function RunScreen({ screen, runs }: { screen: Screen; runs: Runs }) {
       {/* The deck has no run picker, so it says here what Explore says beside it. */}
       {note && <p className="run-kind">{note}</p>}
       {screen.id === 'population' ? (
-        <PopulationStep runId={runId} />
+        <PopulationStep runId={runId} fit />
       ) : screen.id === 'simulation' ? (
         <SimulationStep runId={runId} liveRuns={false} mockLlm={false} onLiveRunSaved={() => {}} />
       ) : (

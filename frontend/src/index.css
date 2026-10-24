@@ -989,9 +989,10 @@ h2 {
 }
 
 /* Presenter deck (ADR-0012): a slim bar, then the screen fills a shared 1920x1080 view. */
+/* Exactly one screen tall (#57): a screen that is too tall shows as page scroll, never hidden. */
 .deck {
   max-width: 1600px;
-  min-height: 100vh;
+  height: 100vh;
   margin: 0 auto;
   padding: 0 48px;
   display: flex;
@@ -1002,7 +1003,7 @@ h2 {
   display: flex;
   align-items: center;
   gap: 24px;
-  padding: 16px 0;
+  padding: 12px 0;
   border-bottom: 2px solid var(--ink);
 }
 
@@ -1062,9 +1063,17 @@ h2 {
 
 .deck-stage {
   flex: 1;
-  padding: 32px 0 40px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 0;
+}
+
+.deck .footer {
+  padding: 10px 0 14px;
+  font-size: 1rem;
 }
 
 .deck-stage .run-step > h2 {
-  margin-bottom: 20px;
+  margin-bottom: 4px;
 }
