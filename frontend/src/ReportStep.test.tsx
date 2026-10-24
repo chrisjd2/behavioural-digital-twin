@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import Explorer from './Explorer'
@@ -320,6 +320,147 @@ describe('Users by outcome', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       /could not load user U3’s predictions/i,
     )
+  })
+})
+
+describe('Paged report (presenter mode, #57)', () => {
+  function renderPaged(report: Reply = reportFixture) {
+    stubApi({
+      status: statusFixture,
+      urls: { [reportUrl]: report, [predictionsUrl('U3')]: predictions('U3') },
+    })
+    const user = userEvent.setup()
+    render(<ReportStep runId={RUN} paged />)
+    return user
+  }
+
+  /** A key press the report did not use is left for the deck (its defaultPrevented is false). */
+  function press(key: string) {
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+    act(() => {
+      document.body.dispatchEvent(event)
+    })
+    return event.defaultPrevented
+  }
+
+  const PAGES = [
+    'Primary outcome',
+    'AUC and MRR',
+    'nDCG@5 and Hit@1',
+    'Paired differences',
+    'Calibration',
+    'Reliability diagram',
+    'Users by outcome',
+    'Diagnostics',
+  ]
+
+  it('shows one page at a time, with a tab per page, starting on the primary outcome', async () => {
+    renderPaged()
+
+    const tabs = await screen.findByRole('tablist', { name: /report pages/i })
+    expect(
+      within(tabs)
+        .getAllByRole('tab')
+        .map((t) => t.textContent),
+    ).toEqual(PAGES)
+    expect(within(tabs).getByRole('tab', { name: 'Primary outcome' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    expect(screen.getByTestId('outcome')).toBeVisible()
+    expect(screen.queryByRole('img', { name: /paired auc differences/i })).not.toBeInTheDocument()
+  })
+
+  it('splits the four metrics over two pages, two panels each', async () => {
+    const user = renderPaged()
+
+    await user.click(await screen.findByRole('tab', { name: 'AUC and MRR' }))
+    expect(screen.getByRole('img', { name: /^AUC:/ })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: /^MRR:/ })).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: /^Hit@1:/ })).not.toBeInTheDocument()
+    expect(screen.getByText(/dashed grey lines: the popularity and random/i)).toBeVisible()
+
+    await user.click(screen.getByRole('tab', { name: 'nDCG@5 and Hit@1' }))
+    expect(screen.getByRole('img', { name: /^nDCG@5:/ })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: /^Hit@1:/ })).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: /^AUC:/ })).not.toBeInTheDocument()
+  })
+
+  it('steps through its pages with the next key before the deck moves on', async () => {
+    renderPaged()
+    await screen.findByTestId('outcome')
+
+    for (const page of PAGES.slice(1)) {
+      expect(press('PageDown')).toBe(true)
+      expect(screen.getByRole('tab', { name: page })).toHaveAttribute('aria-selected', 'true')
+    }
+    expect(press('ArrowRight')).toBe(false)
+    expect(press('ArrowLeft')).toBe(true)
+    expect(screen.getByRole('tab', { name: 'Users by outcome' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+  })
+
+  it('leaves the previous key for the deck on the first page', async () => {
+    renderPaged()
+    await screen.findByTestId('outcome')
+
+    expect(press('ArrowLeft')).toBe(false)
+  })
+
+  it('gives the reliability diagram its own page, open, rather than a disclosure', async () => {
+    const user = renderPaged()
+
+    await user.click(await screen.findByRole('tab', { name: 'Calibration' }))
+    expect(screen.getByRole('img', { name: /mean p_click per arm/i })).toBeInTheDocument()
+    expect(screen.queryByText('Reliability diagram', { selector: 'summary' })).toBeNull()
+
+    await user.click(screen.getByRole('tab', { name: 'Reliability diagram' }))
+    expect(screen.getByRole('img', { name: /arm a reliability/i })).toBeInTheDocument()
+    expect(screen.getByText(/on the dashed diagonal, predictions match that share/i)).toBeVisible()
+  })
+
+  it('keeps the not-a-result banner on every page', async () => {
+    const user = renderPaged({
+      ...reportFixture,
+      is_result: false,
+      mock: true,
+      not_result_reasons: ['mock'],
+    })
+
+    await user.click(await screen.findByRole('tab', { name: 'Diagnostics' }))
+    expect(screen.getByRole('note')).toHaveTextContent('NOT A RESULT: MOCK')
+    expect(screen.getByRole('region', { name: 'Diagnostics table' })).toBeInTheDocument()
+  })
+
+  it('has no pages without a primary outcome or calibration to show', async () => {
+    renderPaged({
+      ...reportFixture,
+      primary: null,
+      arms: reportFixture.arms.map((a) => ({ ...a, calibration: null })),
+    })
+
+    const tabs = await screen.findByRole('tablist', { name: /report pages/i })
+    expect(
+      within(tabs)
+        .getAllByRole('tab')
+        .map((t) => t.textContent),
+    ).toEqual([
+      'Primary outcome',
+      'AUC and MRR',
+      'nDCG@5 and Hit@1',
+      'Paired differences',
+      'Diagnostics',
+    ])
+    expect(screen.getByText(/no primary outcome/i)).toBeVisible()
+  })
+
+  it('takes no keys while loading or after an error', async () => {
+    renderPaged(500)
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+    expect(press('ArrowRight')).toBe(false)
   })
 })
 

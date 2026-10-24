@@ -80,4 +80,11 @@ describe('population layout', () => {
     expect(graphHeight(1360, 2000)).toBe(748)
     expect(graphHeight(1360, 300)).toBe(360)
   })
+
+  it('takes the height it is given in place of the window cap, never above its own shape', () => {
+    expect(graphHeight(1360, 1080, 600)).toBe(600)
+    expect(graphHeight(1360, 1080, 900)).toBe(748)
+    expect(graphHeight(1360, 1080, 200)).toBe(360)
+    expect(layout(population(300), 1360, 1080, 600).height).toBe(600)
+  })
 })

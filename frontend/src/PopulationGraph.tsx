@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import type { RunPopulation } from './api/runs'
 import { labelPosition, layout } from './populationLayout'
 
@@ -18,6 +18,24 @@ type Props = {
   /** Laid out at the full step width, so opening the reader panel only scales the picture. */
   width: number
   windowHeight: number
+  /** Presenter mode: lay out to the height CSS gives the graph's box, so it draws at full size. */
+  fit?: boolean
+}
+
+/** The box's height while `box` is set; undefined before the first measure or without one. */
+function useBoxHeight(box: HTMLDivElement | null) {
+  const [height, setHeight] = useState<number>()
+  useEffect(() => {
+    if (!box || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(([entry]) => {
+      const next = Math.round(entry.contentRect.height)
+      // Ignore a few pixels of jitter: a relayout of the graph must not resize its own box again.
+      if (next > 0) setHeight((h) => (h !== undefined && Math.abs(h - next) <= 4 ? h : next))
+    })
+    observer.observe(box)
+    return () => observer.disconnect()
+  }, [box])
+  return box ? height : undefined
 }
 
 /** One Tab stop: arrow keys move between readers (grouped by top category), Enter opens one. */
@@ -27,10 +45,13 @@ export default function PopulationGraph({
   onSelect,
   width,
   windowHeight,
+  fit = false,
 }: Props) {
+  const [box, setBox] = useState<HTMLDivElement | null>(null)
+  const boxHeight = useBoxHeight(fit ? box : null)
   const graph = useMemo(
-    () => layout(population, width, windowHeight),
-    [population, width, windowHeight],
+    () => layout(population, width, windowHeight, boxHeight),
+    [population, width, windowHeight, boxHeight],
   )
   const [active, setActive] = useState(0)
   const [pointed, setPointed] = useState<string | null>(null)
@@ -52,7 +73,7 @@ export default function PopulationGraph({
 
   const classes = [graph.narrow && 'graph-narrow', selected && 'has-selection'].filter(Boolean)
   return (
-    <div className="graph">
+    <div className="graph" ref={setBox}>
       <svg
         viewBox={`0 0 ${graph.width} ${graph.height}`}
         width="100%"

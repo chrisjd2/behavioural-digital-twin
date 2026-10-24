@@ -32,13 +32,13 @@ The panel format changed from ADR-0008's 10-minute in-room talk. It is now **15 
 - **Seed is out of the talk.** Screen 10 explains the arms. The Interview is a Q&A bonus (screen 17), as in ADR-0008.
 - **Navigation:**
   - Right/left arrows and PageDown/PageUp (presentation clickers) move between screens.
-  - A screen with its own stages (the Hook, click-to-reveal slides) takes the key first, and the deck moves only when nothing on screen used it.
+  - A screen with its own stages (the Hook, click-to-reveal slides, the Report's pages) takes the key first, and the deck moves only when nothing on screen used it.
   - Keys are ignored while typing.
 - **The deck shows one run:** the default run (`defaultRunId`), with no run picker or live-run controls.
 - **Personal media is never committed:**
   - Photos and screenshots live in `frontend/public/private/`, which is gitignored and dockerignored (ADR-0010).
   - Each media slot shows a placeholder when its file is missing.
-- **About me is hidden in `DEMO_MODE`.** The hosted demo (ADR-0011) starts at Learn. (Built with the About me slides in #53; until then the deck always opens on screen 1.)
+- **About me is hidden in `DEMO_MODE`.** The hosted demo (ADR-0011) starts at Learn. (Built in #53.)
 - **No speaker notes in the app.**
 
 ## Consequences

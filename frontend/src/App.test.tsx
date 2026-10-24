@@ -137,6 +137,47 @@ describe('Presenter deck (ADR-0012)', () => {
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
   })
 
+  it('pages through the Report with the next key before moving on (#57)', async () => {
+    const estimate = { mean: 0.5, low: 0.45, high: 0.55 }
+    const report = {
+      run_id: runFixture.run_id,
+      population: 'test',
+      data_source: 'mind',
+      model: 'gemini-test-001',
+      mock: false,
+      is_result: true,
+      not_result_reasons: [],
+      n_users: 3,
+      arms: [
+        {
+          arm: 'A',
+          kind: 'llm',
+          n: 3,
+          metrics: { auc: estimate, mrr: estimate, ndcg5: estimate, hit1: estimate },
+          tie_share: 0,
+          parse_failure_rate: 0,
+          calibration: null,
+        },
+      ],
+      differences: [],
+      primary: null,
+      reliability: [],
+      identity_screen: {},
+    }
+    const user = setup(RUNS, { [`/api/run/${runFixture.run_id}/report`]: report })
+
+    await goTo(user, 'report')
+    const tabs = await screen.findByRole('tablist', { name: /report pages/i })
+    await user.keyboard('{PageDown}')
+    expect(within(tabs).getByRole('tab', { name: 'AUC and MRR' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    expect(counter()).toBe('14 / 17')
+    await user.keyboard('{PageDown}{PageDown}{PageDown}{PageDown}')
+    expect(counter()).toBe('15 / 17')
+  })
+
   it('says when the run on screen is not a reported result', async () => {
     const user = setup()
 

@@ -1,8 +1,9 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import Explorer from './Explorer'
 import { defaultRunId, type RunList } from './api/runs'
+import PopulationStep from './PopulationStep'
 import {
   agentFixture,
   runFixture,
@@ -44,6 +45,37 @@ async function openPopulation(
 
 afterEach(() => {
   vi.unstubAllGlobals()
+})
+
+describe('Population in presenter mode (#57)', () => {
+  it('lays the graph out to the height of its box, not the window', async () => {
+    // jsdom has no layout: every observed box reports 1500 x 520.
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        callback: ResizeObserverCallback
+        constructor(callback: ResizeObserverCallback) {
+          this.callback = callback
+        }
+        observe() {
+          this.callback(
+            [{ contentRect: { width: 1500, height: 520 } } as ResizeObserverEntry],
+            this as unknown as ResizeObserver,
+          )
+        }
+        disconnect() {}
+      },
+    )
+    stubApi({
+      status: statusFixture,
+      urls: { [populationUrl(runFixture.run_id)]: runPopulationFixture },
+    })
+    render(<PopulationStep runId={runFixture.run_id} fit />)
+
+    const graph = await screen.findByRole('group', { name: /readers around/i })
+    // Measured after the first paint, so the viewBox settles on the next render.
+    await waitFor(() => expect(graph).toHaveAttribute('viewBox', '0 0 1500 520'))
+  })
 })
 
 describe('defaultRunId', () => {

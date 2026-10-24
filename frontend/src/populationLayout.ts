@@ -27,11 +27,15 @@ const TOP_PULL = 0.7 // share of a reader's pull towards the category they click
 const FENCE = 0.86 // readers stay inside this share of the ring
 const NARROW = 640
 
-/** The graph never runs below the fold: its height is capped by the window. */
-export function graphHeight(width: number, windowHeight: number): number {
+/**
+ * The graph never runs below the fold: its height is capped by the window, or by `maxHeight`
+ * when the caller knows the room it has (the presenter deck).
+ */
+export function graphHeight(width: number, windowHeight: number, maxHeight?: number): number {
   const narrow = width < NARROW
   const wanted = narrow ? width * 1.25 : width * 0.55
-  return Math.round(Math.max(360, Math.min(wanted, windowHeight - (narrow ? 140 : 190))))
+  const cap = maxHeight ?? windowHeight - (narrow ? 140 : 190)
+  return Math.round(Math.max(360, Math.min(wanted, cap)))
 }
 
 /**
@@ -40,9 +44,14 @@ export function graphHeight(width: number, windowHeight: number): number {
  * colour. The simulation runs to rest up front (a still picture reads better on a projector
  * than a jiggle) and is deterministic for the same input.
  */
-export function layout(population: RunPopulation, width: number, windowHeight: number): Layout {
+export function layout(
+  population: RunPopulation,
+  width: number,
+  windowHeight: number,
+  maxHeight?: number,
+): Layout {
   const narrow = width < NARROW
-  const height = graphHeight(width, windowHeight)
+  const height = graphHeight(width, windowHeight, maxHeight)
   // Room for the longest label (with its count) beside the ring; roughly 0.6em per character.
   // On a phone the labels sit above or below their category instead, so the ring can be wide.
   const longest = Math.max(

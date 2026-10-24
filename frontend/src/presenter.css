@@ -1,0 +1,333 @@
+/*
+ * Presenter fit: the four step screens in the deck fit a 1920x1080 shared screen with no
+ * page scroll, and their body text is at least 20px (1rem). Scoped to .deck-stage, so the Explore
+ * stepper keeps its layout. Imported after the steps' own stylesheets.
+ */
+
+/*
+ * The run's kind note sits beside the title, and the step fills the stage below them, so a graph
+ * or panel can take what is left.
+ */
+.deck-stage > .run-step {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  column-gap: 24px;
+  align-items: baseline;
+}
+
+.deck-stage .run-step > :last-child {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  align-self: stretch;
+  min-height: 0;
+  margin-top: 12px;
+}
+
+/* Body text: nothing below 1rem (20px) on a shared screen. */
+.deck-stage
+  :is(
+    .run-kind,
+    .small,
+    .notice,
+    .graph-legend,
+    .simulated-label,
+    .mock-note,
+    .secondary,
+    .close,
+    .headlines,
+    .headline-category,
+    .reason,
+    .persona,
+    .profile-field-name,
+    .profile .evidence,
+    .arm-tab,
+    .arm-panel h5,
+    .recorded-label,
+    .comparison-reader,
+    .comparison-arm-name,
+    .comparison-reaction,
+    .reveal,
+    .earlier,
+    .earlier .reveal,
+    .speed,
+    .reaction-who,
+    .p-click-label,
+    .arm-progress li,
+    .hook-keys,
+    .hook-buttons button,
+    .section-note,
+    .rule,
+    .chip,
+    .bucket-note,
+    .rankings-meta,
+    .rankings-table,
+    .rank-cell .p-click,
+    .diagnostics,
+    .calibration-key
+  ) {
+  font-size: 1rem;
+}
+
+.deck-stage .run-kind {
+  margin: 0;
+}
+
+/* Chart labels are SVG text drawn at their CSS size. */
+.deck-stage .bar-track text,
+.deck-stage .reliability-panel text {
+  font-size: 18px;
+}
+
+/* Population: the graph takes the height the legend leaves; the reader panel scrolls inside. */
+.deck-stage .population {
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.deck-stage .population-graph {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.deck-stage .population .graph {
+  flex: 1;
+  min-height: 0;
+}
+
+.deck-stage .population .graph svg {
+  height: 100%;
+}
+
+.deck-stage .population .notice {
+  margin: 0 0 12px;
+}
+
+.deck-stage .population-graph > .small {
+  margin-top: 8px;
+}
+
+.deck-stage .agent-panel {
+  position: static;
+  max-height: 100%;
+}
+
+/* Simulation: the labels move under the playback panel, so the feed has the full height. */
+.deck-stage .simulation {
+  display: grid;
+  grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 16px 32px;
+  align-content: start;
+}
+
+.deck-stage .replay-grid {
+  display: contents;
+}
+
+.deck-stage .replay-panel {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.deck-stage .replay-labels {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: start;
+  flex-direction: column;
+  align-items: stretch;
+  margin: 0;
+}
+
+.deck-stage .recorded-label {
+  border-radius: 12px;
+}
+
+/* By arm: the progress bars sit closer, so the panel and labels share the column. */
+.deck-stage .arm-progress {
+  gap: 4px;
+}
+
+.deck-stage .arm-progress li {
+  gap: 0 10px;
+  line-height: 1.25;
+}
+
+/*
+ * Older cards and earlier readers show only while whole ones fit under the newest: a card that
+ * does not fit wraps into a second column, which is hidden. Explore keeps them all.
+ */
+.deck-stage .feed {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.deck-stage :is(.earlier-list, .reaction-feed) {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-flow: column wrap;
+  align-content: flex-start;
+  overflow: hidden;
+}
+
+.deck-stage :is(.earlier-list, .reaction-feed) > * {
+  flex: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/*
+ * Report: one page at a time (ReportStep `paged`), its tabs under the banner. The page takes the
+ * height left, so a long table can scroll inside it.
+ */
+.deck-stage .report-paged {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.deck-stage .report-paged > [role='tabpanel'],
+.deck-stage .report-paged > [role='tabpanel'] > .report-section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The banner's reason runs on after its title, so it takes two lines, not three. */
+.deck-stage .not-result {
+  padding: 8px 20px;
+}
+
+.deck-stage .not-result > p {
+  display: inline;
+  margin: 0 12px 0 0;
+}
+
+/* The selected tab names the page, so its heading is for screen readers only. */
+.deck-stage .report-paged .report-section > h3 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.deck-stage .report-paged .section-note {
+  margin-top: 0;
+}
+
+.deck-stage .not-result-title {
+  font-size: 1.3rem;
+}
+
+.report-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 2px solid var(--rule);
+}
+
+.report-tabs button {
+  font: inherit;
+  font-weight: 700;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-bottom: 4px solid transparent;
+  margin-bottom: -2px;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+
+.report-tabs button:hover {
+  color: var(--ink);
+}
+
+.report-tabs button[aria-selected='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+.deck-stage .report-paged .metric-grid {
+  gap: 24px 48px;
+}
+
+/* Users by outcome: the buckets stack beside the rankings table, which scrolls if it must. */
+.deck-stage .user-browser {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0 32px;
+  align-items: start;
+}
+
+.deck-stage .user-browser > .rankings {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  margin-top: 0;
+  align-self: stretch;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.deck-stage .rankings-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Header and per-arm AUC stay in view while the headlines scroll. */
+.deck-stage .rankings-table thead th,
+.deck-stage .rankings-table tfoot :is(th, td) {
+  position: sticky;
+  z-index: 1;
+  background: var(--paper);
+}
+
+.deck-stage .rankings-table thead th {
+  top: 0;
+}
+
+.deck-stage .rankings-table tfoot :is(th, td) {
+  bottom: 0;
+}
+
+.deck-stage .bucket-row {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.deck-stage .bucket {
+  padding: 6px 14px;
+}
+
+.deck-stage .bucket-count {
+  font-size: 1.6rem;
+}
+
+.deck-stage .bucket-stepper {
+  grid-column: 1;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.deck-stage .rankings-table {
+  line-height: 1.25;
+}
+
+.deck-stage .rankings-table th,
+.deck-stage .rankings-table td {
+  padding: 2px 8px;
+}
