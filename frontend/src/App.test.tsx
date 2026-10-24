@@ -74,7 +74,7 @@ describe('Presenter deck (ADR-0012)', () => {
     const user = setup()
     const seen = [counter()]
 
-    for (let press = 0; press < 40 && counter() !== '17 / 17'; press++) {
+    for (let press = 0; press < 100 && counter() !== '17 / 17'; press++) {
       await next(user)
       if (counter() !== seen.at(-1)) seen.push(counter())
     }
@@ -193,7 +193,9 @@ describe('Presenter deck (ADR-0012)', () => {
 
     await user.keyboard('{ArrowLeft}{PageUp}')
     expect(counter()).toBe('6 / 17')
-    await user.keyboard('{ArrowRight}')
+    // The brief reveals its options before the deck moves on.
+    for (let press = 0; press < 10 && counter() === '6 / 17'; press++)
+      await user.keyboard('{ArrowRight}')
     expect(counter()).toBe('7 / 17')
     await user.click(within(sections).getByRole('button', { name: 'Learn' }))
     await user.keyboard('{ArrowLeft}')
