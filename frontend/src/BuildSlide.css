@@ -31,7 +31,6 @@
 }
 
 .build-arm {
-  --arm: var(--baseline);
   display: flex;
   align-items: center;
   gap: 10px;
