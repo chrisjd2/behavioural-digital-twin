@@ -38,7 +38,7 @@ The panel format changed from ADR-0008's 10-minute in-room talk. It is now **15 
 - **Personal media is never committed:**
   - Photos and screenshots live in `frontend/public/private/`, which is gitignored and dockerignored (ADR-0010).
   - Each media slot shows a placeholder when its file is missing.
-- **About me is hidden in `DEMO_MODE`.** The hosted demo (ADR-0011) starts at Learn. (Built with the About me slides in #53; until then the deck always opens on screen 1.)
+- **About me is hidden in `DEMO_MODE`.** The hosted demo (ADR-0011) starts at Learn. (Built in #53.)
 - **No speaker notes in the app.**
 
 ## Consequences
