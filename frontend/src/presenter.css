@@ -324,10 +324,10 @@
 }
 
 .deck-stage .rankings-table {
-  line-height: 1.25;
+  line-height: 1.2;
 }
 
 .deck-stage .rankings-table th,
 .deck-stage .rankings-table td {
-  padding: 2px 8px;
+  padding: 1px 8px;
 }

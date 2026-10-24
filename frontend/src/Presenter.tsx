@@ -21,6 +21,24 @@ export type Runs =
 
 const RUN_SCREENS = new Set<ScreenId>(['population', 'simulation', 'report'])
 
+/** The canvas every screen is laid out on (index.css .deck). */
+const CANVAS = { width: 1920, height: 1080 }
+
+function fitScale(): number {
+  return Math.min(window.innerWidth / CANVAS.width, window.innerHeight / CANVAS.height)
+}
+
+/** The zoom that fits the whole canvas in the window, kept up to date as the window resizes. */
+function useFitScale(): number {
+  const [scale, setScale] = useState(fitScale)
+  useEffect(() => {
+    const resize = () => setScale(fitScale())
+    window.addEventListener('resize', resize)
+    return () => window.removeEventListener('resize', resize)
+  }, [])
+  return scale
+}
+
 /** The talk (ADR-0012): one running order, the default run, no developer controls. */
 export default function Presenter({
   index,
@@ -34,6 +52,7 @@ export default function Presenter({
   const [runs, setRuns] = useState<Runs>({ state: 'loading' })
   const [hookRunMock, setHookRunMock] = useState(false)
   const start = useDeckStart()
+  const scale = useFitScale()
   const first = start.state === 'ready' ? start.first : 0
   const at = Math.max(index, first)
   const screen = SCREENS[at]
@@ -74,73 +93,75 @@ export default function Presenter({
         runs.run?.mock === true
 
   return (
-    <div className="deck">
-      <header className="deck-bar">
-        <p className="wordmark">Twin Lab</p>
-        <nav aria-label="Sections" className="deck-sections">
-          <ol>
-            {sections.map((section) => (
-              <li key={section}>
-                <button
-                  type="button"
-                  aria-current={section === screen.section ? 'step' : undefined}
-                  onClick={() => onIndex(() => SCREENS.findIndex((s) => s.section === section))}
-                >
-                  {section}
-                </button>
-              </li>
-            ))}
-          </ol>
-        </nav>
-        {shownRunIsMock && (
-          <span
-            className="badge-mock"
-            title="This run is fake LLM output for development, not results"
-          >
-            MOCK
-          </span>
-        )}
-        <p className="deck-counter" data-testid="deck-counter">
-          {at + 1} / {SCREENS.length}
-        </p>
-        <button type="button" className="mode-switch" onClick={onExplore}>
-          Explore
-        </button>
-      </header>
-
-      <main className="deck-stage" key={screen.id}>
-        {start.state === 'loading' ? (
-          <p className="muted">Loading…</p>
-        ) : start.state === 'error' ? (
-          <p role="alert" className="error">
-            The status could not be loaded: {start.message}
+    <div className="deck-viewport">
+      <div className="deck" style={{ zoom: scale }}>
+        <header className="deck-bar">
+          <p className="wordmark">Twin Lab</p>
+          <nav aria-label="Sections" className="deck-sections">
+            <ol>
+              {sections.map((section) => (
+                <li key={section}>
+                  <button
+                    type="button"
+                    aria-current={section === screen.section ? 'step' : undefined}
+                    onClick={() => onIndex(() => SCREENS.findIndex((s) => s.section === section))}
+                  >
+                    {section}
+                  </button>
+                </li>
+              ))}
+            </ol>
+          </nav>
+          {shownRunIsMock && (
+            <span
+              className="badge-mock"
+              title="This run is fake LLM output for development, not results"
+            >
+              MOCK
+            </span>
+          )}
+          <p className="deck-counter" data-testid="deck-counter">
+            {at + 1} / {SCREENS.length}
           </p>
-        ) : isAboutMe(screen.id) ? (
-          <AboutMeSlide id={screen.id} />
-        ) : screen.id === 'hook' ? (
-          <HookStep onRunMock={setHookRunMock} />
-        ) : RUN_SCREENS.has(screen.id) ? (
-          <section className="run-step" aria-labelledby="step-title">
-            <h2 id="step-title">{screen.title}</h2>
-            <RunScreen screen={screen} runs={runs} />
-          </section>
-        ) : LEARN_SCREENS.has(screen.id) ? (
-          <LearnSlide screen={screen} />
-        ) : screen.id === 'build' ? (
-          <BuildSlide />
-        ) : TEACH_SLIDES.has(screen.id) ? (
-          <TeachSlide screen={screen} runs={runs} mockLlm={start.mockLlm} />
-        ) : (
-          <Slide kicker={screen.section} title={screen.title} />
-        )}
-      </main>
+          <button type="button" className="mode-switch" onClick={onExplore}>
+            Explore
+          </button>
+        </header>
 
-      {/* ADR-0007: on every agent view; the slides are about Chris and the research, not agents. */}
-      {isStep && (
-        <footer className="footer">
-          <p>{SIMULATED_LABEL}</p>
-        </footer>
-      )}
+        <main className="deck-stage" key={screen.id}>
+          {start.state === 'loading' ? (
+            <p className="muted">Loading…</p>
+          ) : start.state === 'error' ? (
+            <p role="alert" className="error">
+              The status could not be loaded: {start.message}
+            </p>
+          ) : isAboutMe(screen.id) ? (
+            <AboutMeSlide id={screen.id} />
+          ) : screen.id === 'hook' ? (
+            <HookStep onRunMock={setHookRunMock} />
+          ) : RUN_SCREENS.has(screen.id) ? (
+            <section className="run-step" aria-labelledby="step-title">
+              <h2 id="step-title">{screen.title}</h2>
+              <RunScreen screen={screen} runs={runs} />
+            </section>
+          ) : LEARN_SCREENS.has(screen.id) ? (
+            <LearnSlide screen={screen} />
+          ) : screen.id === 'build' ? (
+            <BuildSlide />
+          ) : TEACH_SLIDES.has(screen.id) ? (
+            <TeachSlide screen={screen} runs={runs} mockLlm={start.mockLlm} />
+          ) : (
+            <Slide kicker={screen.section} title={screen.title} />
+          )}
+        </main>
+
+        {/* ADR-0007: on every agent view; the slides are about Chris and the research, not agents. */}
+        {isStep && (
+          <footer className="footer">
+            <p>{SIMULATED_LABEL}</p>
+          </footer>
+        )}
+      </div>
     </div>
   )
 }

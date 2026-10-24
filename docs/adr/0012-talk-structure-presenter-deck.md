@@ -48,7 +48,7 @@ The panel format changed from ADR-0008's 10-minute in-room talk. It is now **15 
 - The existing steps are reused, not rebuilt as slides.
 
 **Becomes harder:**
-- Screens must fit a 1920×1080 shared screen.
+- Screens must fit a 1920×1080 shared screen. The deck is laid out on a fixed 1920×1080 canvas and zoomed to fit the window (#64), so no window size or display scaling makes a screen scroll; deck styles use `cqw`/`cqh`, not `vw`/`vh`.
 - Slide copy lives in code and must be reviewed by Chris before the panel.
 
 ## Alternatives considered

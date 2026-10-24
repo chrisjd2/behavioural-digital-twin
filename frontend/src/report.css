@@ -54,7 +54,7 @@
 }
 
 .outcome {
-  font-size: clamp(1.4rem, 3.2vw, 2.4rem);
+  font-size: clamp(1.4rem, 3.2cqw, 2.4rem);
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.01em;

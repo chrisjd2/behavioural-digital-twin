@@ -1,13 +1,13 @@
 /* Learn slides (screens 6-9): sized for a 1920×1080 shared screen. */
 .learn-quote {
   margin: 0;
-  font-size: 1.8rem;
+  font-size: 2.4rem;
   font-weight: 600;
   line-height: 1.3;
 }
 
 .learn-lede {
-  font-size: 1.6rem;
+  font-size: 2rem;
   font-weight: 600;
 }
 
@@ -18,14 +18,22 @@
   align-items: start;
 }
 
+/* Six papers beside the screenshots: one size down so all of them fit. */
+.learn-split .reveal-items {
+  font-size: 1.3rem;
+  gap: 16px;
+}
+
 .learn-media {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
+/* Three screenshots stacked beside the papers: each a third of what is left, placeholders too. */
 .learn-media-small .media {
-  max-height: 18vh;
+  max-height: 17cqh;
+  min-height: 0;
 }
 
 .learn-change {
@@ -34,11 +42,11 @@
 
 .learn-footnote {
   color: var(--muted);
-  font-size: 1rem;
+  font-size: 1.2rem;
 }
 
 .learn-question {
   margin: 0;
-  font-size: 2rem;
+  font-size: 3rem;
   font-weight: 700;
 }

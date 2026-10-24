@@ -45,7 +45,7 @@ export function Reveal({ label, items }: { label: string; items: ReactNode[] }) 
   }, [items.length])
 
   return (
-    <div className="reveal">
+    <div className="slide-reveal">
       <ol className="reveal-items" aria-label={label}>
         {items.slice(0, count).map((item, i) => (
           <li key={i}>{item}</li>
