@@ -345,8 +345,10 @@ describe('Paged report (presenter mode, #57)', () => {
 
   const PAGES = [
     'Primary outcome',
-    'AUC and MRR',
-    'nDCG@5 and Hit@1',
+    'AUC',
+    'MRR',
+    'nDCG@5',
+    'Hit@1',
     'Paired differences',
     'Calibration',
     'Reliability diagram',
@@ -371,17 +373,15 @@ describe('Paged report (presenter mode, #57)', () => {
     expect(screen.queryByRole('img', { name: /paired auc differences/i })).not.toBeInTheDocument()
   })
 
-  it('splits the four metrics over two pages, two panels each', async () => {
+  it('gives each metric a page of its own, so its chart can fill the screen', async () => {
     const user = renderPaged()
 
-    await user.click(await screen.findByRole('tab', { name: 'AUC and MRR' }))
+    await user.click(await screen.findByRole('tab', { name: 'AUC' }))
     expect(screen.getByRole('img', { name: /^AUC:/ })).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: /^MRR:/ })).toBeInTheDocument()
-    expect(screen.queryByRole('img', { name: /^Hit@1:/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: /^MRR:/ })).not.toBeInTheDocument()
     expect(screen.getByText(/dashed grey lines: the popularity and random/i)).toBeVisible()
 
-    await user.click(screen.getByRole('tab', { name: 'nDCG@5 and Hit@1' }))
-    expect(screen.getByRole('img', { name: /^nDCG@5:/ })).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: 'Hit@1' }))
     expect(screen.getByRole('img', { name: /^Hit@1:/ })).toBeInTheDocument()
     expect(screen.queryByRole('img', { name: /^AUC:/ })).not.toBeInTheDocument()
   })
@@ -448,8 +448,10 @@ describe('Paged report (presenter mode, #57)', () => {
         .map((t) => t.textContent),
     ).toEqual([
       'Primary outcome',
-      'AUC and MRR',
-      'nDCG@5 and Hit@1',
+      'AUC',
+      'MRR',
+      'nDCG@5',
+      'Hit@1',
       'Paired differences',
       'Diagnostics',
     ])

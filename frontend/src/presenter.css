@@ -201,6 +201,11 @@
   flex-direction: column;
 }
 
+/* Its natural height, so ReportStep can measure it and zoom it to fill the page. */
+.deck-stage .report-page {
+  flex: none;
+}
+
 /* The banner's reason runs on after its title, so it takes two lines, not three. */
 .deck-stage .not-result {
   padding: 8px 20px;
@@ -257,8 +262,28 @@
   border-bottom-color: var(--ink);
 }
 
+/* One metric per page, across the full width. */
 .deck-stage .report-paged .metric-grid {
-  gap: 24px 48px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Difference rows go by the arms' names alone, which leaves the chart room to be zoomed. */
+.deck-stage .report-paged .difference-arms {
+  display: none;
+}
+
+.deck-stage .report-paged .difference-label .arm-name {
+  color: var(--ink);
+}
+
+/* The five reliability panels share the width rather than keep their Explore size. */
+.deck-stage .report-paged .reliability {
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 32px;
+}
+
+.deck-stage .report-paged .reliability-panel svg {
+  width: 100%;
 }
 
 /* Users by outcome: the buckets stack beside the rankings table, which scrolls if it must. */
