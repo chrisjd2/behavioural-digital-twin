@@ -1,6 +1,6 @@
-# Twin Lab: can an AI predict which headlines you'll click?
+# Twin Lab: what makes an AI better at predicting what you'll click?
 
-If a brand knows which headlines a reader clicked before, can an off-the-shelf LLM agent predict which new ones they'll click? And does grounding the agent in real behaviour beat invented personas?
+If a brand knows which headlines a reader clicked before, does that make an off-the-shelf LLM agent better at predicting which new ones they'll click? Which ingredients help (memories of past clicks, a distilled profile), and does grounding the agent in real behaviour beat an invented persona?
 
 Twin Lab tests this on real click data from the Microsoft News Dataset (MIND). It compares a plain LLM, an invented persona, two "digital twins" grounded in each reader's real click history, and a wrong-twin control, against non-AI baselines.
 

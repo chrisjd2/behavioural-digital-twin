@@ -90,7 +90,7 @@ const GAP: ReactNode[] = [
       </li>
     </ol>
   </>,
-  <p className="learn-question">Can an AI predict which headlines you’ll click?</p>,
+  <p className="learn-question">What makes an AI better at predicting what you’ll click?</p>,
 ]
 
 export default function LearnSlide({ screen }: { screen: Screen }) {

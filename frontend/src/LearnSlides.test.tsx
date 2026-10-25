@@ -112,6 +112,8 @@ describe('Learn slides (screens 4-7)', () => {
     const arms = within(screen.getByRole('list', { name: 'Arms' })).getAllByRole('listitem')
     expect(arms.map((arm) => arm.textContent?.[0])).toEqual(['A', 'B', 'C', 'D', 'E'])
     expect(arms[4]).toHaveTextContent(/someone else’s clicks: is the gain personal/)
-    expect(screen.getByText('Can an AI predict which headlines you’ll click?')).toBeInTheDocument()
+    expect(
+      screen.getByText('What makes an AI better at predicting what you’ll click?'),
+    ).toBeInTheDocument()
   })
 })

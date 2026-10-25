@@ -22,7 +22,7 @@ describe('Explorer', () => {
     expect(
       screen.getByRole('heading', {
         level: 1,
-        name: /can an ai predict which headlines you.ll click/i,
+        name: /what makes an ai better at predicting what you.ll click/i,
       }),
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /hook/i })).toHaveAttribute('aria-current', 'step')

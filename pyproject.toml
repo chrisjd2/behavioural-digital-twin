@@ -1,7 +1,7 @@
 [project]
 name = "twin-lab"
 version = "0.1.0"
-description = "Can an AI predict which headlines you'll click? LLM digital twins vs plain LLM vs invented personas on MIND click data."
+description = "What makes an AI better at predicting what you'll click? LLM digital twins vs plain LLM vs invented personas on MIND click data."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
