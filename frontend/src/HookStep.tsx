@@ -12,7 +12,7 @@ type Load =
   | { state: 'error'; message: string }
   | { state: 'ready'; example: HookExample }
 
-const QUESTION = 'What makes an AI better at predicting what you’ll click?'
+const QUESTION = 'Can you predict what the user clicked?'
 
 const PROMPTS = {
   guess: 'Which headline did this reader click? Vote 1 or 2.',

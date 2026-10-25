@@ -147,10 +147,10 @@
 }
 
 /*
- * Said in the talk instead (ADR-0007 amendment): the simulated-data label and the replay's order
- * notes. Explore, with no one to say them, keeps every one.
+ * Said in the talk instead (ADR-0007 amendment): the simulated-data label, the Hook's dev-set
+ * stamp and the replay's order notes. Explore, with no one to say them, keeps every one.
  */
-.deck-stage :is(.simulated-label, .hook-simulated) {
+.deck-stage :is(.simulated-label, .hook-simulated, .hook-stamp) {
   display: none;
 }
 
