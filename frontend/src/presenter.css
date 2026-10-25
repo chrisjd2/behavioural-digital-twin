@@ -146,6 +146,11 @@
   border-radius: 12px;
 }
 
+/* Said in the talk instead; Explore, with no one to say it, keeps both notes. */
+.deck-stage :is(.reader-order-note, .order-rule) {
+  display: none;
+}
+
 /* By arm: the progress bars sit closer, so the panel and labels share the column. */
 .deck-stage .arm-progress {
   gap: 4px;
