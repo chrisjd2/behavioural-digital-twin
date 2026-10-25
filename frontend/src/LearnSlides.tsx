@@ -19,12 +19,12 @@ const OPTIONS: ReactNode[] = [
 
 const MIROFISH: ReactNode[] = [
   <>
-    <strong>Carried forward:</strong> the UI flow (seed → agent graph → simulation → report →
-    interview an agent).
-  </>,
-  <>
     <strong>Why it didn&rsquo;t fit:</strong> it judges by audience consensus, not individual
     behaviour, and its stack needed licences and was costly to set up and run.
+  </>,
+  <>
+    <strong>Carried forward:</strong> the UI flow (seed → agent graph → simulation → report →
+    interview an agent).
   </>,
 ]
 

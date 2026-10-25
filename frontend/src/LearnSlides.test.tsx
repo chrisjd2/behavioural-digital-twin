@@ -52,10 +52,11 @@ describe('Learn slides (screens 4-7)', () => {
     for (const p of placeholders) expect(p).not.toHaveAttribute('src')
 
     await revealAll(user)
-    expect(
-      screen.getByText(/seed → agent graph → simulation → report → interview/),
-    ).toBeInTheDocument()
-    expect(screen.getByText(/consensus, not individual behaviour/)).toBeInTheDocument()
+    const points = [...screen.getByRole('list', { name: /what I took from MiroFish/i }).children]
+    expect(points[0]).toHaveTextContent(/Why it didn’t fit:.*consensus, not individual behaviour/)
+    expect(points[1]).toHaveTextContent(
+      /Carried forward:.*seed → agent graph → simulation → report → interview/,
+    )
   })
 
   it('Research path: reveals one paper at a time, with its figures', async () => {
