@@ -30,6 +30,12 @@
   gap: 16px;
 }
 
+/* Two screenshots stacked: each half of what is left under the title, cropped from the bottom. */
+.learn-media .media {
+  max-height: 34cqh;
+  object-position: top;
+}
+
 /* Three screenshots stacked beside the papers: each a third of what is left, placeholders too. */
 .learn-media-small .media {
   max-height: 17cqh;
