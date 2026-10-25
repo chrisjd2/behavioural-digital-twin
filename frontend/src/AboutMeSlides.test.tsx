@@ -3,6 +3,13 @@ import { describe, expect, it } from 'vitest'
 import AboutMeSlide from './AboutMeSlides'
 
 describe('About me slides', () => {
+  it('opens on a title alone, for Chris to introduce themselves over', () => {
+    render(<AboutMeSlide id="intro" />)
+    expect(screen.getByRole('heading', { level: 2, name: 'About me' })).toBeInTheDocument()
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(screen.queryByRole('list')).not.toBeInTheDocument()
+  })
+
   it('shows the career as five roles at once, each with its note', () => {
     render(<AboutMeSlide id="career" />)
 

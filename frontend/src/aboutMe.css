@@ -1,4 +1,13 @@
 /* About me slides (ADR-0012): a few large words per item, for a shared screen. */
+.intro {
+  flex: 1;
+  justify-content: center;
+}
+
+.slide.intro h2 {
+  font-size: 7rem;
+}
+
 .career {
   list-style: none;
   margin: 0;

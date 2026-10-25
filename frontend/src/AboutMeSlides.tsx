@@ -1,5 +1,5 @@
-/** Part 1 of the talk, About me (ADR-0012): screens 1-3, left out of the deck in DEMO_MODE. */
-import { useEffect, useState } from 'react'
+/** Part 1 of the talk, About me (ADR-0012): screens 1-4, left out of the deck in DEMO_MODE. */
+import { useEffect, useId, useState } from 'react'
 import { fetchStatus } from './api/status'
 import { SCREENS, type ScreenId } from './deck'
 import { PrivateMedia, Slide } from './slides'
@@ -8,7 +8,7 @@ import './aboutMe.css'
 const KICKER = 'About me'
 
 /** The screens this file draws; any other About me screen falls back to the deck's placeholder. */
-const ABOUT_ME_IDS = ['career', 'life', 'handoff'] as const
+const ABOUT_ME_IDS = ['intro', 'career', 'life', 'handoff'] as const
 export type AboutMeId = (typeof ABOUT_ME_IDS)[number]
 
 export function isAboutMe(id: ScreenId): id is AboutMeId {
@@ -74,6 +74,8 @@ const LIFE = [
 
 export default function AboutMeSlide({ id }: { id: AboutMeId }) {
   switch (id) {
+    case 'intro':
+      return <Intro />
     case 'career':
       return (
         <Slide kicker={KICKER} title="Career">
@@ -113,4 +115,14 @@ export default function AboutMeSlide({ id }: { id: AboutMeId }) {
         />
       )
   }
+}
+
+/** The title alone: Chris says who they are over it (#66). */
+function Intro() {
+  const id = useId()
+  return (
+    <section className="slide intro" aria-labelledby={id}>
+      <h2 id={id}>{KICKER}</h2>
+    </section>
+  )
 }

@@ -5,6 +5,7 @@ export const SECTIONS = ['About me', 'Learn', 'Tinker', 'Teach'] as const
 export type Section = (typeof SECTIONS)[number]
 
 export type ScreenId =
+  | 'intro'
   | 'career'
   | 'life'
   | 'handoff'
@@ -24,6 +25,7 @@ export type ScreenId =
 export type Screen = { id: ScreenId; section: Section; title: string }
 
 export const SCREENS: Screen[] = [
+  { id: 'intro', section: 'About me', title: 'About me' },
   { id: 'career', section: 'About me', title: 'Career' },
   { id: 'life', section: 'About me', title: 'Learn · Tinker · Teach in my life' },
   { id: 'handoff', section: 'About me', title: 'Hand-off' },
