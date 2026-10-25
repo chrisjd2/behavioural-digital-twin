@@ -47,7 +47,7 @@ describe('Step 0 Hook', () => {
       within(history)
         .getAllByRole('listitem')
         .map((li) => li.textContent),
-    ).toEqual(['news / newspolitics Impeachment moves on', 'travel / travelnews Order ginger ale'])
+    ).toEqual(['travel / travelnews Order ginger ale', 'news / newspolitics Impeachment moves on'])
     expect(screen.getByText(/vote again/i)).toBeInTheDocument()
     expect(screen.queryByText(/they clicked this/i)).not.toBeInTheDocument()
 
