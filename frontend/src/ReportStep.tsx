@@ -3,7 +3,7 @@ import { fetchReport, type MetricName, type RunReport } from './api/report'
 import { deckCommand, move } from './deck'
 import { largestFit } from './fit'
 import { ReliabilityDiagrams } from './ReportCharts'
-import { notResultText, outcomeLine } from './reportModel'
+import { armName, decimal, differenceLine, notResultText, outcomeHeadline } from './reportModel'
 import { CalibrationChart, DifferenceChart, Diagnostics, MetricPanel } from './ReportSections'
 import UserBrowser from './UserBrowser'
 import './report.css'
@@ -19,7 +19,7 @@ const METRICS: { metric: MetricName; title: string; note: string }[] = [
 ]
 
 const RULE =
-  'Pre-registered rule (ADR-0001): twins beat plain LLM only if the 95% CI on the mean per-user D − A AUC difference excludes 0 and is positive. Entirely negative: plain LLM better. Otherwise: no detectable difference.'
+  'Rule set before the test run (ADR-0001): the twin wins only if the whole 95% CI is above 0. All below 0: the plain LLM wins. Otherwise: no detectable difference.'
 
 /**
  * Step 4: the selected run's pre-registered report. Numbers and the rule's outcome only; no
@@ -73,19 +73,42 @@ export default function ReportStep({ runId, paged = false }: { runId: string; pa
     </div>
   )
 
+  // The two arms the pre-registered outcome compares, by their mean AUC.
+  const compared = ['A', 'D'].flatMap((id) => {
+    const arm = report.arms.find((a) => a.arm.toUpperCase() === id)
+    return arm ? [{ id, auc: arm.metrics.auc.mean }] : []
+  })
   const primary = (
     <section className="report-section primary-outcome" aria-labelledby="primary-title">
       <h3 id="primary-title">Primary outcome</h3>
       {report.primary ? (
         <>
-          <p className="rule">{RULE}</p>
           <p className="outcome" data-testid="outcome">
-            {outcomeLine(report.primary)}
+            {outcomeHeadline(report.primary)}
+          </p>
+          {compared.length === 2 && (
+            <dl className="primary-compare">
+              {compared.map(({ id, auc }) => (
+                <div key={id} className={`arm-${id.toLowerCase()}`}>
+                  <dt>
+                    <span className="arm-letter">{id}</span> {armName(id)}
+                  </dt>
+                  <dd>AUC {decimal(auc)}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          <p className="small muted">
+            AUC: the chance a clicked headline is ranked above a skipped one. 0.5 is a coin flip.
+          </p>
+          <p className="primary-difference">
+            Twin minus plain LLM, per reader: <strong>{differenceLine(report.primary)}</strong>
           </p>
           <DifferenceChart
             title="D − A AUC difference"
             differences={[{ arm: 'D', reference: 'A', auc: report.primary.difference }]}
           />
+          <p className="rule">{RULE}</p>
           <p className="small muted">N = {report.n_users} users, bootstrap 95% CI over users.</p>
         </>
       ) : (

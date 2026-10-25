@@ -6,7 +6,8 @@ import {
   currentUser,
   niceMax,
   notResultText,
-  outcomeLine,
+  differenceLine,
+  outcomeHeadline,
   position,
   signed,
   stepBrowse,
@@ -67,11 +68,12 @@ const primary: PrimaryOutcome = {
 }
 
 describe('primary outcome', () => {
-  it('states D − A with its CI and the stored verdict verbatim', () => {
-    expect(outcomeLine(primary)).toBe('D − A AUC +0.147 [+0.102, +0.191]: twins beat plain LLM')
-    expect(outcomeLine({ ...primary, verdict: 'no detectable difference' })).toMatch(
-      /: no detectable difference$/,
+  it('heads with the stored verdict verbatim, then D − A with its CI', () => {
+    expect(outcomeHeadline(primary)).toBe('Twins beat plain LLM')
+    expect(outcomeHeadline({ ...primary, verdict: 'no detectable difference' })).toBe(
+      'No detectable difference',
     )
+    expect(differenceLine(primary)).toBe('+0.147 on average, 95% CI +0.102 to +0.191')
   })
 
   it('signs numbers with a true minus', () => {

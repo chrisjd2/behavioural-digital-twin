@@ -144,14 +144,26 @@ describe('Report step', () => {
     }
     renderReport(stored)
 
-    expect(await screen.findByTestId('outcome')).toHaveTextContent(
-      'D − A AUC +0.147 [+0.102, +0.192]: no detectable difference',
+    expect(await screen.findByTestId('outcome')).toHaveTextContent('No detectable difference')
+    expect(screen.getByText(/Twin minus plain LLM, per reader/)).toHaveTextContent(
+      '+0.147 on average, 95% CI +0.102 to +0.192',
     )
     expect(
       screen.getByText(
-        'Pre-registered rule (ADR-0001): twins beat plain LLM only if the 95% CI on the mean per-user D − A AUC difference excludes 0 and is positive. Entirely negative: plain LLM better. Otherwise: no detectable difference.',
+        'Rule set before the test run (ADR-0001): the twin wins only if the whole 95% CI is above 0. All below 0: the plain LLM wins. Otherwise: no detectable difference.',
       ),
     ).toBeVisible()
+  })
+
+  it('compares the two arms the outcome is about by their mean AUC', async () => {
+    renderReport()
+
+    await screen.findByTestId('outcome')
+    const compared = screen.getAllByRole('term').map((term) => term.parentElement?.textContent)
+    expect(compared).toEqual([
+      expect.stringMatching(/^A Plain LLMAUC 0\.\d{3}$/),
+      expect.stringMatching(/^D Twin \+ profile \+ memoryAUC 0\.\d{3}$/),
+    ])
   })
 
   it('shows no banner for a result run', async () => {
