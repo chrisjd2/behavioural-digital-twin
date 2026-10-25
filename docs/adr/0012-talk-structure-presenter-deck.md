@@ -20,7 +20,7 @@ The panel format changed from ADR-0008's 10-minute in-room talk. It is now **15 
     | 4–7 | ★ The brief, Back to MiroFish, Research path, The gap and my angle                                    | Learn    |
     | 8   | ★ What I built                                                                                        | Tinker   |
     | 9   | ★ The arms (what each agent knows, and why)                                                           | Tinker   |
-    | 10  | ★ Plan met reality (arm E, the bigger test set)                                                       | Tinker   |
+    | 10  | ★ Plan met reality (arm E, bigger test set, no inferred persona)                                      | Tinker   |
     | 11  | Population                                                                                            | Tinker   |
     | 12  | Hook                                                                                                  | Teach    |
     | 13  | Simulation replay                                                                                     | Teach    |

@@ -69,7 +69,7 @@ describe('BuildSlide', () => {
     expect(rows[4]).toHaveTextContent(/Tests whether gains are personal/)
   })
 
-  it('Plan met reality: the wrong twin, then the bigger test set', async () => {
+  it('Plan met reality: the wrong twin, the bigger test set, the persona not built', async () => {
     const user = userEvent.setup()
     render(<BuildSlide id="changes" />)
 
@@ -78,6 +78,10 @@ describe('BuildSlide', () => {
     expect(parts('Plan met reality')[0]).toHaveTextContent(/wrong twin/i)
     await user.keyboard('{ArrowRight}')
     expect(parts('Plan met reality')[1]).toHaveTextContent(/from 200 to 300 users/)
+    await user.keyboard('{ArrowRight}')
+    expect(parts('Plan met reality')[2]).toHaveTextContent(
+      /Not built: a persona inferred from clicks/,
+    )
     expect(screen.queryByRole('button', { name: /show next/i })).not.toBeInTheDocument()
   })
 })

@@ -129,6 +129,14 @@ const CHANGES = [
       from 200 to 300 users before the freeze.
     </p>
   </div>,
+  <div key="persona" className="build-part">
+    <h3>Not built: a persona inferred from clicks</h3>
+    <p>
+      Guessing someone&rsquo;s age, job or politics from what they read is the line a brand
+      shouldn&rsquo;t cross. Arm D keeps the grounding without the guesswork: what they read, not
+      who they are.
+    </p>
+  </div>,
 ]
 
 export default function BuildSlide({ id }: { id: 'build' | 'arms' | 'changes' }) {
