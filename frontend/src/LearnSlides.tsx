@@ -32,14 +32,13 @@ const PAPERS: { name: string; finding: string; change: string }[] = [
   {
     name: 'Stanford (Park et al. 2024)',
     finding:
-      'Agents built from 2-hour interviews with 1,052 real people matched their survey answers 85% as well as people matched themselves 2 weeks later.',
-    change: 'Grounding in real individual data works.',
+      'Agents of 1,052 real people, built from interviews, were 85% as accurate as a human retest.',
+    change: 'Real individual data works',
   },
   {
     name: 'Synthetic personas (Maiorano 2026)',
-    finding:
-      'On 399 headline A/B tests, a plain LLM picked the winner 49.2% of the time, but a 10-persona panel only 34.6%. Invented personas made it worse.',
-    change: 'The catch: they were made-up identities.',
+    finding: 'On 399 headline A/B tests, a plain LLM picked the winner 49.2%; personas only 34.6%.',
+    change: 'Made-up personas hurt',
   },
   {
     name: 'Twin-2K-500 (Toubia et al. 2025)',
