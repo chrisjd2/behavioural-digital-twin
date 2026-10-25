@@ -419,27 +419,22 @@ describe('Paged report (presenter mode, #57)', () => {
     await user.click(await screen.findByRole('tab', { name: 'AUC' }))
     expect(screen.getByRole('img', { name: /^AUC:/ })).toBeInTheDocument()
     expect(screen.queryByRole('img', { name: /^MRR:/ })).not.toBeInTheDocument()
-    expect(screen.getByText(/dashed grey lines: the popularity and random/i)).toBeVisible()
+    // The chart key is said in the talk, not shown.
+    expect(screen.queryByText(/dashed grey lines/i)).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('tab', { name: 'Hit@1' }))
     expect(screen.getByRole('img', { name: /^Hit@1:/ })).toBeInTheDocument()
     expect(screen.queryByRole('img', { name: /^AUC:/ })).not.toBeInTheDocument()
   })
 
-  it('steps through its pages with the next key before the deck moves on', async () => {
-    renderPaged()
+  it('leaves the next key for the deck, on any page', async () => {
+    const user = renderPaged()
     await screen.findByTestId('outcome')
 
-    for (const page of PAGES.slice(1)) {
-      expect(press('PageDown')).toBe(true)
-      expect(screen.getByRole('tab', { name: page })).toHaveAttribute('aria-selected', 'true')
-    }
+    expect(press('PageDown')).toBe(false)
+    await user.click(screen.getByRole('tab', { name: 'AUC' }))
     expect(press('ArrowRight')).toBe(false)
-    expect(press('ArrowLeft')).toBe(true)
-    expect(screen.getByRole('tab', { name: 'Users by outcome' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    )
+    expect(screen.getByRole('tab', { name: 'AUC' })).toHaveAttribute('aria-selected', 'true')
   })
 
   it('leaves the previous key for the deck on the first page', async () => {

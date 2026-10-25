@@ -1,6 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { fetchReport, type MetricName, type RunReport } from './api/report'
-import { deckCommand, move } from './deck'
 import { largestFit } from './fit'
 import { ReliabilityDiagrams } from './ReportCharts'
 import {
@@ -138,10 +137,12 @@ export default function ReportStep({ runId, paged = false }: { runId: string; pa
   const metrics = (shown: typeof METRICS) => (
     <section className="report-section" aria-labelledby="metrics-title">
       <h3 id="metrics-title">Every metric, per arm</h3>
-      <p className="section-note">
-        Bars: mean over users, whiskers: 95% CI. Dashed grey lines: the popularity and random
-        baselines.
-      </p>
+      {!paged && (
+        <p className="section-note">
+          Bars: mean over users, whiskers: 95% CI. Dashed grey lines: the popularity and random
+          baselines.
+        </p>
+      )}
       <div className="metric-grid">
         {shown.map(({ metric, title, note }) => (
           <MetricPanel
@@ -183,9 +184,11 @@ export default function ReportStep({ runId, paged = false }: { runId: string; pa
   const calibration = (withReliability: boolean) => (
     <section className="report-section" aria-labelledby="calibration-title">
       <h3 id="calibration-title">Calibration</h3>
-      <p className="section-note">
-        Mean <code>p_click</code> per arm against how often readers really clicked.
-      </p>
+      {!paged && (
+        <p className="section-note">
+          Mean <code>p_click</code> per arm against how often readers really clicked.
+        </p>
+      )}
       <CalibrationChart arms={llm} />
       {withReliability && (
         <details className="reliability-details">
@@ -299,11 +302,9 @@ const MAX_ZOOM = 2
 /** The share of a bar chart's width its track keeps: zooming grows the labels beside it. */
 const MIN_TRACK = 0.45
 
-/** One page on screen; the next and previous keys turn pages before the deck moves (ADR-0012). */
+/** One page on screen, picked by its tab; the next and previous keys move the deck on (ADR-0012). */
 function PagedReport({ banner, pages }: { banner: ReactNode; pages: Page[] }) {
   const [page, setPage] = useState(0)
-  const pageRef = useRef(page)
-  pageRef.current = page
   const panelRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const fill = pages[page].fill ?? true
@@ -328,21 +329,6 @@ function PagedReport({ banner, pages }: { banner: ReactNode; pages: Page[] }) {
     }
     content.style.zoom = String(largestFit(fits, MAX_ZOOM))
   }, [page, fill])
-
-  useEffect(() => {
-    // On document, so it runs before the presenter deck's window listener.
-    function onKey(event: KeyboardEvent) {
-      const command = deckCommand(event)
-      if (!command) return
-      const next = move(pageRef.current, command, pages.length)
-      // On the first or last page the key is left for the deck: the screen before or after.
-      if (next === pageRef.current) return
-      event.preventDefault()
-      setPage(next)
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [pages.length])
 
   return (
     <div className="report report-paged">

@@ -146,6 +146,14 @@
   border-radius: 12px;
 }
 
+/*
+ * Said in the talk instead (ADR-0007 amendment): the simulated-data label and the replay's order
+ * notes. Explore, with no one to say them, keeps every one.
+ */
+.deck-stage :is(.simulated-label, .hook-simulated) {
+  display: none;
+}
+
 /* Said in the talk instead; Explore, with no one to say it, keeps both notes. */
 .deck-stage :is(.reader-order-note, .order-rule) {
   display: none;

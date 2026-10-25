@@ -4,7 +4,6 @@ import BuildSlide from './BuildSlide'
 import { defaultRunId, fetchRuns, runKind, type RunSummary } from './api/runs'
 import { deckCommand, move, SCREENS, SECTIONS, type Screen, type ScreenId } from './deck'
 import HookStep from './HookStep'
-import { SIMULATED_LABEL } from './labels'
 import LearnSlide, { LEARN_SCREENS } from './LearnSlides'
 import PopulationStep from './PopulationStep'
 import ReportStep from './ReportStep'
@@ -84,7 +83,6 @@ export default function Presenter({
     return () => window.removeEventListener('keydown', onKey)
   }, [onIndex, first])
 
-  const isStep = RUN_SCREENS.has(screen.id) || screen.id === 'hook'
   const shownRunIsMock =
     screen.id === 'hook'
       ? hookRunMock
@@ -154,13 +152,6 @@ export default function Presenter({
             <Slide kicker={screen.section} title={screen.title} />
           )}
         </main>
-
-        {/* ADR-0007: on every agent view; the slides are about Chris and the research, not agents. */}
-        {isStep && (
-          <footer className="footer">
-            <p>{SIMULATED_LABEL}</p>
-          </footer>
-        )}
       </div>
     </div>
   )

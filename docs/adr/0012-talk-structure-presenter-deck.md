@@ -36,7 +36,7 @@ The panel format changed from ADR-0008's 10-minute in-room talk. It is now **15 
 - **Seed is out of the talk.** Screen 8 explains the arms. The Interview is a Q&A bonus (screen 17), as in ADR-0008.
 - **Navigation:**
     - Right/left arrows and PageDown/PageUp (presentation clickers) move between screens.
-    - A screen with its own stages (the Hook, click-to-reveal slides, the Report's pages) takes the key first, and the deck moves only when nothing on screen used it.
+    - A screen with its own stages (the Hook, click-to-reveal slides) takes the key first, and the deck moves only when nothing on screen used it. The Report's pages are picked by clicking their tabs; the keys move straight on to the check-in (#66).
     - Keys are ignored while typing.
 - **The deck shows one run:** the default run (`defaultRunId`), with no run picker or live-run controls.
 - **Personal media is never committed:**

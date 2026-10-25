@@ -112,7 +112,8 @@ describe('Presenter deck (ADR-0012)', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Population' })).toBeInTheDocument()
     expect(await screen.findByRole('group', { name: /readers around/i })).toBeInTheDocument()
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
-    expect(screen.getByText(/simulated from anonymised research data/i)).toBeInTheDocument()
+    // The simulated-data label is said in the talk (ADR-0007 amendment): no deck footer.
+    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument()
   })
 
   it('replays the default run on Simulation, with no live-run or run controls', async () => {
@@ -135,7 +136,7 @@ describe('Presenter deck (ADR-0012)', () => {
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
   })
 
-  it('pages through the Report with the next key before moving on (#57)', async () => {
+  it('turns Report pages by tab; the next key moves on to the check-in', async () => {
     const estimate = { mean: 0.5, low: 0.45, high: 0.55 }
     const report = {
       run_id: runFixture.run_id,
@@ -166,13 +167,10 @@ describe('Presenter deck (ADR-0012)', () => {
 
     await goTo(user, 'report')
     const tabs = await screen.findByRole('tablist', { name: /report pages/i })
-    await user.keyboard('{PageDown}')
+    await user.click(within(tabs).getByRole('tab', { name: 'AUC' }))
     expect(within(tabs).getByRole('tab', { name: 'AUC' })).toHaveAttribute('aria-selected', 'true')
     expect(counter()).toBe('14 / 17')
-    // MRR, nDCG@5, Hit@1, paired differences, diagnostics, then the next screen.
-    await user.keyboard('{PageDown}{PageDown}{PageDown}{PageDown}{PageDown}')
-    expect(counter()).toBe('14 / 17')
-    await user.keyboard('{PageDown}')
+    await user.keyboard('{ArrowRight}')
     expect(counter()).toBe('15 / 17')
   })
 
