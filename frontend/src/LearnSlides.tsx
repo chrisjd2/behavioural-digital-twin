@@ -12,10 +12,8 @@ const OPTIONS: ReactNode[] = [
     but new to me.
   </>,
   <>
-    <strong>Option 2: the idea I&rsquo;d parked.</strong> Months ago I read about MiroFish, a
-    Chinese project creating synthetic users with opinions and memories that react to things to
-    predict events. I wondered how it could apply to marketing: predicting how audiences react to
-    new content. I never had the time. The brief was the perfect excuse.
+    <strong>Option 2: An idea I&rsquo;d parked.</strong> MiroFish&rsquo;s synthetic users, applied
+    to marketing: predicting how audiences react to new content.
   </>,
 ]
 
