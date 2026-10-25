@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { SCREENS, type ScreenId } from './deck'
@@ -110,9 +110,7 @@ describe('Learn slides (screens 4-7)', () => {
     renderScreen('gap')
     await revealAll(user)
     expect(screen.getByText(/Large Behavior Model, 2026/)).toBeInTheDocument()
-    const arms = within(screen.getByRole('list', { name: 'Arms' })).getAllByRole('listitem')
-    expect(arms.map((arm) => arm.textContent?.[0])).toEqual(['A', 'B', 'C', 'D', 'E'])
-    expect(arms[4]).toHaveTextContent(/someone else’s clicks: is the gain personal/)
+    expect(screen.queryByRole('list', { name: 'Arms' })).not.toBeInTheDocument()
     expect(
       screen.getByText('What makes an AI better at predicting what you’ll click?'),
     ).toBeInTheDocument()

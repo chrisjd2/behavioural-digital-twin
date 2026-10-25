@@ -71,23 +71,6 @@ const GAP: ReactNode[] = [
   <>
     <strong>My angle:</strong> combine what the research found, one ingredient at a time, on the
     same headlines and real clicks. To find what actually improves agent predictions.
-    <ol className="learn-ladder" aria-label="Arms">
-      <li>
-        <strong>A</strong> Plain LLM
-      </li>
-      <li>
-        <strong>B</strong> Invented persona
-      </li>
-      <li>
-        <strong>C</strong> + memories of the reader&rsquo;s past clicks
-      </li>
-      <li>
-        <strong>D</strong> + a distilled profile of those clicks
-      </li>
-      <li>
-        <strong>E</strong> D with someone else&rsquo;s clicks: is the gain personal?
-      </li>
-    </ol>
   </>,
   <p className="learn-question">What makes an AI better at predicting what you’ll click?</p>,
 ]
