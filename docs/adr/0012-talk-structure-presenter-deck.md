@@ -19,7 +19,7 @@ The panel format changed from ADR-0008's 10-minute in-room talk. It is now **15 
     | 1–3 | ★ About me (title only), Career (the roles, all at once), Learn · Tinker · Teach in my life           | About me |
     | 4–7 | ★ The brief, Back to MiroFish, Research path, The gap and my angle                                    | Learn    |
     | 8   | ★ What I built (the pipeline, then every arm)                                                         | Tinker   |
-    | 9   | ★ How I tested it (the task, the test framework)                                                      | Tinker   |
+    | 9   | ★ Testing framework (scoring one reader)                                                              | Tinker   |
     | 10  | ★ Plan met reality (arm E, bigger test set, no inferred persona)                                      | Tinker   |
     | 11  | Population                                                                                            | Tinker   |
     | 12  | Hook                                                                                                  | Teach    |

@@ -1,4 +1,4 @@
-/** Screens 8-10 (ADR-0012): What I built (pipeline and arms), How I tested it, Plan met reality. */
+/** Screens 8-10 (ADR-0012): What I built (pipeline and arms), Testing framework, Plan met reality. */
 import { ARMS, BASELINES, CONTROL, armClass, type ArmCard } from './arms'
 import { Reveal, Slide } from './slides'
 import './BuildSlide.css'
@@ -187,8 +187,8 @@ export default function BuildSlide({ id }: { id: 'build' | 'testing' | 'changes'
     )
   }
   return id === 'testing' ? (
-    <Slide kicker="Tinker" title="How I tested it">
-      <Reveal label="How I tested it" items={TESTING} />
+    <Slide kicker="Tinker" title="Testing framework">
+      <Reveal label="Testing framework" items={TESTING} />
     </Slide>
   ) : (
     <Slide kicker="Tinker" title="Plan met reality">

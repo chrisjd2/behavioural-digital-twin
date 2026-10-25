@@ -1,4 +1,4 @@
-/* Screens 8-10, What I built, How I tested it and Plan met reality: sized for a 1920×1080 shared screen. */
+/* Screens 8-10, What I built, Testing framework and Plan met reality: sized for a 1920×1080 shared screen. */
 .build-strip {
   display: flex;
   align-items: center;
@@ -96,7 +96,7 @@
   letter-spacing: 0.04em;
 }
 
-/* How I tested it: one reader's headlines ranked by the agent, the clicked two in ink. */
+/* Testing framework: one reader's headlines ranked by the agent, the clicked two in ink. */
 .build-note {
   color: var(--muted);
   font-size: 1rem;

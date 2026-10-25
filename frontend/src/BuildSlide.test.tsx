@@ -32,15 +32,15 @@ describe('BuildSlide', () => {
     expect(rows[4]).toHaveTextContent(/Tests whether gains are personal/)
   })
 
-  it('How I tested it: one reader ranked, then their pairs scored', async () => {
+  it('Testing framework: one reader ranked, then their pairs scored', async () => {
     const user = userEvent.setup()
     render(<BuildSlide id="testing" />)
 
-    expect(screen.getByRole('heading', { level: 2, name: 'How I tested it' })).toBeInTheDocument()
-    expect(parts('How I tested it')).toHaveLength(0)
+    expect(screen.getByRole('heading', { level: 2, name: 'Testing framework' })).toBeInTheDocument()
+    expect(parts('Testing framework')).toHaveLength(0)
 
     await user.keyboard('{ArrowRight}')
-    expect(parts('How I tested it')[0]).toHaveTextContent(/Made-up example/)
+    expect(parts('Testing framework')[0]).toHaveTextContent(/Made-up example/)
     const ranked = within(screen.getByRole('list', { name: 'Ranked by the agent' })).getAllByRole(
       'listitem',
     )
@@ -61,7 +61,7 @@ describe('BuildSlide', () => {
       'Mortgageabove 6 of 6 skipped',
       'Chiefsabove 3 of 6 skipped',
     ])
-    expect(parts('How I tested it')[1]).toHaveTextContent(/9 of 12 pairs right = AUC 0\.75/)
+    expect(parts('Testing framework')[1]).toHaveTextContent(/9 of 12 pairs right = AUC 0\.75/)
 
     expect(screen.queryByRole('button', { name: /show next/i })).not.toBeInTheDocument()
   })

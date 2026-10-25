@@ -203,7 +203,7 @@ describe('Presenter deck (ADR-0012)', () => {
     expect(await screen.findByText(/no saved run/i)).toBeInTheDocument()
   })
 
-  it('reveals both parts of How I tested it before moving on', async () => {
+  it('reveals both parts of Testing framework before moving on', async () => {
     const user = setup()
 
     await goTo(user, 'testing')
