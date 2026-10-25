@@ -38,18 +38,50 @@ function Strip() {
   )
 }
 
+/** Made up to show the scoring, not taken from a run. Sorted by the agent's click chance. */
+const EXAMPLE = [
+  { headline: 'Mortgage rates jump', chance: 70, clicked: true },
+  { headline: 'Celebrity divorce', chance: 40, clicked: false },
+  { headline: 'New iPhone leak', chance: 30, clicked: false },
+  { headline: 'Stock market dips', chance: 25, clicked: false },
+  { headline: 'Chiefs win in overtime', chance: 20, clicked: true },
+  { headline: 'Weather warning', chance: 15, clicked: false },
+  { headline: 'Recipe: easy pasta', chance: 10, clicked: false },
+  { headline: 'Royal family news', chance: 5, clicked: false },
+]
+
 const TESTING = [
-  <div key="task" className="build-part build-test">
-    <h3>Every agent, the same task</h3>
-    <ul>
-      <li>Up to 8 headlines from one real feed, up to 2 of them clicked.</li>
-      <li>Same headlines, order and prompt in every arm: only what the agent knows changes.</li>
-      <li>Each writes a gut reaction, then a 0–100 click chance, at temperature 0.</li>
-    </ul>
+  <div key="example" className="build-part build-test">
+    <h3>Scoring one reader</h3>
+    <p className="build-note">Made-up numbers; each reader gets 8 headlines, up to 2 clicked.</p>
+    <table className="auc-example">
+      <thead>
+        <tr>
+          <th scope="col">Headline</th>
+          <th scope="col">Click chance</th>
+          <th scope="col">Really clicked?</th>
+        </tr>
+      </thead>
+      <tbody>
+        {EXAMPLE.map(({ headline, chance, clicked }) => (
+          <tr key={headline} className={clicked ? 'clicked' : undefined}>
+            <th scope="row">{headline}</th>
+            <td>{chance}</td>
+            <td>{clicked ? 'Clicked' : 'Skipped'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    <p>
+      Every clicked headline against every skipped one: 2 × 6 = 12 pairs. Mortgage beats all 6,
+      Chiefs beats 3, so 9 of 12 are right: <strong>AUC 0.75</strong>. Random ≈ 0.5, perfect = 1.
+    </p>
   </div>,
   <div key="tests" className="build-part build-test">
     <h3>The test framework</h3>
     <ul>
+      <li>Same headlines, order and prompt in every arm: only what the agent knows changes.</li>
+      <li>Each writes a gut reaction, then a 0–100 click chance, at temperature 0.</li>
       <li>Pre-registered before the test run: D − A AUC per reader, with a 95% CI.</li>
       <li>Prompts tuned on a separate 30-user dev set only, then tagged frozen.</li>
       <li>The 300-user test set run once, against popularity and random baselines.</li>

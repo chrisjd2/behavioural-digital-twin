@@ -40,7 +40,7 @@
   padding: 0;
 }
 
-/* The task and the test framework side by side. */
+/* The worked example and the test framework side by side. */
 .reveal-items:has(.build-test) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -94,4 +94,37 @@
   font-size: 1rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+/* How I tested it: one reader's headlines, ranked by the agent, the clicked ones marked. */
+.build-note {
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+
+.auc-example {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.auc-example :is(th, td) {
+  text-align: left;
+  padding: 4px 16px 4px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.auc-example thead th {
+  font-size: 1rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.auc-example tbody th {
+  font-weight: 400;
+}
+
+.auc-example tr.clicked :is(th, td) {
+  font-weight: 800;
 }

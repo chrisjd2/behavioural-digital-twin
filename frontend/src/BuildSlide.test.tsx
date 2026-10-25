@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import BuildSlide from './BuildSlide'
@@ -32,7 +32,7 @@ describe('BuildSlide', () => {
     expect(rows[4]).toHaveTextContent(/Tests whether gains are personal/)
   })
 
-  it('How I tested it: the task, then the test framework', async () => {
+  it('How I tested it: a worked AUC example, then the test framework', async () => {
     const user = userEvent.setup()
     render(<BuildSlide id="testing" />)
 
@@ -40,13 +40,21 @@ describe('BuildSlide', () => {
     expect(parts('How I tested it')).toHaveLength(0)
 
     await user.keyboard('{ArrowRight}')
-    expect(parts('How I tested it')[0]).toHaveTextContent(/only what the agent knows changes/)
-    expect(parts('How I tested it')[0]).toHaveTextContent(/gut reaction, then a 0–100 click chance/)
+    const example = parts('How I tested it')[0] as HTMLElement
+    expect(example).toHaveTextContent(/Made-up numbers/)
+    const rows = within(example).getAllByRole('row').slice(1)
+    expect(rows).toHaveLength(8)
+    expect(rows.filter((row) => row.textContent?.endsWith('Clicked'))).toHaveLength(2)
+    expect(example).toHaveTextContent(/2 × 6 = 12 pairs/)
+    expect(example).toHaveTextContent(/AUC 0\.75/)
 
     await user.keyboard('{ArrowRight}')
-    expect(parts('How I tested it')[1]).toHaveTextContent(/Pre-registered before the test run/)
-    expect(parts('How I tested it')[1]).toHaveTextContent(/30-user dev set/)
-    expect(parts('How I tested it')[1]).toHaveTextContent(/300-user test set run once/)
+    const framework = parts('How I tested it')[1]
+    expect(framework).toHaveTextContent(/only what the agent knows changes/)
+    expect(framework).toHaveTextContent(/gut reaction, then a 0–100 click chance/)
+    expect(framework).toHaveTextContent(/Pre-registered before the test run/)
+    expect(framework).toHaveTextContent(/30-user dev set/)
+    expect(framework).toHaveTextContent(/300-user test set run once/)
     expect(screen.queryByRole('button', { name: /show next/i })).not.toBeInTheDocument()
   })
 
