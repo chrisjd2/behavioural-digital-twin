@@ -243,15 +243,15 @@ describe('Presenter deck (ADR-0012)', () => {
     expect(await screen.findByText(/no saved run/i)).toBeInTheDocument()
   })
 
-  it('reveals the three parts of What I built before moving on', async () => {
+  it('reveals both parts of How I tested it before moving on', async () => {
     const user = setup()
 
-    await goTo(user, 'build')
-    for (let press = 0; press < 3; press++) await next(user)
-    expect(counter()).toBe('8 / 17')
+    await goTo(user, 'testing')
+    for (let press = 0; press < 2; press++) await next(user)
+    expect(counter()).toBe('9 / 17')
     expect(screen.getByText(/30-user dev set/)).toBeInTheDocument()
     await next(user)
-    expect(counter()).toBe('9 / 17')
+    expect(counter()).toBe('10 / 17')
   })
 
   it('switches to the free stepper and back to the same screen', async () => {

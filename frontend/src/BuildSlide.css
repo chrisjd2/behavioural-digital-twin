@@ -1,4 +1,4 @@
-/* Screens 8-10, What I built, The arms and Plan met reality: sized for a 1920×1080 shared screen. */
+/* Screens 8-10, What I built, How I tested it and Plan met reality: sized for a 1920×1080 shared screen. */
 .build-strip {
   display: flex;
   align-items: center;
@@ -24,32 +24,6 @@
   color: var(--muted);
 }
 
-/* Two columns, read down: with every part revealed, one column ran below 1080px. */
-.build-arms {
-  list-style: none;
-  margin: 0;
-  font-size: 1.3rem;
-  display: grid;
-  grid-template-rows: repeat(4, auto);
-  grid-auto-flow: column;
-  gap: 4px 24px;
-}
-
-/* Two classes, so the arm's colour wins over the revealed items' bar. */
-.build-arms .build-arm {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-left: 6px solid var(--arm);
-  padding-left: 10px;
-}
-
-.build-arm .arm-letter {
-  width: 1.5em;
-  height: 1.5em;
-  border-radius: 6px;
-}
-
 .build-part h3 {
   font-size: 1.8rem;
   margin-bottom: 8px;
@@ -66,15 +40,11 @@
   padding: 0;
 }
 
-/* The diagram across the top, the task and the test framework side by side under it. */
-.reveal-items:has(.build-strip) {
+/* The task and the test framework side by side. */
+.reveal-items:has(.build-test) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px 32px;
-}
-
-.reveal-items > li:has(.build-strip) {
-  grid-column: 1 / -1;
 }
 
 /* The arms: one row per arm, its colour down the left edge. */
@@ -87,7 +57,7 @@
 .arms-table :is(th, td) {
   text-align: left;
   vertical-align: top;
-  padding: 10px 24px 10px 0;
+  padding: 7px 24px 7px 0;
   border-bottom: 1px solid var(--rule);
 }
 
@@ -119,7 +89,7 @@
 }
 
 .arms-table .arms-group {
-  padding-top: 24px;
+  padding-top: 16px;
   color: var(--muted);
   font-size: 1rem;
   text-transform: uppercase;

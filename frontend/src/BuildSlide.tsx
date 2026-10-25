@@ -1,4 +1,4 @@
-/** Screens 8-10 (ADR-0012): What I built, The arms, then Plan met reality. */
+/** Screens 8-10 (ADR-0012): What I built (pipeline and arms), How I tested it, Plan met reality. */
 import { ARMS, BASELINES, CONTROL, armClass, type ArmCard } from './arms'
 import { Reveal, Slide } from './slides'
 import './BuildSlide.css'
@@ -13,20 +13,9 @@ function Strip() {
       <span className="build-arrow" aria-hidden="true">
         →
       </span>
-      <ul className="build-stage build-arms" aria-label="Arms and baselines">
-        {[...ARMS, CONTROL].map((arm) => (
-          <li key={arm.id} className={`build-arm ${armClass(arm.id)}`}>
-            <span className="arm-letter">{arm.id.toUpperCase()}</span>
-            {arm.name}
-            {arm === CONTROL && <span className="control-tag">control</span>}
-          </li>
-        ))}
-        {BASELINES.map((baseline) => (
-          <li key={baseline.id} className={`build-arm ${armClass(baseline.id)}`}>
-            {baseline.name}
-          </li>
-        ))}
-      </ul>
+      <div className="build-stage">
+        <strong>5 arms + 2 baselines</strong>
+      </div>
       <span className="build-arrow" aria-hidden="true">
         →
       </span>
@@ -49,9 +38,8 @@ function Strip() {
   )
 }
 
-const BUILT = [
-  <Strip key="strip" />,
-  <div key="task" className="build-part">
+const TESTING = [
+  <div key="task" className="build-part build-test">
     <h3>Every agent, the same task</h3>
     <ul>
       <li>Up to 8 headlines from one real feed, up to 2 of them clicked.</li>
@@ -59,7 +47,7 @@ const BUILT = [
       <li>Each writes a gut reaction, then a 0–100 click chance, at temperature 0.</li>
     </ul>
   </div>,
-  <div key="tests" className="build-part">
+  <div key="tests" className="build-part build-test">
     <h3>The test framework</h3>
     <ul>
       <li>Pre-registered before the test run: D − A AUC per reader, with a 95% CI.</li>
@@ -139,17 +127,18 @@ const CHANGES = [
   </div>,
 ]
 
-export default function BuildSlide({ id }: { id: 'build' | 'arms' | 'changes' }) {
-  if (id === 'arms') {
+export default function BuildSlide({ id }: { id: 'build' | 'testing' | 'changes' }) {
+  if (id === 'build') {
     return (
-      <Slide kicker="Tinker" title="The arms">
+      <Slide kicker="Tinker" title="What I built">
+        <Strip />
         <ArmsTable />
       </Slide>
     )
   }
-  return id === 'build' ? (
-    <Slide kicker="Tinker" title="What I built">
-      <Reveal label="What I built" items={BUILT} />
+  return id === 'testing' ? (
+    <Slide kicker="Tinker" title="How I tested it">
+      <Reveal label="How I tested it" items={TESTING} />
     </Slide>
   ) : (
     <Slide kicker="Tinker" title="Plan met reality">

@@ -18,8 +18,8 @@ The panel format changed from ADR-0008's 10-minute in-room talk. It is now **15 
     | --- | ----------------------------------------------------------------------------------------------------- | -------- |
     | 1–3 | ★ About me (title only), Career (the roles, all at once), Learn · Tinker · Teach in my life           | About me |
     | 4–7 | ★ The brief, Back to MiroFish, Research path, The gap and my angle                                    | Learn    |
-    | 8   | ★ What I built                                                                                        | Tinker   |
-    | 9   | ★ The arms (what each agent knows, and why)                                                           | Tinker   |
+    | 8   | ★ What I built (the pipeline, then every arm)                                                         | Tinker   |
+    | 9   | ★ How I tested it (the task, the test framework)                                                      | Tinker   |
     | 10  | ★ Plan met reality (arm E, bigger test set, no inferred persona)                                      | Tinker   |
     | 11  | Population                                                                                            | Tinker   |
     | 12  | Hook                                                                                                  | Teach    |
@@ -33,7 +33,7 @@ The panel format changed from ADR-0008's 10-minute in-room talk. It is now **15 
 
 - **Teach is woven in.** The Hook moves from the opening into Teach: Learn's MiroFish question opens Part 2 instead.
 - **Audience interaction is verbal.** The Hook vote and the check-in question have no on-screen tally or phone voting.
-- **Seed is out of the talk.** Screen 9 explains the arms. The Interview is a Q&A bonus (screen 17), as in ADR-0008.
+- **Seed is out of the talk.** Screen 8 explains the arms. The Interview is a Q&A bonus (screen 17), as in ADR-0008.
 - **Navigation:**
     - Right/left arrows and PageDown/PageUp (presentation clickers) move between screens.
     - A screen with its own stages (the Hook, click-to-reveal slides, the Report's pages) takes the key first, and the deck moves only when nothing on screen used it.
