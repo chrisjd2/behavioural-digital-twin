@@ -17,7 +17,7 @@ async function revealAll(user: ReturnType<typeof userEvent.setup>) {
   }
 }
 
-describe('Learn slides (screens 6-9)', () => {
+describe('Learn slides (screens 4-7)', () => {
   it('covers the four Learn screens', () => {
     expect([...LEARN_SCREENS]).toEqual(
       SCREENS.filter((s) => s.section === 'Learn').map((s) => s.id),

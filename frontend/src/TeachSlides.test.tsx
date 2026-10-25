@@ -68,7 +68,7 @@ function show(id: ScreenId, runs: Runs, urls: Record<string, Reply> = {}, mockLl
   return user
 }
 
-describe('Check-in (screen 15)', () => {
+describe('Check-in (screen 13)', () => {
   it("asks the question with arm D's mean p_click and the feed CTR from the run", async () => {
     show('checkin', ready(runFixture), { [REPORT]: reportFixture(ARMS) })
 
@@ -123,7 +123,7 @@ describe('Check-in (screen 15)', () => {
   })
 })
 
-describe('Takeaways (screen 16)', () => {
+describe('Takeaways (screen 14)', () => {
   it('reveals the four takeaways one by one, then the callback line', async () => {
     const user = show('takeaways', ready(runFixture))
 
@@ -143,7 +143,7 @@ describe('Takeaways (screen 16)', () => {
   })
 })
 
-describe('Thanks (screen 17)', () => {
+describe('Thanks (screen 15)', () => {
   it('asks the question again and invites questions', () => {
     show('thanks', ready(runFixture))
 

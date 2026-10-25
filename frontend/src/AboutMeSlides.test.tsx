@@ -1,48 +1,22 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import AboutMeSlide from './AboutMeSlides'
 
-function careerStops() {
-  return within(screen.getByRole('list', { name: /career/i }))
-    .queryAllByRole('listitem')
-    .filter((li) => li.parentElement?.getAttribute('aria-label') === 'Career')
-}
-
 describe('About me slides', () => {
-  it('opens with the title and a photo slot', () => {
-    render(<AboutMeSlide id="title" />)
-    expect(screen.getByRole('heading', { level: 2, name: 'Chris Davies' })).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: /chris/i })).toHaveAttribute('src', '/private/me.jpg')
-  })
-
-  it('says who Chris is in a few words', () => {
-    render(<AboutMeSlide id="who" />)
-    expect(screen.getByRole('heading', { level: 2, name: 'Who I am' })).toBeInTheDocument()
-    for (const text of [/south african/i, /denmark.*10 years/i, /web development/i, /7 years/i])
-      expect(screen.getByText(text)).toBeInTheDocument()
-  })
-
-  it('reveals the career timeline stop by stop', async () => {
-    const user = userEvent.setup()
+  it('shows the career as four roles at once, each with its note', () => {
     render(<AboutMeSlide id="career" />)
 
-    expect(careerStops()).toHaveLength(0)
-    await user.keyboard('{ArrowRight}')
-    expect(careerStops()[0]).toHaveTextContent(/application consultant/i)
-    expect(careerStops()[0]).toHaveTextContent(/SFMC/)
-    await user.click(screen.getByRole('button', { name: /show next/i }))
-    await user.keyboard('{ArrowRight}{ArrowRight}')
-
-    const stops = careerStops()
-    expect(stops.map((li) => li.querySelector('strong')?.textContent)).toEqual([
+    expect(screen.getByRole('heading', { level: 2, name: 'Career' })).toBeInTheDocument()
+    const roles = within(screen.getByRole('list', { name: 'Career' })).getAllByRole('listitem')
+    expect(roles.map((li) => li.querySelector('strong')?.textContent)).toEqual([
       'Application consultant',
       'Developer',
       'Technical architect',
       'Product role',
     ])
-    expect(stops[3]).toHaveTextContent(/MCP server/i)
-    expect(stops[3]).toHaveTextContent(/Adobe/)
+    expect(roles[0]).toHaveTextContent(/emails and journeys in SFMC/i)
+    expect(roles[2]).toHaveTextContent(/two large SFMC clients/i)
+    expect(roles[3]).toHaveTextContent(/operations briefing platform/i)
     expect(screen.queryByRole('button', { name: /show next/i })).not.toBeInTheDocument()
   })
 
@@ -62,18 +36,13 @@ describe('About me slides', () => {
   })
 
   it('falls back to a placeholder for every missing media file', () => {
-    render(
-      <>
-        <AboutMeSlide id="title" />
-        <AboutMeSlide id="life" />
-      </>,
-    )
+    render(<AboutMeSlide id="life" />)
     const media = screen.getAllByRole('img')
-    expect(media).toHaveLength(4)
+    expect(media).toHaveLength(3)
     for (const img of media) fireEvent.error(img)
 
     const placeholders = screen.getAllByRole('img')
-    expect(placeholders).toHaveLength(4)
+    expect(placeholders).toHaveLength(3)
     for (const placeholder of placeholders) expect(placeholder).not.toHaveAttribute('src')
   })
 

@@ -16,20 +16,22 @@ The panel format changed from ADR-0008's 10-minute in-room talk. It is now **15 
 
   | # | Screen | Section |
   |---|---|---|
-  | 1–5 | ★ Title, Who I am, Career timeline, Learn · Tinker · Teach in my life, Hand-off | About me |
-  | 6–9 | ★ The brief, Back to MiroFish, Research path, The gap and my angle | Learn |
-  | 10 | ★ How I built it (incl. "Who did what": the honest AI-use statement) | Tinker |
-  | 11 | Population | Tinker |
-  | 12 | Hook | Teach |
-  | 13 | Simulation replay | Teach |
-  | 14 | Report | Teach |
-  | 15 | ★ Check-in question (calibration) | Teach |
-  | 16 | ★ Takeaways | Teach |
-  | 17 | ★ Thanks / questions (Interview as a Q&A bonus) | Teach |
+  | 1–3 | ★ Career (the roles, all at once), Learn · Tinker · Teach in my life, Hand-off | About me |
+  | 4–7 | ★ The brief, Back to MiroFish, Research path, The gap and my angle | Learn |
+  | 8 | ★ How I built it (incl. "Who did what": the honest AI-use statement) | Tinker |
+  | 9 | Population | Tinker |
+  | 10 | Hook | Teach |
+  | 11 | Simulation replay | Teach |
+  | 12 | Report | Teach |
+  | 13 | ★ Check-in question (calibration) | Teach |
+  | 14 | ★ Takeaways | Teach |
+  | 15 | ★ Thanks / questions (Interview as a Q&A bonus) | Teach |
+
+- **About me is mostly said, not shown** (#66). Chris is on camera, so the deck has no title slide or "Who I am" list; Chris's name and background are in the talk track.
 
 - **Teach is woven in.** The Hook moves from the opening into Teach: Learn's MiroFish question opens Part 2 instead.
 - **Audience interaction is verbal.** The Hook vote and the check-in question have no on-screen tally or phone voting.
-- **Seed is out of the talk.** Screen 10 explains the arms. The Interview is a Q&A bonus (screen 17), as in ADR-0008.
+- **Seed is out of the talk.** Screen 8 explains the arms. The Interview is a Q&A bonus (screen 15), as in ADR-0008.
 - **Navigation:**
   - Right/left arrows and PageDown/PageUp (presentation clickers) move between screens.
   - A screen with its own stages (the Hook, click-to-reveal slides, the Report's pages) takes the key first, and the deck moves only when nothing on screen used it.
