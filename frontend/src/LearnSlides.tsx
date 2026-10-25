@@ -69,10 +69,26 @@ const GAP: ReactNode[] = [
     2026).
   </>,
   <>
-    <strong>My angle:</strong> give an off-the-shelf LLM only a reader&rsquo;s{' '}
-    <strong>past clicks</strong>. Does it predict which new headlines they click better than a plain
-    LLM or an invented persona? And is the gain <strong>personal</strong>? A wrong-twin control
-    (someone else&rsquo;s clicks) tests that. No fine-tuning.
+    <strong>My angle:</strong> combine what the research found, one ingredient at a time, on the
+    same headlines and real clicks. Off the shelf, no fine-tuning; every arm writes a gut reaction,
+    then its click chance.
+    <ol className="learn-ladder" aria-label="Arms">
+      <li>
+        <strong>A</strong> Plain LLM
+      </li>
+      <li>
+        <strong>B</strong> Invented persona
+      </li>
+      <li>
+        <strong>C</strong> + memories of the reader&rsquo;s past clicks
+      </li>
+      <li>
+        <strong>D</strong> + a distilled profile of those clicks
+      </li>
+      <li>
+        <strong>E</strong> D with someone else&rsquo;s clicks: is the gain personal?
+      </li>
+    </ol>
   </>,
   <p className="learn-question">Can an AI predict which headlines you’ll click?</p>,
 ]

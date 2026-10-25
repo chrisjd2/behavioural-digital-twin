@@ -50,6 +50,25 @@
   font-size: 1.2rem;
 }
 
+/* The arms as a ladder: each adds one ingredient from the research. */
+.learn-ladder {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.learn-ladder li {
+  border-left: 0;
+  padding: 0;
+}
+
+.learn-ladder strong {
+  display: inline-block;
+  width: 1.6em;
+}
+
 .learn-question {
   margin: 0;
   font-size: 3rem;
