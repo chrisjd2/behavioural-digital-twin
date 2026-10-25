@@ -79,25 +79,10 @@
   box-sizing: border-box;
 }
 
-.checkin-question,
+/* The talk's question on one line. */
 .thanks-question {
   font-size: 3.2rem;
   line-height: 1.25;
-  max-width: 30ch;
-}
-
-/* The talk's question on one line. */
-.thanks-question {
-  max-width: none;
-}
-
-.checkin-number {
-  white-space: nowrap;
-}
-
-.checkin-number .badge-mock-small {
-  margin-left: 8px;
-  vertical-align: middle;
 }
 
 .thanks-questions {

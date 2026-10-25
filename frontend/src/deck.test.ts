@@ -8,8 +8,8 @@ function keydown(key: string, init: KeyboardEventInit = {}, target?: Element) {
 }
 
 describe('running order (ADR-0012)', () => {
-  it('has 17 screens, the existing steps at 11-14', () => {
-    expect(SCREENS).toHaveLength(17)
+  it('has 16 screens, the existing steps at 11-14', () => {
+    expect(SCREENS).toHaveLength(16)
     expect(SCREENS.slice(10, 14).map((s) => s.id)).toEqual([
       'population',
       'hook',
@@ -21,7 +21,7 @@ describe('running order (ADR-0012)', () => {
   it('runs through the four sections in order', () => {
     expect(SECTIONS).toEqual(['About me', 'Learn', 'Tinker', 'Teach'])
     const counts = SECTIONS.map((section) => SCREENS.filter((s) => s.section === section).length)
-    expect(counts).toEqual([3, 4, 4, 6])
+    expect(counts).toEqual([3, 4, 4, 5])
     const order = SCREENS.map((s) => SECTIONS.indexOf(s.section))
     expect(order).toEqual([...order].sort((a, b) => a - b))
   })

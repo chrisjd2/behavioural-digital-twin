@@ -25,15 +25,14 @@ The panel format changed from ADR-0008's 10-minute in-room talk. It is now **15 
     | 12  | Hook                                                                                                  | Teach    |
     | 13  | Simulation replay                                                                                     | Teach    |
     | 14  | Report                                                                                                | Teach    |
-    | 15  | ★ Check-in question (calibration)                                                                     | Teach    |
-    | 16  | ★ Takeaways                                                                                           | Teach    |
-    | 17  | ★ Thanks / questions (Interview as a Q&A bonus)                                                       | Teach    |
+    | 15  | ★ Takeaways                                                                                           | Teach    |
+    | 16  | ★ Thanks / questions (Interview as a Q&A bonus)                                                       | Teach    |
 
 - **About me is mostly said, not shown** (#66). Chris is on camera, so the deck opens on a plain "About me" title, with no name, photo or "Who I am" list; Chris says who they are over it. No hand-off slide: Chris says the "learn, tinker, teach" line on the way into Learn.
 
 - **Teach is woven in.** The Hook moves from the opening into Teach: Learn's MiroFish question opens Part 2 instead.
-- **Audience interaction is verbal.** The Hook vote and the check-in question have no on-screen tally or phone voting.
-- **Seed is out of the talk.** Screen 8 explains the arms. The Interview is a Q&A bonus (screen 17), as in ADR-0008.
+- **Audience interaction is verbal.** The Hook vote has no on-screen tally or phone voting. The calibration question ("what would you do with that in a campaign?") is asked aloud on Takeaways; the check-in screen was cut (#66), its point folded into the third takeaway.
+- **Seed is out of the talk.** Screen 8 explains the arms. The Interview is a Q&A bonus (screen 16), as in ADR-0008.
 - **Navigation:**
     - Right/left arrows and PageDown/PageUp (presentation clickers) move between screens.
     - A screen with its own stages (the Hook, click-to-reveal slides) takes the key first, and the deck moves only when nothing on screen used it. The Report's pages are picked by clicking their tabs; the keys move straight on to the check-in (#66).

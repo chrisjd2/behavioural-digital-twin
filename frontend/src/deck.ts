@@ -19,7 +19,6 @@ export type ScreenId =
   | 'hook'
   | 'simulation'
   | 'report'
-  | 'checkin'
   | 'takeaways'
   | 'thanks'
 
@@ -40,7 +39,6 @@ export const SCREENS: Screen[] = [
   { id: 'hook', section: 'Teach', title: 'Hook' },
   { id: 'simulation', section: 'Teach', title: 'Simulation' },
   { id: 'report', section: 'Teach', title: 'Report' },
-  { id: 'checkin', section: 'Teach', title: 'Check-in' },
   { id: 'takeaways', section: 'Teach', title: 'Takeaways' },
   { id: 'thanks', section: 'Teach', title: 'Thanks' },
 ]
