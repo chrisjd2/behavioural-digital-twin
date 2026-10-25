@@ -5,7 +5,7 @@ import BuildSlide from './BuildSlide'
 
 /** The revealed parts, not the lists nested inside them. */
 function parts() {
-  return [...screen.getByRole('list', { name: 'How I built it' }).children]
+  return [...screen.getByRole('list', { name: 'What I built' }).children]
 }
 
 describe('BuildSlide', () => {
@@ -13,7 +13,7 @@ describe('BuildSlide', () => {
     const user = userEvent.setup()
     render(<BuildSlide />)
 
-    expect(screen.getByRole('heading', { level: 2, name: 'How I built it' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'What I built' })).toBeInTheDocument()
     expect(parts()).toHaveLength(0)
 
     await user.keyboard('{ArrowRight}')

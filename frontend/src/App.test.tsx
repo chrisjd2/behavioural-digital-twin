@@ -243,7 +243,7 @@ describe('Presenter deck (ADR-0012)', () => {
     expect(await screen.findByText(/no saved run/i)).toBeInTheDocument()
   })
 
-  it('reveals the four parts of How I built it before moving on', async () => {
+  it('reveals the four parts of What I built before moving on', async () => {
     const user = setup()
 
     await goTo(user, 'build')
@@ -262,7 +262,7 @@ describe('Presenter deck (ADR-0012)', () => {
     expect(screen.getByRole('navigation', { name: /steps/i })).toBeInTheDocument()
     await user.keyboard('{ArrowRight}') // the stepper's own Hook, not the deck
     await user.click(screen.getByRole('button', { name: 'Presenter' }))
-    expect(screen.getByRole('heading', { level: 2, name: 'How I built it' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'What I built' })).toBeInTheDocument()
     expect(counter()).toBe('8 / 15')
   })
   it('leaves About me out in DEMO_MODE: opens on The brief and cannot go back', async () => {

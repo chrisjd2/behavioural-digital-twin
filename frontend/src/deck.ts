@@ -31,7 +31,7 @@ export const SCREENS: Screen[] = [
   { id: 'mirofish', section: 'Learn', title: 'Back to MiroFish' },
   { id: 'research', section: 'Learn', title: 'Research path' },
   { id: 'gap', section: 'Learn', title: 'The gap and my angle' },
-  { id: 'build', section: 'Tinker', title: 'How I built it' },
+  { id: 'build', section: 'Tinker', title: 'What I built' },
   { id: 'population', section: 'Tinker', title: 'Population' },
   { id: 'hook', section: 'Teach', title: 'Hook' },
   { id: 'simulation', section: 'Teach', title: 'Simulation' },

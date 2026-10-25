@@ -1,4 +1,4 @@
-/** Screen 8, How I built it (ADR-0012): the pipeline, two plan changes, and who did what. */
+/** Screen 8, What I built (ADR-0012): the pipeline, two plan changes, and who did what. */
 import { ARMS, BASELINES, CONTROL, armClass } from './arms'
 import { Reveal, Slide } from './slides'
 import './BuildSlide.css'
@@ -87,8 +87,8 @@ const PARTS = [
 
 export default function BuildSlide() {
   return (
-    <Slide kicker="Tinker" title="How I built it">
-      <Reveal label="How I built it" items={PARTS} />
+    <Slide kicker="Tinker" title="What I built">
+      <Reveal label="What I built" items={PARTS} />
     </Slide>
   )
 }
