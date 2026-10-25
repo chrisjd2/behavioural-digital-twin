@@ -368,6 +368,34 @@ describe('Paged report (presenter mode, #57)', () => {
     'Diagnostics',
   ]
 
+  it('states the primary outcome in plain percentages, leaving the statistics to Explore', async () => {
+    renderPaged()
+
+    expect(await screen.findByTestId('outcome')).toHaveTextContent('Twins beat plain LLM')
+    const stats = screen
+      .getAllByRole('term')
+      .map((term) => [
+        term.textContent,
+        ...[...term.parentElement!.querySelectorAll('dd')].map((dd) => dd.textContent),
+      ])
+    expect(stats).toEqual([
+      [
+        'Its top pick was a headline the reader clicked',
+        '30%Plain LLM',
+        '30%Twin + profile + memory',
+        '30%Random',
+      ],
+      [
+        'It ranked a clicked headline above a skipped one',
+        '55%Plain LLM',
+        '70%Twin + profile + memory',
+        '51%Random',
+      ],
+    ])
+    expect(screen.getByText(/3 real readers/)).toBeVisible()
+    expect(screen.queryByText(/Rule set before the test run/)).not.toBeInTheDocument()
+  })
+
   it('shows one page at a time, with a tab per page, starting on the primary outcome', async () => {
     renderPaged()
 

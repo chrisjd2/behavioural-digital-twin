@@ -97,6 +97,48 @@
   margin: 16px 0 8px;
 }
 
+/* Presenter: each plain stat as a row of arms, the twin's number largest. */
+.plain-outcome {
+  display: grid;
+  gap: 24px;
+  margin: 8px 0 16px;
+}
+
+.plain-outcome > div {
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
+  gap: 4px 48px;
+  align-items: end;
+}
+
+.plain-outcome dt {
+  grid-column: 1 / -1;
+  font-weight: 700;
+}
+
+.plain-outcome dd {
+  margin: 0;
+  border-left: 6px solid var(--arm);
+  padding-left: 12px;
+  color: var(--muted);
+}
+
+.plain-value {
+  display: block;
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.plain-outcome dd.arm-d .plain-value {
+  font-size: 3.2rem;
+}
+
+.plain-outcome dd.baseline .plain-value {
+  color: var(--muted);
+}
+
 /* Bar charts: HTML labels | SVG track | HTML values. */
 .bar-chart {
   display: grid;

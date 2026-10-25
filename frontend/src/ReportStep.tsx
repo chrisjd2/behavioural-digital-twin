@@ -3,7 +3,14 @@ import { fetchReport, type MetricName, type RunReport } from './api/report'
 import { deckCommand, move } from './deck'
 import { largestFit } from './fit'
 import { ReliabilityDiagrams } from './ReportCharts'
-import { armName, decimal, differenceLine, notResultText, outcomeHeadline } from './reportModel'
+import {
+  armName,
+  decimal,
+  differenceLine,
+  notResultText,
+  outcomeHeadline,
+  percent,
+} from './reportModel'
 import { CalibrationChart, DifferenceChart, Diagnostics, MetricPanel } from './ReportSections'
 import UserBrowser from './UserBrowser'
 import './report.css'
@@ -86,30 +93,39 @@ export default function ReportStep({ runId, paged = false }: { runId: string; pa
           <p className="outcome" data-testid="outcome">
             {outcomeHeadline(report.primary)}
           </p>
-          {compared.length === 2 && (
-            <dl className="primary-compare">
-              {compared.map(({ id, auc }) => (
-                <div key={id} className={`arm-${id.toLowerCase()}`}>
-                  <dt>
-                    <span className="arm-letter">{id}</span> {armName(id)}
-                  </dt>
-                  <dd>AUC {decimal(auc)}</dd>
-                </div>
-              ))}
-            </dl>
+          {paged ? (
+            <PlainOutcome report={report} />
+          ) : (
+            <>
+              {compared.length === 2 && (
+                <dl className="primary-compare">
+                  {compared.map(({ id, auc }) => (
+                    <div key={id} className={`arm-${id.toLowerCase()}`}>
+                      <dt>
+                        <span className="arm-letter">{id}</span> {armName(id)}
+                      </dt>
+                      <dd>AUC {decimal(auc)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+              <p className="small muted">
+                AUC: the chance a clicked headline is ranked above a skipped one. 0.5 is a coin
+                flip.
+              </p>
+              <p className="primary-difference">
+                Twin minus plain LLM, per reader: <strong>{differenceLine(report.primary)}</strong>
+              </p>
+              <DifferenceChart
+                title="D − A AUC difference"
+                differences={[{ arm: 'D', reference: 'A', auc: report.primary.difference }]}
+              />
+              <p className="rule">{RULE}</p>
+              <p className="small muted">
+                N = {report.n_users} users, bootstrap 95% CI over users.
+              </p>
+            </>
           )}
-          <p className="small muted">
-            AUC: the chance a clicked headline is ranked above a skipped one. 0.5 is a coin flip.
-          </p>
-          <p className="primary-difference">
-            Twin minus plain LLM, per reader: <strong>{differenceLine(report.primary)}</strong>
-          </p>
-          <DifferenceChart
-            title="D − A AUC difference"
-            differences={[{ arm: 'D', reference: 'A', auc: report.primary.difference }]}
-          />
-          <p className="rule">{RULE}</p>
-          <p className="small muted">N = {report.n_users} users, bootstrap 95% CI over users.</p>
         </>
       ) : (
         <p className="result-empty">
@@ -231,6 +247,47 @@ export default function ReportStep({ runId, paged = false }: { runId: string; pa
       {users}
       {diagnostics}
     </div>
+  )
+}
+
+const PLAIN_STATS: { metric: MetricName; label: string }[] = [
+  { metric: 'hit1', label: 'Its top pick was a headline the reader clicked' },
+  { metric: 'auc', label: 'It ranked a clicked headline above a skipped one' },
+]
+
+/**
+ * The primary outcome for a room, not a reviewer (ADR-0012): plain LLM against twin on two
+ * metrics read as percentages, with random as the floor. The full statistics stay in Explore.
+ */
+function PlainOutcome({ report }: { report: RunReport }) {
+  const find = (id: string) => report.arms.find((a) => a.arm.toLowerCase() === id)
+  const shown = [
+    { id: 'a', className: 'arm-a' },
+    { id: 'd', className: 'arm-d' },
+    { id: 'random', className: 'baseline' },
+  ].flatMap(({ id, className }) => {
+    const arm = find(id)
+    return arm ? [{ id, className, arm }] : []
+  })
+  return (
+    <>
+      <dl className="plain-outcome">
+        {PLAIN_STATS.map(({ metric, label }) => (
+          <div key={metric}>
+            <dt>{label}</dt>
+            {shown.map(({ id, className, arm }) => (
+              <dd key={id} className={className}>
+                <span className="plain-value">{percent(arm.metrics[metric].mean, 0)}</span>
+                {armName(id)}
+              </dd>
+            ))}
+          </div>
+        ))}
+      </dl>
+      <p className="small muted">
+        {report.n_users} real readers. The rule for a win was fixed before the test run.
+      </p>
+    </>
   )
 }
 
