@@ -54,19 +54,19 @@ const CAREER = [
 const LIFE = [
   {
     heading: 'Learn',
-    items: ['Learning to draw', 'New tech, for fun'],
+    items: ['Learning to draw'],
     media: 'drawing.jpg',
     caption: 'A drawing of mine',
   },
   {
     heading: 'Tinker',
-    items: ['Little games and tools', 'Speech-to-speech agents: calling friends in new voices'],
+    items: ['Speech-to-speech agents platform'],
     media: 'voice.jpg',
     caption: 'My voice platform',
   },
   {
     heading: 'Teach',
-    items: ['Tricks for my Australian Shepherd'],
+    items: ['Tricks with my Australian Shepherd'],
     media: 'dog.jpg',
     caption: 'My dog',
   },
