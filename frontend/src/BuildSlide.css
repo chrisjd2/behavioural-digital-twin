@@ -40,26 +40,13 @@
   padding: 0;
 }
 
-/* The worked example down the left, revealed in two steps; the test framework on the right. */
+/* The worked example: the ranking on the left, its pairs scored on the right. */
 .reveal-items:has(.build-test) {
   display: grid;
   grid-template-columns: minmax(0, 11fr) minmax(0, 9fr);
-  grid-template-rows: auto 1fr;
+  align-items: start;
   gap: 18px 40px;
 }
-
-.reveal-items > li:has(.test-ranking) {
-  grid-area: 1 / 1;
-}
-
-.reveal-items > li:has(.test-pairs) {
-  grid-area: 2 / 1;
-}
-
-.reveal-items > li:has(.test-framework) {
-  grid-area: 1 / 2 / 3 / 3;
-}
-
 /* The arms: one row per arm, its colour down the left edge. */
 .arms-table {
   border-collapse: collapse;
@@ -210,6 +197,10 @@
 
 .auc-result {
   font-size: 1.5rem;
+}
+
+.test-pairs .nowrap {
+  white-space: nowrap;
 }
 
 .auc-result .build-note {

@@ -90,7 +90,11 @@ const TESTING = [
     </ol>
   </div>,
   <div key="pairs" className="build-part build-test test-pairs">
-    <p>Each clicked headline against each skipped one: 2 × 6 = 12 pairs.</p>
+    <h3>Scoring the pairs</h3>
+    <p>
+      Each clicked headline against each skipped one:{' '}
+      <span className="nowrap">2 × 6 = 12 pairs</span>.
+    </p>
     <ul className="auc-tally" aria-label="Pairs">
       {EXAMPLE.filter((h) => h.clicked).map((h) => (
         <Tally key={h.headline} {...h} />
@@ -100,16 +104,6 @@ const TESTING = [
       9 of 12 pairs right = <strong>AUC 0.75</strong>
       <span className="build-note"> random 0.5 · perfect 1</span>
     </p>
-  </div>,
-  <div key="tests" className="build-part build-test test-framework">
-    <h3>The test framework</h3>
-    <ul>
-      <li>Same headlines, order and prompt in every arm: only what the agent knows changes.</li>
-      <li>Each writes a gut reaction, then a 0–100 click chance, at temperature 0.</li>
-      <li>Pre-registered before the test run: D − A AUC per reader, with a 95% CI.</li>
-      <li>Prompts tuned on a separate 30-user dev set only, then tagged frozen.</li>
-      <li>The 300-user test set run once, against popularity and random baselines.</li>
-    </ul>
   </div>,
 ]
 

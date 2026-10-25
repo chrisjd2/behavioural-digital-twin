@@ -32,7 +32,7 @@ describe('BuildSlide', () => {
     expect(rows[4]).toHaveTextContent(/Tests whether gains are personal/)
   })
 
-  it('How I tested it: one reader ranked, their pairs scored, then the test framework', async () => {
+  it('How I tested it: one reader ranked, then their pairs scored', async () => {
     const user = userEvent.setup()
     render(<BuildSlide id="testing" />)
 
@@ -63,13 +63,6 @@ describe('BuildSlide', () => {
     ])
     expect(parts('How I tested it')[1]).toHaveTextContent(/9 of 12 pairs right = AUC 0\.75/)
 
-    await user.keyboard('{ArrowRight}')
-    const framework = parts('How I tested it')[2]
-    expect(framework).toHaveTextContent(/only what the agent knows changes/)
-    expect(framework).toHaveTextContent(/gut reaction, then a 0–100 click chance/)
-    expect(framework).toHaveTextContent(/Pre-registered before the test run/)
-    expect(framework).toHaveTextContent(/30-user dev set/)
-    expect(framework).toHaveTextContent(/300-user test set run once/)
     expect(screen.queryByRole('button', { name: /show next/i })).not.toBeInTheDocument()
   })
 
