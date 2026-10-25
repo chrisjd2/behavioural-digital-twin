@@ -48,7 +48,7 @@ const CAREER = [
   { role: 'Platform developer' },
   { role: 'Senior platform developer' },
   { role: 'Technical architect', note: 'Two of the largest SFMC clients' },
-  { role: 'Product role', note: 'Our operations briefing platform' },
+  { role: 'Product innovation role', note: 'Our operations briefing platform' },
 ]
 
 const LIFE = [

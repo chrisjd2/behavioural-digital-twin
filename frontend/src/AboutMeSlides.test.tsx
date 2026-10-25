@@ -20,7 +20,7 @@ describe('About me slides', () => {
       'Platform developer',
       'Senior platform developer',
       'Technical architect',
-      'Product role',
+      'Product innovation role',
     ])
     expect(roles[0]).toHaveTextContent(/emails and journeys in SFMC/i)
     expect(roles[3]).toHaveTextContent(/two of the largest SFMC clients/i)
