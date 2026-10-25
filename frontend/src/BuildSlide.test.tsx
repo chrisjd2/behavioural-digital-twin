@@ -32,7 +32,7 @@ describe('BuildSlide', () => {
     expect(rows[4]).toHaveTextContent(/Tests whether gains are personal/)
   })
 
-  it('How I tested it: a worked AUC example, then the test framework', async () => {
+  it('How I tested it: one reader ranked, their pairs scored, then the test framework', async () => {
     const user = userEvent.setup()
     render(<BuildSlide id="testing" />)
 
@@ -40,16 +40,31 @@ describe('BuildSlide', () => {
     expect(parts('How I tested it')).toHaveLength(0)
 
     await user.keyboard('{ArrowRight}')
-    const example = parts('How I tested it')[0] as HTMLElement
-    expect(example).toHaveTextContent(/Made-up numbers/)
-    const rows = within(example).getAllByRole('row').slice(1)
-    expect(rows).toHaveLength(8)
-    expect(rows.filter((row) => row.textContent?.endsWith('Clicked'))).toHaveLength(2)
-    expect(example).toHaveTextContent(/2 × 6 = 12 pairs/)
-    expect(example).toHaveTextContent(/AUC 0\.75/)
+    expect(parts('How I tested it')[0]).toHaveTextContent(/Made-up example/)
+    const ranked = within(screen.getByRole('list', { name: 'Ranked by the agent' })).getAllByRole(
+      'listitem',
+    )
+    expect(ranked.map((li) => li.textContent)).toEqual([
+      'Mortgage rates jump70%Clicked',
+      'Celebrity divorce40%',
+      'New iPhone leak30%',
+      'Stock market dips25%',
+      'Chiefs win in overtime20%Clicked',
+      'Weather warning15%',
+      'Recipe: easy pasta10%',
+      'Royal family news5%',
+    ])
 
     await user.keyboard('{ArrowRight}')
-    const framework = parts('How I tested it')[1]
+    const pairs = within(screen.getByRole('list', { name: 'Pairs' })).getAllByRole('listitem')
+    expect(pairs.map((li) => li.textContent)).toEqual([
+      'Mortgageabove 6 of 6 skipped',
+      'Chiefsabove 3 of 6 skipped',
+    ])
+    expect(parts('How I tested it')[1]).toHaveTextContent(/9 of 12 pairs right = AUC 0\.75/)
+
+    await user.keyboard('{ArrowRight}')
+    const framework = parts('How I tested it')[2]
     expect(framework).toHaveTextContent(/only what the agent knows changes/)
     expect(framework).toHaveTextContent(/gut reaction, then a 0–100 click chance/)
     expect(framework).toHaveTextContent(/Pre-registered before the test run/)

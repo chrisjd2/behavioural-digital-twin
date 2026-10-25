@@ -40,11 +40,24 @@
   padding: 0;
 }
 
-/* The worked example and the test framework side by side. */
+/* The worked example down the left, revealed in two steps; the test framework on the right. */
 .reveal-items:has(.build-test) {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px 32px;
+  grid-template-columns: minmax(0, 11fr) minmax(0, 9fr);
+  grid-template-rows: auto 1fr;
+  gap: 18px 40px;
+}
+
+.reveal-items > li:has(.test-ranking) {
+  grid-area: 1 / 1;
+}
+
+.reveal-items > li:has(.test-pairs) {
+  grid-area: 2 / 1;
+}
+
+.reveal-items > li:has(.test-framework) {
+  grid-area: 1 / 2 / 3 / 3;
 }
 
 /* The arms: one row per arm, its colour down the left edge. */
@@ -96,35 +109,109 @@
   letter-spacing: 0.04em;
 }
 
-/* How I tested it: one reader's headlines, ranked by the agent, the clicked ones marked. */
+/* How I tested it: one reader's headlines ranked by the agent, the clicked two in ink. */
 .build-note {
   color: var(--muted);
-  margin: 0 0 8px;
+  font-size: 1rem;
 }
 
-.auc-example {
-  border-collapse: collapse;
-  width: 100%;
+.test-ranking .build-note {
   margin-bottom: 12px;
 }
 
-.auc-example :is(th, td) {
-  text-align: left;
-  padding: 4px 16px 4px 0;
-  border-bottom: 1px solid var(--rule);
+.auc-ranking {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: max-content minmax(6rem, 1fr) 3.5ch 5.5em;
+  align-items: center;
+  gap: 6px 14px;
+  --arm: var(--arm-d);
 }
 
-.auc-example thead th {
-  font-size: 1rem;
+.auc-ranking > li {
+  display: contents;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
-.auc-example tbody th {
-  font-weight: 400;
-}
-
-.auc-example tr.clicked :is(th, td) {
+.auc-ranking > li.clicked {
+  color: var(--ink);
   font-weight: 800;
+}
+
+.auc-bar {
+  height: 18px;
+  border-radius: 4px;
+  background: var(--wash);
+  overflow: hidden;
+}
+
+.auc-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--baseline);
+  opacity: 0.5;
+}
+
+.auc-ranking > li.clicked .auc-bar > span {
+  background: var(--arm);
+  opacity: 1;
+}
+
+.auc-chance {
+  text-align: right;
+}
+
+.auc-ranking > li.clicked .auc-mark {
+  justify-self: start;
+  font-size: 0.85rem;
+  color: #fff;
+  background: var(--arm);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+/* Each clicked headline's six pairs as dots, filled where it ranks above the skipped one. */
+.build-part .auc-tally {
+  list-style: none;
+  margin: 10px 0 16px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: max-content max-content 1fr;
+  align-items: center;
+  gap: 6px 14px;
+}
+
+.auc-tally > li {
+  display: contents;
+}
+
+.tally-name {
+  font-weight: 800;
+}
+
+.tally-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.tally-dots > span {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--arm-d);
+  box-sizing: border-box;
+}
+
+.tally-dots > span.win {
+  background: var(--arm-d);
+}
+
+.auc-result {
+  font-size: 1.5rem;
+}
+
+.auc-result .build-note {
+  margin-left: 12px;
 }

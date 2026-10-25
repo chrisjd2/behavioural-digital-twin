@@ -50,34 +50,58 @@ const EXAMPLE = [
   { headline: 'Royal family news', chance: 5, clicked: false },
 ]
 
-const TESTING = [
-  <div key="example" className="build-part build-test">
-    <h3>Scoring one reader</h3>
-    <p className="build-note">Made-up numbers; each reader gets 8 headlines, up to 2 clicked.</p>
-    <table className="auc-example">
-      <thead>
-        <tr>
-          <th scope="col">Headline</th>
-          <th scope="col">Click chance</th>
-          <th scope="col">Really clicked?</th>
-        </tr>
-      </thead>
-      <tbody>
-        {EXAMPLE.map(({ headline, chance, clicked }) => (
-          <tr key={headline} className={clicked ? 'clicked' : undefined}>
-            <th scope="row">{headline}</th>
-            <td>{chance}</td>
-            <td>{clicked ? 'Clicked' : 'Skipped'}</td>
-          </tr>
+const SKIPPED = EXAMPLE.filter((h) => !h.clicked)
+
+/** One clicked headline's pairs: a dot per skipped headline, filled where it ranks higher. */
+function Tally({ headline, chance }: { headline: string; chance: number }) {
+  const wins = SKIPPED.filter((s) => s.chance < chance).length
+  return (
+    <li>
+      <span className="tally-name">{headline.split(' ')[0]}</span>
+      <span className="tally-dots" aria-hidden="true">
+        {SKIPPED.map((s) => (
+          <span key={s.headline} className={s.chance < chance ? 'win' : undefined} />
         ))}
-      </tbody>
-    </table>
-    <p>
-      Every clicked headline against every skipped one: 2 × 6 = 12 pairs. Mortgage beats all 6,
-      Chiefs beats 3, so 9 of 12 are right: <strong>AUC 0.75</strong>. Random ≈ 0.5, perfect = 1.
+      </span>
+      <span>
+        above {wins} of {SKIPPED.length} skipped
+      </span>
+    </li>
+  )
+}
+
+const TESTING = [
+  <div key="ranking" className="build-part build-test test-ranking">
+    <h3>Scoring one reader</h3>
+    <p className="build-note">
+      Made-up example: the agent scores 8 headlines; the reader clicked 2.
+    </p>
+    <ol className="auc-ranking" aria-label="Ranked by the agent">
+      {EXAMPLE.map(({ headline, chance, clicked }) => (
+        <li key={headline} className={clicked ? 'clicked' : undefined}>
+          <span className="auc-headline">{headline}</span>
+          <span className="auc-bar" aria-hidden="true">
+            <span style={{ width: `${chance}%` }} />
+          </span>
+          <span className="auc-chance">{chance}%</span>
+          <span className="auc-mark">{clicked ? 'Clicked' : ''}</span>
+        </li>
+      ))}
+    </ol>
+  </div>,
+  <div key="pairs" className="build-part build-test test-pairs">
+    <p>Each clicked headline against each skipped one: 2 × 6 = 12 pairs.</p>
+    <ul className="auc-tally" aria-label="Pairs">
+      {EXAMPLE.filter((h) => h.clicked).map((h) => (
+        <Tally key={h.headline} {...h} />
+      ))}
+    </ul>
+    <p className="auc-result">
+      9 of 12 pairs right = <strong>AUC 0.75</strong>
+      <span className="build-note"> random 0.5 · perfect 1</span>
     </p>
   </div>,
-  <div key="tests" className="build-part build-test">
+  <div key="tests" className="build-part build-test test-framework">
     <h3>The test framework</h3>
     <ul>
       <li>Same headlines, order and prompt in every arm: only what the agent knows changes.</li>
