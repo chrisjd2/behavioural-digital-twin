@@ -70,8 +70,7 @@ const GAP: ReactNode[] = [
   </>,
   <>
     <strong>My angle:</strong> combine what the research found, one ingredient at a time, on the
-    same headlines and real clicks. Off the shelf, no fine-tuning; every arm writes a gut reaction,
-    then its click chance.
+    same headlines and real clicks. To find what actually improves agent predictions.
     <ol className="learn-ladder" aria-label="Arms">
       <li>
         <strong>A</strong> Plain LLM
