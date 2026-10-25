@@ -47,7 +47,7 @@ const CAREER = [
   { role: 'Application consultant', note: 'Emails and journeys in SFMC Engagement' },
   { role: 'Platform developer' },
   { role: 'Senior platform developer' },
-  { role: 'Technical architect', note: 'Two large SFMC clients' },
+  { role: 'Technical architect', note: 'Two of the largest SFMC clients' },
   { role: 'Product role', note: 'Our operations briefing platform' },
 ]
 

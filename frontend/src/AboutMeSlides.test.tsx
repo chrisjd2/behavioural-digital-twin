@@ -16,7 +16,7 @@ describe('About me slides', () => {
       'Product role',
     ])
     expect(roles[0]).toHaveTextContent(/emails and journeys in SFMC/i)
-    expect(roles[3]).toHaveTextContent(/two large SFMC clients/i)
+    expect(roles[3]).toHaveTextContent(/two of the largest SFMC clients/i)
     expect(roles[4]).toHaveTextContent(/operations briefing platform/i)
     expect(screen.queryByRole('button', { name: /show next/i })).not.toBeInTheDocument()
   })
