@@ -42,7 +42,7 @@
 
 /* The primary outcome: the verdict, the two arms it compares, their difference, then the rule. */
 .primary-outcome {
-  border-left: 10px solid var(--arm-d);
+  border-left: 10px solid var(--ink);
   padding: 4px 0 4px 24px;
 }
 
@@ -129,6 +129,10 @@
   font-weight: 800;
   line-height: 1.1;
   color: var(--ink);
+}
+
+.plain-outcome dd.arm-d {
+  border-left-color: var(--ink);
 }
 
 .plain-outcome dd.arm-d .plain-value {
