@@ -1,4 +1,4 @@
-/** Screen 8, What I built (ADR-0012): the pipeline, two plan changes, and who did what. */
+/** Screen 8, What I built (ADR-0012): the pipeline and two plan changes. */
 import { ARMS, BASELINES, CONTROL, armClass } from './arms'
 import { Reveal, Slide } from './slides'
 import './BuildSlide.css'
@@ -68,20 +68,6 @@ const PARTS = [
       <li>A power check raised the test set from 200 to 300 users.</li>
       <li>Prompts tuned on a separate 30-user dev set only.</li>
     </ul>
-  </div>,
-  <div key="who" className="build-part build-who">
-    <h3>Who did what</h3>
-    <dl>
-      <dt>Me</dt>
-      <dd>The question, the 5-arm design, pre-registration, judging the results</dd>
-      <dt>Claude</dt>
-      <dd>
-        Research search, writing the code (Claude Code, from issues I wrote), reviews against my
-        rules
-      </dd>
-      <dt>Checked by hand</dt>
-      <dd>The hook example, identity-screen flags, final numbers</dd>
-    </dl>
   </div>,
 ]
 

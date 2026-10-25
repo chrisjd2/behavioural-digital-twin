@@ -18,7 +18,7 @@ The panel format changed from ADR-0008's 10-minute in-room talk. It is now **15 
     | --- | ----------------------------------------------------------------------------------------------------- | -------- |
     | 1–3 | ★ About me (title only), Career (the roles, all at once), Learn · Tinker · Teach in my life           | About me |
     | 4–7 | ★ The brief, Back to MiroFish, Research path, The gap and my angle                                    | Learn    |
-    | 8   | ★ What I built (incl. "Who did what": the honest AI-use statement)                                    | Tinker   |
+    | 8   | ★ What I built                                                                                        | Tinker   |
     | 9   | Population                                                                                            | Tinker   |
     | 10  | Hook                                                                                                  | Teach    |
     | 11  | Simulation replay                                                                                     | Teach    |

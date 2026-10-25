@@ -9,7 +9,7 @@ function parts() {
 }
 
 describe('BuildSlide', () => {
-  it('reveals the four parts in order', async () => {
+  it('reveals the three parts in order', async () => {
     const user = userEvent.setup()
     render(<BuildSlide />)
 
@@ -27,12 +27,7 @@ describe('BuildSlide', () => {
     await user.keyboard('{ArrowRight}')
     expect(parts()[2]).toHaveTextContent(/200 to 300 users/)
     expect(parts()[2]).toHaveTextContent(/30-user dev set/)
-
-    await user.keyboard('{ArrowRight}')
-    const who = within(parts()[3] as HTMLElement)
-    expect(who.getByText('Me')).toBeInTheDocument()
-    expect(who.getByText('Claude')).toBeInTheDocument()
-    expect(who.getByText('Checked by hand')).toBeInTheDocument()
+    expect(screen.queryByText('Who did what')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /show next/i })).not.toBeInTheDocument()
   })
 

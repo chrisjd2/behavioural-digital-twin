@@ -59,29 +59,13 @@
   padding-left: 1.2em;
 }
 
-.build-who dl {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 8px 24px;
-  margin: 0;
-}
-
-.build-who dt {
-  font-weight: 800;
-}
-
-.build-who dd {
-  margin: 0;
-}
-
-/* The diagram across the top, the two plan-met-reality parts side by side, then who did what. */
+/* The diagram across the top, the two plan-met-reality parts side by side under it. */
 .reveal-items:has(.build-strip) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px 32px;
 }
 
-.reveal-items > li:has(.build-strip),
-.reveal-items > li:has(.build-who) {
+.reveal-items > li:has(.build-strip) {
   grid-column: 1 / -1;
 }
