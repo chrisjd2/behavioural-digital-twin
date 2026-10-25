@@ -45,7 +45,8 @@ export function useDeckStart(): DeckStart {
 /** Chris tells the story; the slide only names the stops. */
 const CAREER = [
   { role: 'Application consultant', note: 'Emails and journeys in SFMC Engagement' },
-  { role: 'Developer' },
+  { role: 'Platform developer' },
+  { role: 'Senior platform developer' },
   { role: 'Technical architect', note: 'Two large SFMC clients' },
   { role: 'Product role', note: 'Our operations briefing platform' },
 ]

@@ -3,20 +3,21 @@ import { describe, expect, it } from 'vitest'
 import AboutMeSlide from './AboutMeSlides'
 
 describe('About me slides', () => {
-  it('shows the career as four roles at once, each with its note', () => {
+  it('shows the career as five roles at once, each with its note', () => {
     render(<AboutMeSlide id="career" />)
 
     expect(screen.getByRole('heading', { level: 2, name: 'Career' })).toBeInTheDocument()
     const roles = within(screen.getByRole('list', { name: 'Career' })).getAllByRole('listitem')
     expect(roles.map((li) => li.querySelector('strong')?.textContent)).toEqual([
       'Application consultant',
-      'Developer',
+      'Platform developer',
+      'Senior platform developer',
       'Technical architect',
       'Product role',
     ])
     expect(roles[0]).toHaveTextContent(/emails and journeys in SFMC/i)
-    expect(roles[2]).toHaveTextContent(/two large SFMC clients/i)
-    expect(roles[3]).toHaveTextContent(/operations briefing platform/i)
+    expect(roles[3]).toHaveTextContent(/two large SFMC clients/i)
+    expect(roles[4]).toHaveTextContent(/operations briefing platform/i)
     expect(screen.queryByRole('button', { name: /show next/i })).not.toBeInTheDocument()
   })
 
