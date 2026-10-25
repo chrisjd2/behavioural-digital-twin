@@ -69,23 +69,20 @@ function show(id: ScreenId, runs: Runs, urls: Record<string, Reply> = {}, mockLl
 }
 
 describe('Takeaways (screen 15)', () => {
-  it('reveals the four takeaways one by one, then the callback line', async () => {
+  it('reveals the four takeaways one by one', async () => {
     const user = show('takeaways', ready(runFixture))
 
     expect(screen.queryAllByRole('listitem')).toHaveLength(0)
-    for (let i = 0; i < 5; i++) await user.keyboard('{ArrowRight}')
+    for (let i = 0; i < 4; i++) await user.keyboard('{ArrowRight}')
 
     const items = screen.getAllByRole('listitem').map((li) => li.textContent)
-    expect(items).toHaveLength(5)
+    expect(items).toHaveLength(4)
     expect(items[0]).toMatch(/^Grounding beats inventing/)
     expect(items[1]).toMatch(/^It.s personal/)
     expect(items[2]).toMatch(
       /^Don.t trust its probabilities: the model knows which content a person prefers, but not how likely they really are to act on it\./,
     )
     expect(items[3]).toMatch(/consented first-party data.*Data 360.*validate before you trust/)
-    expect(items[4]).toBe(
-      'A twin built from my clicks would know what I read. It wouldn’t know me.',
-    )
     expect(screen.queryByRole('button', { name: /show next/i })).not.toBeInTheDocument()
   })
 })

@@ -28,9 +28,6 @@ const TAKEAWAYS: ReactNode[] = [
     <em>the engagement data in a unified profile, e.g. Data 360</em>), and validate before you
     trust.
   </>,
-  <q className="callback">
-    A twin built from my clicks would know what I read. It wouldn’t know me.
-  </q>,
 ]
 
 export function TeachSlide({

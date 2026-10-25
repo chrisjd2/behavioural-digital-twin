@@ -90,11 +90,6 @@
   font-weight: 700;
 }
 
-.reveal-items li:has(.callback) {
-  border-left-color: var(--rule);
-  font-style: italic;
-}
-
 .media-missing-mark {
   width: 48px;
   height: 36px;
