@@ -123,7 +123,6 @@ function LearnBody({ id }: { id: ScreenId }) {
             />
             <div className="learn-media learn-media-small">
               <PrivateMedia name="paper-stanford.png" caption="Stanford paper, first page" />
-              <PrivateMedia name="paper-maiorano.png" caption="Maiorano paper, first page" />
               <PrivateMedia name="claude-chat.png" caption="Searching with Claude" />
             </div>
           </div>

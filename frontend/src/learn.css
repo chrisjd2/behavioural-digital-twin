@@ -36,10 +36,9 @@
   object-position: top;
 }
 
-/* Three screenshots stacked beside the papers: each a third of what is left, placeholders too. */
+/* Beside the papers, under a subheading, with the footnote below: a little shorter. */
 .learn-media-small .media {
-  max-height: 17cqh;
-  min-height: 0;
+  max-height: 28cqh;
 }
 
 .learn-change {

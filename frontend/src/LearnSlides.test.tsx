@@ -93,12 +93,11 @@ describe('Learn slides (screens 4-7)', () => {
     expect(screen.getByText(/I read every one/)).toBeInTheDocument()
   })
 
-  it('Research path: three screenshot slots fall back to placeholders', () => {
+  it('Research path: two screenshot slots fall back to placeholders', () => {
     renderScreen('research')
     const images = screen.getAllByRole('img')
     expect(images.map((i) => i.getAttribute('src'))).toEqual([
       '/private/paper-stanford.png',
-      '/private/paper-maiorano.png',
       '/private/claude-chat.png',
     ])
     for (const img of images) fireEvent.error(img)
