@@ -114,7 +114,7 @@
   grid-template-columns: max-content minmax(6rem, 1fr) 3.5ch 5.5em;
   align-items: center;
   gap: 6px 14px;
-  --arm: var(--arm-d);
+  --arm: var(--ink);
 }
 
 .auc-ranking > li {
@@ -187,12 +187,12 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  border: 2px solid var(--arm-d);
+  border: 2px solid var(--ink);
   box-sizing: border-box;
 }
 
 .tally-dots > span.win {
-  background: var(--arm-d);
+  background: var(--ink);
 }
 
 .auc-result {
