@@ -12,7 +12,7 @@ type Load =
   | { state: 'error'; message: string }
   | { state: 'ready'; example: HookExample }
 
-const QUESTION = 'Can an AI impersonate a customer?'
+const QUESTION = 'Can an AI predict which headlines you’ll click?'
 
 const PROMPTS = {
   guess: 'Which headline did this reader click? Vote 1 or 2.',

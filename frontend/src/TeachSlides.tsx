@@ -132,7 +132,7 @@ function Thanks({ runs, mockLlm }: { runs: Runs; mockLlm: boolean }) {
   const [interview, setInterview] = useState(false)
   return (
     <>
-      <p className="thanks-question">Can an AI impersonate a customer?</p>
+      <p className="thanks-question">Can an AI predict which headlines you’ll click?</p>
       <p className="thanks-questions">Questions?</p>
       <WithRun runs={runs}>
         {(run) =>

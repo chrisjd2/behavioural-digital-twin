@@ -147,7 +147,7 @@ describe('Thanks (screen 15)', () => {
   it('asks the question again and invites questions', () => {
     show('thanks', ready(runFixture))
 
-    expect(screen.getByText('Can an AI impersonate a customer?')).toBeInTheDocument()
+    expect(screen.getByText('Can an AI predict which headlines you’ll click?')).toBeInTheDocument()
     expect(screen.getByText('Questions?')).toBeInTheDocument()
   })
 

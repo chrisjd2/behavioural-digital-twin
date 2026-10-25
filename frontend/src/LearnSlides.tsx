@@ -69,12 +69,12 @@ const GAP: ReactNode[] = [
     2026).
   </>,
   <>
-    <strong>My angle:</strong> on the same headlines and real clicks, does an agent grounded only in{' '}
-    <strong>behaviour</strong> (what someone opened, clicked, read) beat a plain LLM and an invented
-    persona? And is the gain <strong>personal</strong>? (Test that with a wrong-twin control.) Off
-    the shelf, no fine-tuning.
+    <strong>My angle:</strong> give an off-the-shelf LLM only a reader&rsquo;s{' '}
+    <strong>past clicks</strong>. Does it predict which new headlines they click better than a plain
+    LLM or an invented persona? And is the gain <strong>personal</strong>? A wrong-twin control
+    (someone else&rsquo;s clicks) tests that. No fine-tuning.
   </>,
-  <p className="learn-question">Can an AI impersonate a customer?</p>,
+  <p className="learn-question">Can an AI predict which headlines you’ll click?</p>,
 ]
 
 export default function LearnSlide({ screen }: { screen: Screen }) {

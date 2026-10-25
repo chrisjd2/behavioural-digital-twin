@@ -110,6 +110,6 @@ describe('Learn slides (screens 4-7)', () => {
     await revealAll(user)
     expect(screen.getByText(/Large Behavior Model, 2026/)).toBeInTheDocument()
     expect(screen.getByText(/wrong-twin control/)).toBeInTheDocument()
-    expect(screen.getByText('Can an AI impersonate a customer?')).toBeInTheDocument()
+    expect(screen.getByText('Can an AI predict which headlines you’ll click?')).toBeInTheDocument()
   })
 })

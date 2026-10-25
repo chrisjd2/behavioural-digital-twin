@@ -1,6 +1,6 @@
-# Twin Lab: can an AI impersonate a customer?
+# Twin Lab: can an AI predict which headlines you'll click?
 
-If a brand knows what a customer has opened, clicked and read before, can an LLM agent *impersonate* that customer and predict how they'll react to new content? And does grounding the agent in real behaviour beat invented personas?
+If a brand knows which headlines a reader clicked before, can an off-the-shelf LLM agent predict which new ones they'll click? And does grounding the agent in real behaviour beat invented personas?
 
 Twin Lab tests this on real click data from the Microsoft News Dataset (MIND). It compares a plain LLM, an invented persona, two "digital twins" grounded in each reader's real click history, and a wrong-twin control, against non-AI baselines.
 

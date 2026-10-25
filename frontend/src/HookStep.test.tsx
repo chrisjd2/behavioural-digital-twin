@@ -23,7 +23,7 @@ describe('Step 0 Hook', () => {
   it('opens on the question, with no headlines yet', async () => {
     setup()
 
-    expect(screen.getByText('Can an AI impersonate a customer?')).toBeInTheDocument()
+    expect(screen.getByText('Can an AI predict which headlines you’ll click?')).toBeInTheDocument()
     expect(screen.getByText(LABEL)).toBeInTheDocument()
     expect(screen.queryByText('Pharmacy recall widens')).not.toBeInTheDocument()
   })
@@ -100,7 +100,7 @@ describe('Step 0 Hook', () => {
 
     await user.keyboard('{Control>}{ArrowRight}{/Control}')
 
-    expect(screen.getByText('Can an AI impersonate a customer?')).toBeInTheDocument()
+    expect(screen.getByText('Can an AI predict which headlines you’ll click?')).toBeInTheDocument()
   })
 
   it('leaves keys it has no stage for to the presenter deck', async () => {
