@@ -1,4 +1,4 @@
-/** Part 2's Learn beat (ADR-0012, screens 5-8): how the idea was picked and what was read. */
+/** Part 2's Learn beat (ADR-0012, screens 4-7): how the idea was picked and what was read. */
 import type { ReactNode } from 'react'
 import type { Screen, ScreenId } from './deck'
 import { PrivateMedia, Reveal, Slide } from './slides'

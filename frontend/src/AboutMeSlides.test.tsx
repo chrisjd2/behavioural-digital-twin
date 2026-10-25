@@ -53,14 +53,4 @@ describe('About me slides', () => {
     expect(placeholders).toHaveLength(3)
     for (const placeholder of placeholders) expect(placeholder).not.toHaveAttribute('src')
   })
-
-  it('hands off to Part 2', () => {
-    render(<AboutMeSlide id="handoff" />)
-    expect(
-      screen.getByRole('heading', {
-        level: 2,
-        name: 'So when I got this brief, I did what I always do: learn, tinker, teach.',
-      }),
-    ).toBeInTheDocument()
-  })
 })

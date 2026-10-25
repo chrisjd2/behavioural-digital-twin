@@ -1,4 +1,4 @@
-/** Part 1 of the talk, About me (ADR-0012): screens 1-4, left out of the deck in DEMO_MODE. */
+/** Part 1 of the talk, About me (ADR-0012): screens 1-3, left out of the deck in DEMO_MODE. */
 import { useEffect, useId, useState } from 'react'
 import { fetchStatus } from './api/status'
 import { SCREENS, type ScreenId } from './deck'
@@ -8,7 +8,7 @@ import './aboutMe.css'
 const KICKER = 'About me'
 
 /** The screens this file draws; any other About me screen falls back to the deck's placeholder. */
-const ABOUT_ME_IDS = ['intro', 'career', 'life', 'handoff'] as const
+const ABOUT_ME_IDS = ['intro', 'career', 'life'] as const
 export type AboutMeId = (typeof ABOUT_ME_IDS)[number]
 
 export function isAboutMe(id: ScreenId): id is AboutMeId {
@@ -106,13 +106,6 @@ export default function AboutMeSlide({ id }: { id: AboutMeId }) {
             ))}
           </div>
         </Slide>
-      )
-    case 'handoff':
-      return (
-        <Slide
-          kicker={KICKER}
-          title="So when I got this brief, I did what I always do: learn, tinker, teach."
-        />
       )
   }
 }

@@ -8,7 +8,6 @@ export type ScreenId =
   | 'intro'
   | 'career'
   | 'life'
-  | 'handoff'
   | 'brief'
   | 'mirofish'
   | 'research'
@@ -28,7 +27,6 @@ export const SCREENS: Screen[] = [
   { id: 'intro', section: 'About me', title: 'About me' },
   { id: 'career', section: 'About me', title: 'Career' },
   { id: 'life', section: 'About me', title: 'Learn · Tinker · Teach in my life' },
-  { id: 'handoff', section: 'About me', title: 'Hand-off' },
   { id: 'brief', section: 'Learn', title: 'The brief' },
   { id: 'mirofish', section: 'Learn', title: 'Back to MiroFish' },
   { id: 'research', section: 'Learn', title: 'Research path' },
