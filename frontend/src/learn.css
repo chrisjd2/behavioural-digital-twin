@@ -1,6 +1,6 @@
 /* Learn slides (screens 4-7): sized for a 1920×1080 shared screen. */
 .learn-quote {
-  margin: 0;
+  margin: 0 0 48px;
   font-size: 2.4rem;
   font-weight: 600;
   line-height: 1.3;
