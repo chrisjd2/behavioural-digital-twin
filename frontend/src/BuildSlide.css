@@ -1,4 +1,4 @@
-/* Screens 8-9, What I built and Plan met reality: sized for a 1920×1080 shared screen. */
+/* Screens 8-10, What I built, The arms and Plan met reality: sized for a 1920×1080 shared screen. */
 .build-strip {
   display: flex;
   align-items: center;
@@ -75,4 +75,53 @@
 
 .reveal-items > li:has(.build-strip) {
   grid-column: 1 / -1;
+}
+
+/* The arms: one row per arm, its colour down the left edge. */
+.arms-table {
+  border-collapse: collapse;
+  font-size: 1.3rem;
+  line-height: 1.35;
+}
+
+.arms-table :is(th, td) {
+  text-align: left;
+  vertical-align: top;
+  padding: 10px 24px 10px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.arms-table thead th {
+  font-size: 1rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.arms-table tbody th[scope='row'] {
+  white-space: nowrap;
+  border-left: 6px solid var(--arm);
+  padding-left: 14px;
+}
+
+.arms-table .arm-letter {
+  display: inline-grid;
+  vertical-align: middle;
+  font-size: 1.1rem;
+  width: 1.5em;
+  height: 1.5em;
+  border-radius: 6px;
+  margin-right: 10px;
+}
+
+.arms-table .control-tag {
+  margin-left: 10px;
+}
+
+.arms-table .arms-group {
+  padding-top: 24px;
+  color: var(--muted);
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }

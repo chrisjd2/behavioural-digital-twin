@@ -1,4 +1,4 @@
-/** Screens 14-16, which close the Teach beat (ADR-0012). */
+/** Screens 15-17, which close the Teach beat (ADR-0012). */
 import { useEffect, useState, type ReactNode } from 'react'
 import { fetchReport, type Calibration } from './api/report'
 import { runKind, type RunSummary } from './api/runs'
@@ -75,7 +75,7 @@ type Load =
   | { state: 'error'; message: string }
   | { state: 'ready'; calibration: Calibration | null }
 
-/** Screen 14: asked verbally; the numbers are arm D's calibration in the default run. */
+/** Screen 15: asked verbally; the numbers are arm D's calibration in the default run. */
 function CheckIn({ run }: { run: RunSummary }) {
   const [load, setLoad] = useState<Load>({ state: 'loading' })
 
@@ -127,7 +127,7 @@ function CheckIn({ run }: { run: RunSummary }) {
   )
 }
 
-/** Screen 16: the question again, then the Interview as a Q&A bonus (ADR-0008). */
+/** Screen 17: the question again, then the Interview as a Q&A bonus (ADR-0008). */
 function Thanks({ runs, mockLlm }: { runs: Runs; mockLlm: boolean }) {
   const [interview, setInterview] = useState(false)
   return (

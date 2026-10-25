@@ -1,5 +1,5 @@
-/** Screens 8-9 (ADR-0012): What I built (the system and its test framework), then Plan met reality. */
-import { ARMS, BASELINES, CONTROL, armClass } from './arms'
+/** Screens 8-10 (ADR-0012): What I built, The arms, then Plan met reality. */
+import { ARMS, BASELINES, CONTROL, armClass, type ArmCard } from './arms'
 import { Reveal, Slide } from './slides'
 import './BuildSlide.css'
 
@@ -69,6 +69,50 @@ const BUILT = [
   </div>,
 ]
 
+function ArmRow({ arm }: { arm: ArmCard }) {
+  return (
+    <tr className={armClass(arm.id)}>
+      <th scope="row">
+        {arm.id.length === 1 && <span className="arm-letter">{arm.id.toUpperCase()}</span>}
+        {arm.name}
+        {arm === CONTROL && <span className="control-tag">control</span>}
+      </th>
+      <td>{arm.knows}</td>
+      <td>{arm.description}</td>
+    </tr>
+  )
+}
+
+/** Every arm in plain language: what its agent is given, and why it is there. */
+function ArmsTable() {
+  return (
+    <table className="arms-table">
+      <thead>
+        <tr>
+          <th scope="col">Arm</th>
+          <th scope="col">The agent knows</th>
+          <th scope="col">How, and why</th>
+        </tr>
+      </thead>
+      <tbody>
+        {[...ARMS, CONTROL].map((arm) => (
+          <ArmRow key={arm.id} arm={arm} />
+        ))}
+      </tbody>
+      <tbody>
+        <tr>
+          <th scope="rowgroup" colSpan={3} className="arms-group">
+            Baselines, no AI
+          </th>
+        </tr>
+        {BASELINES.map((baseline) => (
+          <ArmRow key={baseline.id} arm={baseline} />
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
 const CHANGES = [
   <div key="e" className="build-part">
     <h3>Arm E: the wrong twin</h3>
@@ -87,7 +131,14 @@ const CHANGES = [
   </div>,
 ]
 
-export default function BuildSlide({ id }: { id: 'build' | 'changes' }) {
+export default function BuildSlide({ id }: { id: 'build' | 'arms' | 'changes' }) {
+  if (id === 'arms') {
+    return (
+      <Slide kicker="Tinker" title="The arms">
+        <ArmsTable />
+      </Slide>
+    )
+  }
   return id === 'build' ? (
     <Slide kicker="Tinker" title="What I built">
       <Reveal label="What I built" items={BUILT} />

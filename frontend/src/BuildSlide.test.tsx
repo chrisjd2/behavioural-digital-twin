@@ -50,6 +50,25 @@ describe('BuildSlide', () => {
     ])
   })
 
+  it('The arms: what each agent knows, with the baselines apart', () => {
+    render(<BuildSlide id="arms" />)
+
+    expect(screen.getByRole('heading', { level: 2, name: 'The arms' })).toBeInTheDocument()
+    const rows = screen.getAllByRole('row').slice(1)
+    expect(rows.map((row) => row.querySelector('th')?.textContent)).toEqual([
+      'APlain LLM',
+      'BInvented persona',
+      'CTwin + memory',
+      'DTwin + profile + memory',
+      'EWrong twincontrol',
+      'Baselines, no AI',
+      'Popularity',
+      'Random',
+    ])
+    expect(rows[3]).toHaveTextContent('Past clicks and a profile of them')
+    expect(rows[4]).toHaveTextContent(/Tests whether gains are personal/)
+  })
+
   it('Plan met reality: the wrong twin, then the bigger test set', async () => {
     const user = userEvent.setup()
     render(<BuildSlide id="changes" />)

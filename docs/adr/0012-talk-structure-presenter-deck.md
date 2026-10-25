@@ -19,20 +19,21 @@ The panel format changed from ADR-0008's 10-minute in-room talk. It is now **15 
     | 1–3 | ★ About me (title only), Career (the roles, all at once), Learn · Tinker · Teach in my life           | About me |
     | 4–7 | ★ The brief, Back to MiroFish, Research path, The gap and my angle                                    | Learn    |
     | 8   | ★ What I built                                                                                        | Tinker   |
-    | 9   | ★ Plan met reality (arm E, the bigger test set)                                                       | Tinker   |
-    | 10  | Population                                                                                            | Tinker   |
-    | 11  | Hook                                                                                                  | Teach    |
-    | 12  | Simulation replay                                                                                     | Teach    |
-    | 13  | Report                                                                                                | Teach    |
-    | 14  | ★ Check-in question (calibration)                                                                     | Teach    |
-    | 15  | ★ Takeaways                                                                                           | Teach    |
-    | 16  | ★ Thanks / questions (Interview as a Q&A bonus)                                                       | Teach    |
+    | 9   | ★ The arms (what each agent knows, and why)                                                           | Tinker   |
+    | 10  | ★ Plan met reality (arm E, the bigger test set)                                                       | Tinker   |
+    | 11  | Population                                                                                            | Tinker   |
+    | 12  | Hook                                                                                                  | Teach    |
+    | 13  | Simulation replay                                                                                     | Teach    |
+    | 14  | Report                                                                                                | Teach    |
+    | 15  | ★ Check-in question (calibration)                                                                     | Teach    |
+    | 16  | ★ Takeaways                                                                                           | Teach    |
+    | 17  | ★ Thanks / questions (Interview as a Q&A bonus)                                                       | Teach    |
 
 - **About me is mostly said, not shown** (#66). Chris is on camera, so the deck opens on a plain "About me" title, with no name, photo or "Who I am" list; Chris says who they are over it. No hand-off slide: Chris says the "learn, tinker, teach" line on the way into Learn.
 
 - **Teach is woven in.** The Hook moves from the opening into Teach: Learn's MiroFish question opens Part 2 instead.
 - **Audience interaction is verbal.** The Hook vote and the check-in question have no on-screen tally or phone voting.
-- **Seed is out of the talk.** Screen 8 explains the arms. The Interview is a Q&A bonus (screen 16), as in ADR-0008.
+- **Seed is out of the talk.** Screen 9 explains the arms. The Interview is a Q&A bonus (screen 17), as in ADR-0008.
 - **Navigation:**
     - Right/left arrows and PageDown/PageUp (presentation clickers) move between screens.
     - A screen with its own stages (the Hook, click-to-reveal slides, the Report's pages) takes the key first, and the deck moves only when nothing on screen used it.
