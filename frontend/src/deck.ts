@@ -13,6 +13,7 @@ export type ScreenId =
   | 'research'
   | 'gap'
   | 'build'
+  | 'changes'
   | 'population'
   | 'hook'
   | 'simulation'
@@ -32,6 +33,7 @@ export const SCREENS: Screen[] = [
   { id: 'research', section: 'Learn', title: 'Research path' },
   { id: 'gap', section: 'Learn', title: 'The gap and my angle' },
   { id: 'build', section: 'Tinker', title: 'What I built' },
+  { id: 'changes', section: 'Tinker', title: 'Plan met reality' },
   { id: 'population', section: 'Tinker', title: 'Population' },
   { id: 'hook', section: 'Teach', title: 'Hook' },
   { id: 'simulation', section: 'Teach', title: 'Simulation' },

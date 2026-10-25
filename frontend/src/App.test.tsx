@@ -39,7 +39,7 @@ type User = ReturnType<typeof userEvent.setup>
 
 /** One press of the next key; on the Hook, past its title, wait for the example first. */
 async function next(user: User) {
-  if (counter() === '10 / 15' && !screen.queryByText(/you be the twin/i))
+  if (counter() === '11 / 16' && !screen.queryByText(/you be the twin/i))
     await screen.findByText(hookFixture.headlines[0].title ?? '')
   await user.keyboard('{PageDown}')
 }
@@ -52,8 +52,8 @@ async function goTo(user: User, id: string) {
       name: SCREENS[index].section,
     }),
   )
-  for (let press = 0; press < 20 && counter() !== `${index + 1} / 15`; press++) await next(user)
-  expect(counter()).toBe(`${index + 1} / 15`)
+  for (let press = 0; press < 20 && counter() !== `${index + 1} / 16`; press++) await next(user)
+  expect(counter()).toBe(`${index + 1} / 16`)
 }
 
 describe('Presenter deck (ADR-0012)', () => {
@@ -61,7 +61,7 @@ describe('Presenter deck (ADR-0012)', () => {
     setup()
 
     expect(await screen.findByRole('heading', { level: 2, name: 'About me' })).toBeInTheDocument()
-    expect(counter()).toBe('1 / 15')
+    expect(counter()).toBe('1 / 16')
     const sections = screen.getByRole('navigation', { name: /sections/i })
     expect(within(sections).getByRole('button', { name: 'About me' })).toHaveAttribute(
       'aria-current',
@@ -69,16 +69,16 @@ describe('Presenter deck (ADR-0012)', () => {
     )
   })
 
-  it('walks all 15 screens in order with the next key, stepping through the Hook on the way', async () => {
+  it('walks all 16 screens in order with the next key, stepping through the Hook on the way', async () => {
     const user = setup()
     const seen = [counter()]
 
-    for (let press = 0; press < 100 && counter() !== '15 / 15'; press++) {
+    for (let press = 0; press < 100 && counter() !== '16 / 16'; press++) {
       await next(user)
       if (counter() !== seen.at(-1)) seen.push(counter())
     }
 
-    expect(seen).toEqual(SCREENS.map((_, i) => `${i + 1} / 15`))
+    expect(seen).toEqual(SCREENS.map((_, i) => `${i + 1} / 16`))
     expect(screen.getByRole('heading', { level: 2, name: 'Thanks' })).toBeInTheDocument()
   })
 
@@ -86,9 +86,9 @@ describe('Presenter deck (ADR-0012)', () => {
     const user = setup()
 
     await user.keyboard('{ArrowRight}{ArrowRight}{ArrowLeft}')
-    expect(counter()).toBe('2 / 15')
+    expect(counter()).toBe('2 / 16')
     await user.keyboard('{PageUp}{PageUp}')
-    expect(counter()).toBe('1 / 15')
+    expect(counter()).toBe('1 / 16')
   })
 
   it('marks the current section as the deck moves', async () => {
@@ -168,12 +168,12 @@ describe('Presenter deck (ADR-0012)', () => {
     const tabs = await screen.findByRole('tablist', { name: /report pages/i })
     await user.keyboard('{PageDown}')
     expect(within(tabs).getByRole('tab', { name: 'AUC' })).toHaveAttribute('aria-selected', 'true')
-    expect(counter()).toBe('12 / 15')
+    expect(counter()).toBe('13 / 16')
     // MRR, nDCG@5, Hit@1, paired differences, diagnostics, then the next screen.
     await user.keyboard('{PageDown}{PageDown}{PageDown}{PageDown}{PageDown}')
-    expect(counter()).toBe('12 / 15')
+    expect(counter()).toBe('13 / 16')
     await user.keyboard('{PageDown}')
-    expect(counter()).toBe('13 / 15')
+    expect(counter()).toBe('14 / 16')
   })
 
   it('says when the run on screen is not a reported result', async () => {
@@ -248,10 +248,10 @@ describe('Presenter deck (ADR-0012)', () => {
 
     await goTo(user, 'build')
     for (let press = 0; press < 3; press++) await next(user)
-    expect(counter()).toBe('8 / 15')
-    expect(screen.getByText(/200 to 300 users/)).toBeInTheDocument()
+    expect(counter()).toBe('8 / 16')
+    expect(screen.getByText(/30-user dev set/)).toBeInTheDocument()
     await next(user)
-    expect(counter()).toBe('9 / 15')
+    expect(counter()).toBe('9 / 16')
   })
 
   it('switches to the free stepper and back to the same screen', async () => {
@@ -263,7 +263,7 @@ describe('Presenter deck (ADR-0012)', () => {
     await user.keyboard('{ArrowRight}') // the stepper's own Hook, not the deck
     await user.click(screen.getByRole('button', { name: 'Presenter' }))
     expect(screen.getByRole('heading', { level: 2, name: 'What I built' })).toBeInTheDocument()
-    expect(counter()).toBe('8 / 15')
+    expect(counter()).toBe('8 / 16')
   })
   it('leaves About me out in DEMO_MODE: opens on The brief and cannot go back', async () => {
     stubApi({
@@ -275,19 +275,19 @@ describe('Presenter deck (ADR-0012)', () => {
     render(<App />)
 
     expect(await screen.findByRole('heading', { level: 2, name: 'The brief' })).toBeInTheDocument()
-    expect(counter()).toBe('4 / 15')
+    expect(counter()).toBe('4 / 16')
     const sections = screen.getByRole('navigation', { name: /sections/i })
     expect(within(sections).queryByRole('button', { name: 'About me' })).not.toBeInTheDocument()
 
     await user.keyboard('{ArrowLeft}{PageUp}')
-    expect(counter()).toBe('4 / 15')
+    expect(counter()).toBe('4 / 16')
     // The brief reveals its options before the deck moves on.
-    for (let press = 0; press < 10 && counter() === '4 / 15'; press++)
+    for (let press = 0; press < 10 && counter() === '4 / 16'; press++)
       await user.keyboard('{ArrowRight}')
-    expect(counter()).toBe('5 / 15')
+    expect(counter()).toBe('5 / 16')
     await user.click(within(sections).getByRole('button', { name: 'Learn' }))
     await user.keyboard('{ArrowLeft}')
-    expect(counter()).toBe('4 / 15')
+    expect(counter()).toBe('4 / 16')
     expect(screen.queryByRole('heading', { name: 'About me' })).not.toBeInTheDocument()
   })
 

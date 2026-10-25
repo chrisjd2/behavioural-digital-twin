@@ -146,8 +146,8 @@ export default function Presenter({
             </section>
           ) : LEARN_SCREENS.has(screen.id) ? (
             <LearnSlide screen={screen} />
-          ) : screen.id === 'build' ? (
-            <BuildSlide />
+          ) : screen.id === 'build' || screen.id === 'changes' ? (
+            <BuildSlide id={screen.id} />
           ) : TEACH_SLIDES.has(screen.id) ? (
             <TeachSlide screen={screen} runs={runs} mockLlm={start.mockLlm} />
           ) : (

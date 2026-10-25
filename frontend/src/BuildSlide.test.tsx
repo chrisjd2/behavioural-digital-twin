@@ -4,36 +4,36 @@ import { describe, expect, it } from 'vitest'
 import BuildSlide from './BuildSlide'
 
 /** The revealed parts, not the lists nested inside them. */
-function parts() {
-  return [...screen.getByRole('list', { name: 'What I built' }).children]
+function parts(label: string) {
+  return [...screen.getByRole('list', { name: label }).children]
 }
 
 describe('BuildSlide', () => {
-  it('reveals the three parts in order', async () => {
+  it('What I built: the pipeline, the task, then the test framework', async () => {
     const user = userEvent.setup()
-    render(<BuildSlide />)
+    render(<BuildSlide id="build" />)
 
     expect(screen.getByRole('heading', { level: 2, name: 'What I built' })).toBeInTheDocument()
-    expect(parts()).toHaveLength(0)
+    expect(parts('What I built')).toHaveLength(0)
 
     await user.keyboard('{ArrowRight}')
-    expect(parts()).toHaveLength(1)
-    expect(parts()[0]).toHaveTextContent('MIND clicks')
-    expect(parts()[0]).toHaveTextContent('Gemini')
+    expect(parts('What I built')[0]).toHaveTextContent('MIND clicks')
+    expect(parts('What I built')[0]).toHaveTextContent('Gemini')
 
     await user.keyboard('{ArrowRight}')
-    expect(parts()[1]).toHaveTextContent(/wrong twin/i)
+    expect(parts('What I built')[1]).toHaveTextContent(/only what the agent knows changes/)
+    expect(parts('What I built')[1]).toHaveTextContent(/gut reaction, then a 0–100 click chance/)
 
     await user.keyboard('{ArrowRight}')
-    expect(parts()[2]).toHaveTextContent(/200 to 300 users/)
-    expect(parts()[2]).toHaveTextContent(/30-user dev set/)
-    expect(screen.queryByText('Who did what')).not.toBeInTheDocument()
+    expect(parts('What I built')[2]).toHaveTextContent(/Pre-registered before the test run/)
+    expect(parts('What I built')[2]).toHaveTextContent(/30-user dev set/)
+    expect(parts('What I built')[2]).toHaveTextContent(/300-user test set run once/)
     expect(screen.queryByRole('button', { name: /show next/i })).not.toBeInTheDocument()
   })
 
   it('names the five arms and two baselines in their arm colours', async () => {
     const user = userEvent.setup()
-    render(<BuildSlide />)
+    render(<BuildSlide id="build" />)
     await user.click(screen.getByRole('button', { name: /show next/i }))
 
     const arms = within(screen.getByRole('list', { name: 'Arms and baselines' })).getAllByRole(
@@ -48,5 +48,17 @@ describe('BuildSlide', () => {
       ['Popularity', 'build-arm baseline'],
       ['Random', 'build-arm baseline'],
     ])
+  })
+
+  it('Plan met reality: the wrong twin, then the bigger test set', async () => {
+    const user = userEvent.setup()
+    render(<BuildSlide id="changes" />)
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Plan met reality' })).toBeInTheDocument()
+    await user.keyboard('{ArrowRight}')
+    expect(parts('Plan met reality')[0]).toHaveTextContent(/wrong twin/i)
+    await user.keyboard('{ArrowRight}')
+    expect(parts('Plan met reality')[1]).toHaveTextContent(/from 200 to 300 users/)
+    expect(screen.queryByRole('button', { name: /show next/i })).not.toBeInTheDocument()
   })
 })

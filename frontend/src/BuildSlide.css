@@ -1,9 +1,9 @@
-/* Screen 8, What I built: sized for a 1920×1080 shared screen. */
+/* Screens 8-9, What I built and Plan met reality: sized for a 1920×1080 shared screen. */
 .build-strip {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px;
 }
 
 .build-stage {
@@ -35,7 +35,8 @@
   gap: 4px 24px;
 }
 
-.build-arm {
+/* Two classes, so the arm's colour wins over the revealed items' bar. */
+.build-arms .build-arm {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -59,7 +60,13 @@
   padding-left: 1.2em;
 }
 
-/* The diagram across the top, the two plan-met-reality parts side by side under it. */
+/* Plain bullets, not the revealed items' bar. */
+.build-part li {
+  border-left: 0;
+  padding: 0;
+}
+
+/* The diagram across the top, the task and the test framework side by side under it. */
 .reveal-items:has(.build-strip) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
