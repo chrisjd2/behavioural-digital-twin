@@ -94,7 +94,6 @@ export default function Presenter({
     <div className="deck-viewport">
       <div className="deck" style={{ zoom: scale }}>
         <header className="deck-bar">
-          <p className="wordmark">Twin Lab</p>
           <nav aria-label="Sections" className="deck-sections">
             <ol>
               {sections.map((section) => (
