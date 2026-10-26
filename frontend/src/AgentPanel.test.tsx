@@ -43,15 +43,32 @@ describe('AgentPanel', () => {
     expect(screen.queryByText('MOCK')).not.toBeInTheDocument()
   })
 
-  it('shows the click history and the feed headlines without revealing clicks', async () => {
+  it('shows each arm the headlines it scored, without revealing clicks', async () => {
+    const user = userEvent.setup()
     open()
 
-    const history = await screen.findByRole('region', { name: /past clicks/i })
-    expect(within(history).getByText('The workout that may help you live longer')).toBeVisible()
-    expect(within(history).getByText('Election Day 2019: races to watch')).toBeVisible()
-    const feed = screen.getByRole('region', { name: /headlines in this feed/i })
-    expect(within(feed).getByText('How to get a six-pack in 30 days')).toBeVisible()
-    expect(within(feed).queryByText(/clicked/i)).not.toBeInTheDocument()
+    for (const name of [/plain llm/i, /twin \+ memory/i]) {
+      await user.click(await screen.findByRole('tab', { name }))
+      const feed = within(screen.getByRole('tabpanel')).getByRole('region', {
+        name: /headlines it scored/i,
+      })
+      expect(within(feed).getByText('How to get a six-pack in 30 days')).toBeVisible()
+      expect(within(feed).queryByText(/clicked/i)).not.toBeInTheDocument()
+    }
+  })
+
+  it('keeps the real reader’s history apart from the arms, closed', async () => {
+    const user = userEvent.setup()
+    open()
+
+    await screen.findByRole('tablist')
+    expect(within(screen.getByRole('tabpanel')).queryByText(/past clicks/i)).not.toBeInTheDocument()
+    const history = screen.getByText(/the real reader’s past clicks/i)
+    expect(history).toHaveTextContent(/no arm is shown all of them/i)
+    expect(screen.getByText('The workout that may help you live longer')).not.toBeVisible()
+    await user.click(history)
+    expect(screen.getByText('The workout that may help you live longer')).toBeVisible()
+    expect(screen.getByText('Election Day 2019: races to watch')).toBeVisible()
   })
 
   it('has one tab per arm in run order', async () => {
