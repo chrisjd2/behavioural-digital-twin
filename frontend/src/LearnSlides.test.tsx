@@ -17,7 +17,7 @@ async function revealAll(user: ReturnType<typeof userEvent.setup>) {
   }
 }
 
-describe('Learn slides (screens 6-9)', () => {
+describe('Learn slides (screens 4-7)', () => {
   it('covers the four Learn screens', () => {
     expect([...LEARN_SCREENS]).toEqual(
       SCREENS.filter((s) => s.section === 'Learn').map((s) => s.id),
@@ -52,10 +52,11 @@ describe('Learn slides (screens 6-9)', () => {
     for (const p of placeholders) expect(p).not.toHaveAttribute('src')
 
     await revealAll(user)
-    expect(
-      screen.getByText(/seed → agent graph → simulation → report → interview/),
-    ).toBeInTheDocument()
-    expect(screen.getByText(/consensus, not individual behaviour/)).toBeInTheDocument()
+    const points = [...screen.getByRole('list', { name: /what I took from MiroFish/i }).children]
+    expect(points[0]).toHaveTextContent(/Why it didn’t fit:.*consensus, not individual behaviour/)
+    expect(points[1]).toHaveTextContent(
+      /Carried forward:.*seed → agent graph → simulation → report → interview/,
+    )
   })
 
   it('Research path: reveals one paper at a time, with its figures', async () => {
@@ -93,12 +94,11 @@ describe('Learn slides (screens 6-9)', () => {
     expect(screen.getByText(/I read every one/)).toBeInTheDocument()
   })
 
-  it('Research path: three screenshot slots fall back to placeholders', () => {
+  it('Research path: two screenshot slots fall back to placeholders', () => {
     renderScreen('research')
     const images = screen.getAllByRole('img')
     expect(images.map((i) => i.getAttribute('src'))).toEqual([
       '/private/paper-stanford.png',
-      '/private/paper-maiorano.png',
       '/private/claude-chat.png',
     ])
     for (const img of images) fireEvent.error(img)
@@ -110,7 +110,9 @@ describe('Learn slides (screens 6-9)', () => {
     renderScreen('gap')
     await revealAll(user)
     expect(screen.getByText(/Large Behavior Model, 2026/)).toBeInTheDocument()
-    expect(screen.getByText(/wrong-twin control/)).toBeInTheDocument()
-    expect(screen.getByText('Can an AI impersonate a customer?')).toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: 'Arms' })).not.toBeInTheDocument()
+    expect(
+      screen.getByText('What makes an AI better at predicting what you’ll click?'),
+    ).toBeInTheDocument()
   })
 })

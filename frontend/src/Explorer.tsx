@@ -127,7 +127,7 @@ export default function Explorer({ onPresent }: { onPresent: () => void }) {
             </span>
           )}
         </div>
-        <h1>Can an AI impersonate a customer?</h1>
+        <h1>What makes an AI better at predicting what you’ll click?</h1>
         <nav aria-label="Steps" className="stepper">
           <ol>
             {STEPS.map(({ name }, i) => (

@@ -5,42 +5,40 @@ export const SECTIONS = ['About me', 'Learn', 'Tinker', 'Teach'] as const
 export type Section = (typeof SECTIONS)[number]
 
 export type ScreenId =
-  | 'title'
-  | 'who'
+  | 'intro'
   | 'career'
   | 'life'
-  | 'handoff'
   | 'brief'
   | 'mirofish'
   | 'research'
   | 'gap'
   | 'build'
+  | 'testing'
+  | 'changes'
   | 'population'
   | 'hook'
   | 'simulation'
   | 'report'
-  | 'checkin'
   | 'takeaways'
   | 'thanks'
 
 export type Screen = { id: ScreenId; section: Section; title: string }
 
 export const SCREENS: Screen[] = [
-  { id: 'title', section: 'About me', title: 'Chris Davies' },
-  { id: 'who', section: 'About me', title: 'Who I am' },
+  { id: 'intro', section: 'About me', title: 'About me' },
   { id: 'career', section: 'About me', title: 'Career' },
   { id: 'life', section: 'About me', title: 'Learn · Tinker · Teach in my life' },
-  { id: 'handoff', section: 'About me', title: 'Hand-off' },
   { id: 'brief', section: 'Learn', title: 'The brief' },
   { id: 'mirofish', section: 'Learn', title: 'Back to MiroFish' },
   { id: 'research', section: 'Learn', title: 'Research path' },
   { id: 'gap', section: 'Learn', title: 'The gap and my angle' },
-  { id: 'build', section: 'Tinker', title: 'How I built it' },
+  { id: 'build', section: 'Tinker', title: 'What I built' },
+  { id: 'testing', section: 'Tinker', title: 'Testing framework' },
+  { id: 'changes', section: 'Tinker', title: 'Plan met reality' },
   { id: 'population', section: 'Tinker', title: 'Population' },
   { id: 'hook', section: 'Teach', title: 'Hook' },
   { id: 'simulation', section: 'Teach', title: 'Simulation' },
   { id: 'report', section: 'Teach', title: 'Report' },
-  { id: 'checkin', section: 'Teach', title: 'Check-in' },
   { id: 'takeaways', section: 'Teach', title: 'Takeaways' },
   { id: 'thanks', section: 'Teach', title: 'Thanks' },
 ]

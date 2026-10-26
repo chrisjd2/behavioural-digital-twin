@@ -1,9 +1,15 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { fetchReport, type MetricName, type RunReport } from './api/report'
-import { deckCommand, move } from './deck'
 import { largestFit } from './fit'
 import { ReliabilityDiagrams } from './ReportCharts'
-import { notResultText, outcomeLine } from './reportModel'
+import {
+  armName,
+  decimal,
+  differenceLine,
+  notResultText,
+  outcomeHeadline,
+  percent,
+} from './reportModel'
 import { CalibrationChart, DifferenceChart, Diagnostics, MetricPanel } from './ReportSections'
 import UserBrowser from './UserBrowser'
 import './report.css'
@@ -19,7 +25,7 @@ const METRICS: { metric: MetricName; title: string; note: string }[] = [
 ]
 
 const RULE =
-  'Pre-registered rule (ADR-0001): twins beat plain LLM only if the 95% CI on the mean per-user D − A AUC difference excludes 0 and is positive. Entirely negative: plain LLM better. Otherwise: no detectable difference.'
+  'Rule set before the test run (ADR-0001): the twin wins only if the whole 95% CI is above 0. All below 0: the plain LLM wins. Otherwise: no detectable difference.'
 
 /**
  * Step 4: the selected run's pre-registered report. Numbers and the rule's outcome only; no
@@ -73,20 +79,52 @@ export default function ReportStep({ runId, paged = false }: { runId: string; pa
     </div>
   )
 
+  // The two arms the pre-registered outcome compares, by their mean AUC.
+  const compared = ['A', 'D'].flatMap((id) => {
+    const arm = report.arms.find((a) => a.arm.toUpperCase() === id)
+    return arm ? [{ id, auc: arm.metrics.auc.mean }] : []
+  })
   const primary = (
     <section className="report-section primary-outcome" aria-labelledby="primary-title">
       <h3 id="primary-title">Primary outcome</h3>
       {report.primary ? (
         <>
-          <p className="rule">{RULE}</p>
           <p className="outcome" data-testid="outcome">
-            {outcomeLine(report.primary)}
+            {outcomeHeadline(report.primary)}
           </p>
-          <DifferenceChart
-            title="D − A AUC difference"
-            differences={[{ arm: 'D', reference: 'A', auc: report.primary.difference }]}
-          />
-          <p className="small muted">N = {report.n_users} users, bootstrap 95% CI over users.</p>
+          {paged ? (
+            <PlainOutcome report={report} />
+          ) : (
+            <>
+              {compared.length === 2 && (
+                <dl className="primary-compare">
+                  {compared.map(({ id, auc }) => (
+                    <div key={id} className={`arm-${id.toLowerCase()}`}>
+                      <dt>
+                        <span className="arm-letter">{id}</span> {armName(id)}
+                      </dt>
+                      <dd>AUC {decimal(auc)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+              <p className="small muted">
+                AUC: the chance a clicked headline is ranked above a skipped one. 0.5 is a coin
+                flip.
+              </p>
+              <p className="primary-difference">
+                Twin minus plain LLM, per reader: <strong>{differenceLine(report.primary)}</strong>
+              </p>
+              <DifferenceChart
+                title="D − A AUC difference"
+                differences={[{ arm: 'D', reference: 'A', auc: report.primary.difference }]}
+              />
+              <p className="rule">{RULE}</p>
+              <p className="small muted">
+                N = {report.n_users} users, bootstrap 95% CI over users.
+              </p>
+            </>
+          )}
         </>
       ) : (
         <p className="result-empty">
@@ -99,10 +137,12 @@ export default function ReportStep({ runId, paged = false }: { runId: string; pa
   const metrics = (shown: typeof METRICS) => (
     <section className="report-section" aria-labelledby="metrics-title">
       <h3 id="metrics-title">Every metric, per arm</h3>
-      <p className="section-note">
-        Bars: mean over users, whiskers: 95% CI. Dashed grey lines: the popularity and random
-        baselines.
-      </p>
+      {!paged && (
+        <p className="section-note">
+          Bars: mean over users, whiskers: 95% CI. Dashed grey lines: the popularity and random
+          baselines.
+        </p>
+      )}
       <div className="metric-grid">
         {shown.map(({ metric, title, note }) => (
           <MetricPanel
@@ -144,9 +184,11 @@ export default function ReportStep({ runId, paged = false }: { runId: string; pa
   const calibration = (withReliability: boolean) => (
     <section className="report-section" aria-labelledby="calibration-title">
       <h3 id="calibration-title">Calibration</h3>
-      <p className="section-note">
-        Mean <code>p_click</code> per arm against how often readers really clicked.
-      </p>
+      {!paged && (
+        <p className="section-note">
+          Mean <code>p_click</code> per arm against how often readers really clicked.
+        </p>
+      )}
       <CalibrationChart arms={llm} />
       {withReliability && (
         <details className="reliability-details">
@@ -211,6 +253,47 @@ export default function ReportStep({ runId, paged = false }: { runId: string; pa
   )
 }
 
+const PLAIN_STATS: { metric: MetricName; label: string }[] = [
+  { metric: 'hit1', label: 'Its top pick was a headline the reader clicked' },
+  { metric: 'auc', label: 'It ranked a clicked headline above a skipped one' },
+]
+
+/**
+ * The primary outcome for a room, not a reviewer (ADR-0012): plain LLM against twin on two
+ * metrics read as percentages, with random as the floor. The full statistics stay in Explore.
+ */
+function PlainOutcome({ report }: { report: RunReport }) {
+  const find = (id: string) => report.arms.find((a) => a.arm.toLowerCase() === id)
+  const shown = [
+    { id: 'a', className: 'arm-a' },
+    { id: 'd', className: 'arm-d' },
+    { id: 'random', className: 'baseline' },
+  ].flatMap(({ id, className }) => {
+    const arm = find(id)
+    return arm ? [{ id, className, arm }] : []
+  })
+  return (
+    <>
+      <dl className="plain-outcome">
+        {PLAIN_STATS.map(({ metric, label }) => (
+          <div key={metric}>
+            <dt>{label}</dt>
+            {shown.map(({ id, className, arm }) => (
+              <dd key={id} className={className}>
+                <span className="plain-value">{percent(arm.metrics[metric].mean, 0)}</span>
+                {armName(id)}
+              </dd>
+            ))}
+          </div>
+        ))}
+      </dl>
+      <p className="small muted">
+        {report.n_users} real readers. The rule for a win was fixed before the test run.
+      </p>
+    </>
+  )
+}
+
 /** `fill: false` for a page whose own layout already takes the height left. */
 type Page = { tab: string; content: ReactNode; fill?: boolean }
 
@@ -219,11 +302,9 @@ const MAX_ZOOM = 2
 /** The share of a bar chart's width its track keeps: zooming grows the labels beside it. */
 const MIN_TRACK = 0.45
 
-/** One page on screen; the next and previous keys turn pages before the deck moves (ADR-0012). */
+/** One page on screen, picked by its tab; the next and previous keys move the deck on (ADR-0012). */
 function PagedReport({ banner, pages }: { banner: ReactNode; pages: Page[] }) {
   const [page, setPage] = useState(0)
-  const pageRef = useRef(page)
-  pageRef.current = page
   const panelRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const fill = pages[page].fill ?? true
@@ -248,21 +329,6 @@ function PagedReport({ banner, pages }: { banner: ReactNode; pages: Page[] }) {
     }
     content.style.zoom = String(largestFit(fits, MAX_ZOOM))
   }, [page, fill])
-
-  useEffect(() => {
-    // On document, so it runs before the presenter deck's window listener.
-    function onKey(event: KeyboardEvent) {
-      const command = deckCommand(event)
-      if (!command) return
-      const next = move(pageRef.current, command, pages.length)
-      // On the first or last page the key is left for the deck: the screen before or after.
-      if (next === pageRef.current) return
-      event.preventDefault()
-      setPage(next)
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [pages.length])
 
   return (
     <div className="report report-paged">

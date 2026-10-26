@@ -618,22 +618,28 @@ h2 {
   font-weight: 700;
 }
 
-.agent-lists {
-  display: grid;
-  gap: 20px;
-  margin-top: 24px;
+/* Inside an arm's tab: what it knew, then the headlines it scored, after a rule. */
+.arm-feed {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
 }
 
-.agent-lists h4 {
-  font-size: 1rem;
+/* The real reader's history: apart from the arms, closed until asked for. */
+.reader-history {
+  margin-top: 20px;
+}
+
+.reader-history summary {
   font-weight: 800;
-  margin-bottom: 6px;
+  cursor: pointer;
 }
 
-.agent-lists .headlines {
+.reader-history .headlines {
   max-height: 18rem;
   overflow-y: auto;
   padding-right: 6px;
+  margin-top: 8px;
 }
 
 /* Seed */

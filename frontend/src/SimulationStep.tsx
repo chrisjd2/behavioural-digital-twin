@@ -112,7 +112,7 @@ function Replay({ recording }: { recording: RunEvents }) {
     <div className="simulation">
       <div className="replay-labels">
         {order === 'reader' ? (
-          <p className="recorded-label">
+          <p className="recorded-label reader-order-note">
             <strong>Recorded run, sped up and reordered by reader</strong> (seeded order, not
             cherry-picked), alternating a headline they clicked with one they skipped. Half are
             clicks by design; across this run {Math.round(100 * shownClickRate(recording.events))}%

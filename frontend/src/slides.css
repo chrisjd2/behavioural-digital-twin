@@ -79,30 +79,15 @@
   box-sizing: border-box;
 }
 
-.checkin-question,
+/* The talk's question on one line. */
 .thanks-question {
   font-size: 3.2rem;
   line-height: 1.25;
-  max-width: 30ch;
-}
-
-.checkin-number {
-  white-space: nowrap;
-}
-
-.checkin-number .badge-mock-small {
-  margin-left: 8px;
-  vertical-align: middle;
 }
 
 .thanks-questions {
   font-size: 2.6rem;
   font-weight: 700;
-}
-
-.reveal-items li:has(.callback) {
-  border-left-color: var(--rule);
-  font-style: italic;
 }
 
 .media-missing-mark {

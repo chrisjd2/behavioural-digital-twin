@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ArmReport, RunReport } from './api/report'
@@ -68,86 +68,48 @@ function show(id: ScreenId, runs: Runs, urls: Record<string, Reply> = {}, mockLl
   return user
 }
 
-describe('Check-in (screen 15)', () => {
-  it("asks the question with arm D's mean p_click and the feed CTR from the run", async () => {
-    show('checkin', ready(runFixture), { [REPORT]: reportFixture(ARMS) })
+describe('Takeaways (screen 15)', () => {
+  it('reveals the four takeaways one by one', async () => {
+    const user = show('takeaways', ready(runFixture))
 
-    expect(screen.getByRole('heading', { level: 2, name: 'Check-in' })).toBeInTheDocument()
-    const question = await screen.findByText(/chance of a click/i)
-    expect(question).toHaveTextContent(
-      'The twins predicted a 43.2% chance of a click. In the real feed it was 4.1%. What would you do with that in a campaign?',
+    expect(screen.queryAllByRole('listitem')).toHaveLength(0)
+    for (let i = 0; i < 4; i++) await user.keyboard('{ArrowRight}')
+
+    const items = screen.getAllByRole('listitem').map((li) => li.textContent)
+    expect(items).toHaveLength(4)
+    expect(items[0]).toMatch(/^Grounding beats inventing/)
+    expect(items[1]).toMatch(/^It.s personal/)
+    expect(items[2]).toMatch(
+      /^Don.t trust its probabilities: the model knows which content a person prefers, but not how likely they really are to act on it\./,
     )
-    expect(screen.queryByText('MOCK')).not.toBeInTheDocument()
-    expect(screen.getByText('Dev run. Not a reported result.')).toBeInTheDocument()
+    expect(items[3]).toMatch(/consented first-party data.*Data 360.*validate before you trust/)
+    expect(screen.queryByRole('button', { name: /show next/i })).not.toBeInTheDocument()
   })
+})
 
-  it('labels both numbers MOCK for a mock run', async () => {
-    show('checkin', ready({ ...runFixture, mock: true }), {
-      [REPORT]: reportFixture(ARMS, true),
-    })
-
-    const question = await screen.findByText(/chance of a click/i)
-    expect(within(question).getAllByText('MOCK')).toHaveLength(2)
-    expect(
-      screen.getByText('MOCK run: fake LLM output. Not a reported result.'),
-    ).toBeInTheDocument()
-  })
-
-  it('shows an error, not blanks, when the report fails', async () => {
-    show('checkin', ready(runFixture), { [REPORT]: 500 })
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(/server said 500/i)
-    expect(screen.queryByText(/chance of a click/i)).not.toBeInTheDocument()
-  })
-
+describe('Thanks (screen 16)', () => {
   it('shows an error when the saved runs failed to load', () => {
-    show('checkin', { state: 'error', message: 'Server said 503' })
+    show('thanks', { state: 'error', message: 'Server said 503' })
 
     expect(screen.getByRole('alert')).toHaveTextContent(/saved runs could not be loaded/i)
   })
 
   it('says so while the runs load', () => {
-    show('checkin', { state: 'loading' })
+    show('thanks', { state: 'loading' })
     expect(screen.getByText(/loading the saved run/i)).toBeInTheDocument()
   })
 
   it('says so when there is no saved run', () => {
-    show('checkin', ready(undefined))
+    show('thanks', ready(undefined))
     expect(screen.getByText(/no saved run yet/i)).toBeInTheDocument()
   })
 
-  it('says so when the run has no arm D calibration', async () => {
-    show('checkin', ready(runFixture), { [REPORT]: reportFixture([ARMS[0], ARMS[2]]) })
-
-    expect(await screen.findByText(/no arm D calibration/i)).toBeInTheDocument()
-  })
-})
-
-describe('Takeaways (screen 16)', () => {
-  it('reveals the four takeaways one by one, then the callback line', async () => {
-    const user = show('takeaways', ready(runFixture))
-
-    expect(screen.queryAllByRole('listitem')).toHaveLength(0)
-    for (let i = 0; i < 5; i++) await user.keyboard('{ArrowRight}')
-
-    const items = screen.getAllByRole('listitem').map((li) => li.textContent)
-    expect(items).toHaveLength(5)
-    expect(items[0]).toMatch(/^Grounding beats inventing/)
-    expect(items[1]).toMatch(/^It.s personal/)
-    expect(items[2]).toMatch(/^Don.t trust its probabilities/)
-    expect(items[3]).toMatch(/consented first-party data.*Data 360.*validate before you trust/)
-    expect(items[4]).toBe(
-      'A twin built from my clicks would know what I read. It wouldn’t know me.',
-    )
-    expect(screen.queryByRole('button', { name: /show next/i })).not.toBeInTheDocument()
-  })
-})
-
-describe('Thanks (screen 17)', () => {
   it('asks the question again and invites questions', () => {
     show('thanks', ready(runFixture))
 
-    expect(screen.getByText('Can an AI impersonate a customer?')).toBeInTheDocument()
+    expect(
+      screen.getByText('What makes an AI better at predicting what you’ll click?'),
+    ).toBeInTheDocument()
     expect(screen.getByText('Questions?')).toBeInTheDocument()
   })
 

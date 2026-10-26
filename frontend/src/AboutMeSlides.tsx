@@ -1,14 +1,14 @@
-/** Part 1 of the talk, About me (ADR-0012): screens 1-5, left out of the deck in DEMO_MODE. */
-import { useEffect, useState, type ReactNode } from 'react'
+/** Part 1 of the talk, About me (ADR-0012): screens 1-3, left out of the deck in DEMO_MODE. */
+import { useEffect, useId, useState } from 'react'
 import { fetchStatus } from './api/status'
 import { SCREENS, type ScreenId } from './deck'
-import { PrivateMedia, Reveal, Slide } from './slides'
+import { PrivateMedia, Slide } from './slides'
 import './aboutMe.css'
 
 const KICKER = 'About me'
 
 /** The screens this file draws; any other About me screen falls back to the deck's placeholder. */
-const ABOUT_ME_IDS = ['title', 'who', 'career', 'life', 'handoff'] as const
+const ABOUT_ME_IDS = ['intro', 'career', 'life'] as const
 export type AboutMeId = (typeof ABOUT_ME_IDS)[number]
 
 export function isAboutMe(id: ScreenId): id is AboutMeId {
@@ -42,51 +42,31 @@ export function useDeckStart(): DeckStart {
   return start
 }
 
+/** Chris tells the story; the slide only names the stops. */
 const CAREER = [
-  <Stop
-    key="consultant"
-    role="Application consultant"
-    note="Emails and journeys in SFMC Engagement"
-  />,
-  <Stop key="developer" role="Developer" />,
-  <Stop key="architect" role="Technical architect" note="Two large SFMC clients" />,
-  <Stop key="product" role="Product role" note="Our operations briefing platform">
-    <ul className="career-work">
-      <li>Deeper integrations with sending platforms</li>
-      <li>Platform features, exposed externally</li>
-      <li>Automation for operations</li>
-      <li>New AI capabilities, incl. an MCP server</li>
-      <li>Client visits, pitches, partner hackathons (e.g. Adobe)</li>
-    </ul>
-  </Stop>,
+  { role: 'Application consultant', note: 'Emails and journeys in SFMC Engagement' },
+  { role: 'Platform developer' },
+  { role: 'Senior platform developer' },
+  { role: 'Technical architect', note: 'Two of the largest SFMC clients' },
+  { role: 'Product innovation role', note: 'Our operations briefing platform' },
 ]
-
-function Stop({ role, note, children }: { role: string; note?: string; children?: ReactNode }) {
-  return (
-    <>
-      <strong>{role}</strong>
-      {note && <span className="career-note"> · {note}</span>}
-      {children}
-    </>
-  )
-}
 
 const LIFE = [
   {
     heading: 'Learn',
-    items: ['Learning to draw', 'New tech, for fun'],
+    items: ['Learning to draw'],
     media: 'drawing.jpg',
     caption: 'A drawing of mine',
   },
   {
     heading: 'Tinker',
-    items: ['Little games and tools', 'Speech-to-speech agents: calling friends in new voices'],
+    items: ['Speech-to-speech agents platform'],
     media: 'voice.jpg',
     caption: 'My voice platform',
   },
   {
     heading: 'Teach',
-    items: ['Tricks for my Australian Shepherd'],
+    items: ['Tricks with my Australian Shepherd'],
     media: 'dog.jpg',
     caption: 'My dog',
   },
@@ -94,27 +74,19 @@ const LIFE = [
 
 export default function AboutMeSlide({ id }: { id: AboutMeId }) {
   switch (id) {
-    case 'title':
-      return (
-        <Slide kicker={KICKER} title="Chris Davies">
-          <PrivateMedia name="me.jpg" caption="Chris" />
-        </Slide>
-      )
-    case 'who':
-      return (
-        <Slide kicker={KICKER} title="Who I am">
-          <ul className="about-facts">
-            <li>South African</li>
-            <li>In Denmark for 10 years</li>
-            <li>Studied web development</li>
-            <li>7 years in martech</li>
-          </ul>
-        </Slide>
-      )
+    case 'intro':
+      return <Intro />
     case 'career':
       return (
         <Slide kicker={KICKER} title="Career">
-          <Reveal label="Career" items={CAREER} />
+          <ol className="career" aria-label="Career">
+            {CAREER.map(({ role, note }) => (
+              <li key={role}>
+                <strong>{role}</strong>
+                {note && <span className="career-note"> · {note}</span>}
+              </li>
+            ))}
+          </ol>
         </Slide>
       )
     case 'life':
@@ -135,12 +107,15 @@ export default function AboutMeSlide({ id }: { id: AboutMeId }) {
           </div>
         </Slide>
       )
-    case 'handoff':
-      return (
-        <Slide
-          kicker={KICKER}
-          title="So when I got this brief, I did what I always do: learn, tinker, teach."
-        />
-      )
   }
+}
+
+/** The title alone: Chris says who they are over it (#66). */
+function Intro() {
+  const id = useId()
+  return (
+    <section className="slide intro" aria-labelledby={id}>
+      <h2 id={id}>{KICKER}</h2>
+    </section>
+  )
 }

@@ -1,4 +1,4 @@
-/** Part 2's Learn beat (ADR-0012, screens 6-9): how the idea was picked and what was read. */
+/** Part 2's Learn beat (ADR-0012, screens 4-7): how the idea was picked and what was read. */
 import type { ReactNode } from 'react'
 import type { Screen, ScreenId } from './deck'
 import { PrivateMedia, Reveal, Slide } from './slides'
@@ -12,21 +12,19 @@ const OPTIONS: ReactNode[] = [
     but new to me.
   </>,
   <>
-    <strong>Option 2: the idea I&rsquo;d parked.</strong> Months ago I read about MiroFish, a
-    Chinese project creating synthetic users with opinions and memories that react to things to
-    predict events. I wondered how it could apply to marketing: predicting how audiences react to
-    new content. I never had the time. The brief was the perfect excuse.
+    <strong>Option 2: An idea I&rsquo;d parked.</strong> MiroFish&rsquo;s synthetic users, applied
+    to marketing: predicting how audiences react to new content.
   </>,
 ]
 
 const MIROFISH: ReactNode[] = [
   <>
-    <strong>Carried forward:</strong> the UI flow (seed → agent graph → simulation → report →
-    interview an agent).
-  </>,
-  <>
     <strong>Why it didn&rsquo;t fit:</strong> it judges by audience consensus, not individual
     behaviour, and its stack needed licences and was costly to set up and run.
+  </>,
+  <>
+    <strong>Carried forward:</strong> the UI flow (seed → agent graph → simulation → report →
+    interview an agent).
   </>,
 ]
 
@@ -34,14 +32,13 @@ const PAPERS: { name: string; finding: string; change: string }[] = [
   {
     name: 'Stanford (Park et al. 2024)',
     finding:
-      'Agents built from 2-hour interviews with 1,052 real people matched their survey answers 85% as well as people matched themselves 2 weeks later.',
-    change: 'Grounding in real individual data works.',
+      'Agents of 1,052 real people, built from interviews, were 85% as accurate as a human retest.',
+    change: 'Real individual data works',
   },
   {
     name: 'Synthetic personas (Maiorano 2026)',
-    finding:
-      'On 399 headline A/B tests, a plain LLM picked the winner 49.2% of the time, but a 10-persona panel only 34.6%. Invented personas made it worse.',
-    change: 'The catch: they were made-up identities.',
+    finding: 'On 399 headline A/B tests, a plain LLM picked the winner 49.2%; personas only 34.6%.',
+    change: 'Made-up personas hurt',
   },
   {
     name: 'Twin-2K-500 (Toubia et al. 2025)',
@@ -72,12 +69,10 @@ const GAP: ReactNode[] = [
     2026).
   </>,
   <>
-    <strong>My angle:</strong> on the same headlines and real clicks, does an agent grounded only in{' '}
-    <strong>behaviour</strong> (what someone opened, clicked, read) beat a plain LLM and an invented
-    persona? And is the gain <strong>personal</strong>? (Test that with a wrong-twin control.) Off
-    the shelf, no fine-tuning.
+    <strong>My angle:</strong> combine what the research found, one ingredient at a time, on the
+    same headlines and real clicks. To find what actually improves agent predictions.
   </>,
-  <p className="learn-question">Can an AI impersonate a customer?</p>,
+  <p className="learn-question">What makes an AI better at predicting what you’ll click?</p>,
 ]
 
 export default function LearnSlide({ screen }: { screen: Screen }) {
@@ -125,7 +120,6 @@ function LearnBody({ id }: { id: ScreenId }) {
             />
             <div className="learn-media learn-media-small">
               <PrivateMedia name="paper-stanford.png" caption="Stanford paper, first page" />
-              <PrivateMedia name="paper-maiorano.png" caption="Maiorano paper, first page" />
               <PrivateMedia name="claude-chat.png" caption="Searching with Claude" />
             </div>
           </div>

@@ -1,6 +1,6 @@
-/* Learn slides (screens 6-9): sized for a 1920×1080 shared screen. */
+/* Learn slides (screens 4-7): sized for a 1920×1080 shared screen. */
 .learn-quote {
-  margin: 0;
+  margin: 0 0 48px;
   font-size: 2.4rem;
   font-weight: 600;
   line-height: 1.3;
@@ -30,10 +30,15 @@
   gap: 16px;
 }
 
-/* Three screenshots stacked beside the papers: each a third of what is left, placeholders too. */
+/* Two screenshots stacked: each half of what is left under the title, cropped from the bottom. */
+.learn-media .media {
+  max-height: 34cqh;
+  object-position: top;
+}
+
+/* Beside the papers, under a subheading, with the footnote below: a little shorter. */
 .learn-media-small .media {
-  max-height: 17cqh;
-  min-height: 0;
+  max-height: 28cqh;
 }
 
 .learn-change {

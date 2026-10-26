@@ -12,11 +12,11 @@ function shown() {
 describe('Slide', () => {
   it('has a heading and its content', () => {
     render(
-      <Slide kicker="About me" title="Who I am">
+      <Slide kicker="About me" title="Career">
         <p>Denmark</p>
       </Slide>,
     )
-    expect(screen.getByRole('heading', { level: 2, name: 'Who I am' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Career' })).toBeInTheDocument()
     expect(screen.getByText('About me')).toBeInTheDocument()
     expect(screen.getByText('Denmark')).toBeInTheDocument()
   })

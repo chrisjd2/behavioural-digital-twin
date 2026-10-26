@@ -1,26 +1,30 @@
 /* About me slides (ADR-0012): a few large words per item, for a shared screen. */
-.about-facts {
+.intro {
+  flex: 1;
+  justify-content: center;
+}
+
+.slide.intro h2 {
+  font-size: 7rem;
+}
+
+.career {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  font-size: 3rem;
-  font-weight: 600;
+  gap: 28px;
+  font-size: 2.4rem;
+}
+
+.career li {
+  border-left: 8px solid var(--ink);
+  padding: 4px 0 4px 24px;
 }
 
 .career-note {
   color: var(--muted);
-}
-
-.career-work {
-  margin: 12px 0 0;
-  padding-left: 1.4em;
-  font-size: 1.3rem;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
 .life-columns {

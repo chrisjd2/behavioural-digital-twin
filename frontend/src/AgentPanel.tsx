@@ -29,7 +29,8 @@ const FIELD_NAMES: Record<string, string> = {
 type Props = { runId: string; userId: string; onClose: () => void }
 
 /**
- * One agent: what they read, what their feed showed, and what each arm knew about them.
+ * One reader: each arm's tab shows exactly what that arm's agent was given (what it knew, then the
+ * headlines it scored); the reader's full history sits apart, since no arm sees all of it.
  * Render with `key={userId}` so another reader starts from a clean state.
  */
 export default function AgentPanel({ runId, userId, onClose }: Props) {
@@ -90,20 +91,14 @@ export default function AgentPanel({ runId, userId, onClose }: Props) {
 function AgentBody({ agent }: { agent: AgentDetail }) {
   return (
     <>
-      <ArmTabs arms={agent.arms} />
-      <div className="agent-lists">
-        <section aria-labelledby="history-title">
-          <h4 id="history-title">Past clicks, newest first ({agent.history.length})</h4>
-          <HeadlineList items={[...agent.history].reverse()} />
-        </section>
-        <section aria-labelledby="feed-title">
-          <h4 id="feed-title">Headlines in this feed ({agent.candidates.length})</h4>
-          <p className="muted small">
-            What every arm was asked about. Clicks are revealed in Simulation.
-          </p>
-          <HeadlineList items={agent.candidates} />
-        </section>
-      </div>
+      <ArmTabs arms={agent.arms} candidates={agent.candidates} />
+      <details className="reader-history">
+        <summary>
+          The real reader’s past clicks ({agent.history.length}), newest first. No arm is shown all
+          of them.
+        </summary>
+        <HeadlineList items={[...agent.history].reverse()} />
+      </details>
     </>
   )
 }
@@ -123,7 +118,7 @@ function HeadlineList({ items }: { items: Headline[] }) {
   )
 }
 
-function ArmTabs({ arms }: { arms: ArmKnowledge[] }) {
+function ArmTabs({ arms, candidates }: { arms: ArmKnowledge[]; candidates: Headline[] }) {
   const [selected, setSelected] = useState(0)
   const tabs = useRef<(HTMLButtonElement | null)[]>([])
 
@@ -154,7 +149,7 @@ function ArmTabs({ arms }: { arms: ArmKnowledge[] }) {
 
   return (
     <div className="arm-tabs">
-      <div role="tablist" aria-label="What each arm knew" onKeyDown={onKeyDown}>
+      <div role="tablist" aria-label="What each arm was given" onKeyDown={onKeyDown}>
         {arms.map((k, i) => (
           <button
             key={k.arm}
@@ -184,6 +179,11 @@ function ArmTabs({ arms }: { arms: ArmKnowledge[] }) {
         tabIndex={0}
       >
         <Knowledge knowledge={current} />
+        <section className="arm-feed" aria-labelledby="feed-title">
+          <h5 id="feed-title">The {candidates.length} headlines it scored</h5>
+          <p className="muted small">The same for every arm. Clicks are revealed in Simulation.</p>
+          <HeadlineList items={candidates} />
+        </section>
       </div>
     </div>
   )

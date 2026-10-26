@@ -23,7 +23,7 @@ describe('Step 0 Hook', () => {
   it('opens on the question, with no headlines yet', async () => {
     setup()
 
-    expect(screen.getByText('Can an AI impersonate a customer?')).toBeInTheDocument()
+    expect(screen.getByText('Can you predict what the user clicked?')).toBeInTheDocument()
     expect(screen.getByText(LABEL)).toBeInTheDocument()
     expect(screen.queryByText('Pharmacy recall widens')).not.toBeInTheDocument()
   })
@@ -47,7 +47,7 @@ describe('Step 0 Hook', () => {
       within(history)
         .getAllByRole('listitem')
         .map((li) => li.textContent),
-    ).toEqual(['news / newspolitics Impeachment moves on', 'travel / travelnews Order ginger ale'])
+    ).toEqual(['travel / travelnews Order ginger ale', 'news / newspolitics Impeachment moves on'])
     expect(screen.getByText(/vote again/i)).toBeInTheDocument()
     expect(screen.queryByText(/they clicked this/i)).not.toBeInTheDocument()
 
@@ -100,7 +100,7 @@ describe('Step 0 Hook', () => {
 
     await user.keyboard('{Control>}{ArrowRight}{/Control}')
 
-    expect(screen.getByText('Can an AI impersonate a customer?')).toBeInTheDocument()
+    expect(screen.getByText('Can you predict what the user clicked?')).toBeInTheDocument()
   })
 
   it('leaves keys it has no stage for to the presenter deck', async () => {

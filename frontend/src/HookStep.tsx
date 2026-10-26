@@ -12,7 +12,7 @@ type Load =
   | { state: 'error'; message: string }
   | { state: 'ready'; example: HookExample }
 
-const QUESTION = 'Can an AI impersonate a customer?'
+const QUESTION = 'Can you predict what the user clicked?'
 
 const PROMPTS = {
   guess: 'Which headline did this reader click? Vote 1 or 2.',
@@ -249,12 +249,13 @@ function History({ history }: { history: Headline[] }) {
   return (
     <section className="hook-history" aria-labelledby="hook-history-title">
       <h3 id="hook-history-title">What this reader clicked before</h3>
-      <p className="hook-history-note">Oldest first; the most recent click is last.</p>
+      <p className="hook-history-note">Most recent first; the oldest click is last.</p>
       {history.length === 0 ? (
         <p className="muted">This reader has no earlier clicks in the data.</p>
       ) : (
         <ol>
-          {history.map((h) => (
+          {/* The API sends the history oldest first, as MIND stores it. */}
+          {[...history].reverse().map((h) => (
             <li key={h.news_id}>
               <span className="hook-category">{topic(h)}</span> {title(h)}
             </li>

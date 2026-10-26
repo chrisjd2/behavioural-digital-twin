@@ -38,10 +38,15 @@ export function signed(value: number): string {
 export const decimal = (value: number) => value.toFixed(3)
 export const percent = (value: number, digits = 1) => `${(value * 100).toFixed(digits)}%`
 
-/** The pre-registered outcome: the D − A estimate, its CI and the verdict the run stored. */
-export function outcomeLine({ difference, verdict }: PrimaryOutcome): string {
+/** The verdict the run stored, as a headline: never re-derived from the CI. */
+export function outcomeHeadline({ verdict }: PrimaryOutcome): string {
+  return verdict.charAt(0).toUpperCase() + verdict.slice(1)
+}
+
+/** The D − A estimate and its CI in words. */
+export function differenceLine({ difference }: PrimaryOutcome): string {
   const { mean, low, high } = difference
-  return `D − A AUC ${signed(mean)} [${signed(low)}, ${signed(high)}]: ${verdict}`
+  return `${signed(mean)} on average, 95% CI ${signed(low)} to ${signed(high)}`
 }
 
 export function notResultText(reasons: NotResultReason[]): string {

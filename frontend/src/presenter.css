@@ -146,6 +146,19 @@
   border-radius: 12px;
 }
 
+/*
+ * Said in the talk instead (ADR-0007 amendment): the simulated-data label, the Hook's dev-set
+ * stamp and the replay's order notes. Explore, with no one to say them, keeps every one.
+ */
+.deck-stage :is(.simulated-label, .hook-simulated, .hook-stamp) {
+  display: none;
+}
+
+/* Said in the talk instead; Explore, with no one to say it, keeps both notes. */
+.deck-stage :is(.reader-order-note, .order-rule) {
+  display: none;
+}
+
 /* By arm: the progress bars sit closer, so the panel and labels share the column. */
 .deck-stage .arm-progress {
   gap: 4px;

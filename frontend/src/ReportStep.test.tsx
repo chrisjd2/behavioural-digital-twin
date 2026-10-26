@@ -144,14 +144,26 @@ describe('Report step', () => {
     }
     renderReport(stored)
 
-    expect(await screen.findByTestId('outcome')).toHaveTextContent(
-      'D − A AUC +0.147 [+0.102, +0.192]: no detectable difference',
+    expect(await screen.findByTestId('outcome')).toHaveTextContent('No detectable difference')
+    expect(screen.getByText(/Twin minus plain LLM, per reader/)).toHaveTextContent(
+      '+0.147 on average, 95% CI +0.102 to +0.192',
     )
     expect(
       screen.getByText(
-        'Pre-registered rule (ADR-0001): twins beat plain LLM only if the 95% CI on the mean per-user D − A AUC difference excludes 0 and is positive. Entirely negative: plain LLM better. Otherwise: no detectable difference.',
+        'Rule set before the test run (ADR-0001): the twin wins only if the whole 95% CI is above 0. All below 0: the plain LLM wins. Otherwise: no detectable difference.',
       ),
     ).toBeVisible()
+  })
+
+  it('compares the two arms the outcome is about by their mean AUC', async () => {
+    renderReport()
+
+    await screen.findByTestId('outcome')
+    const compared = screen.getAllByRole('term').map((term) => term.parentElement?.textContent)
+    expect(compared).toEqual([
+      expect.stringMatching(/^A Plain LLMAUC 0\.\d{3}$/),
+      expect.stringMatching(/^D Twin \+ profile \+ memoryAUC 0\.\d{3}$/),
+    ])
   })
 
   it('shows no banner for a result run', async () => {
@@ -356,6 +368,34 @@ describe('Paged report (presenter mode, #57)', () => {
     'Diagnostics',
   ]
 
+  it('states the primary outcome in plain percentages, leaving the statistics to Explore', async () => {
+    renderPaged()
+
+    expect(await screen.findByTestId('outcome')).toHaveTextContent('Twins beat plain LLM')
+    const stats = screen
+      .getAllByRole('term')
+      .map((term) => [
+        term.textContent,
+        ...[...term.parentElement!.querySelectorAll('dd')].map((dd) => dd.textContent),
+      ])
+    expect(stats).toEqual([
+      [
+        'Its top pick was a headline the reader clicked',
+        '30%Plain LLM',
+        '30%Twin + profile + memory',
+        '30%Random',
+      ],
+      [
+        'It ranked a clicked headline above a skipped one',
+        '55%Plain LLM',
+        '70%Twin + profile + memory',
+        '51%Random',
+      ],
+    ])
+    expect(screen.getByText(/3 real readers/)).toBeVisible()
+    expect(screen.queryByText(/Rule set before the test run/)).not.toBeInTheDocument()
+  })
+
   it('shows one page at a time, with a tab per page, starting on the primary outcome', async () => {
     renderPaged()
 
@@ -379,27 +419,22 @@ describe('Paged report (presenter mode, #57)', () => {
     await user.click(await screen.findByRole('tab', { name: 'AUC' }))
     expect(screen.getByRole('img', { name: /^AUC:/ })).toBeInTheDocument()
     expect(screen.queryByRole('img', { name: /^MRR:/ })).not.toBeInTheDocument()
-    expect(screen.getByText(/dashed grey lines: the popularity and random/i)).toBeVisible()
+    // The chart key is said in the talk, not shown.
+    expect(screen.queryByText(/dashed grey lines/i)).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('tab', { name: 'Hit@1' }))
     expect(screen.getByRole('img', { name: /^Hit@1:/ })).toBeInTheDocument()
     expect(screen.queryByRole('img', { name: /^AUC:/ })).not.toBeInTheDocument()
   })
 
-  it('steps through its pages with the next key before the deck moves on', async () => {
-    renderPaged()
+  it('leaves the next key for the deck, on any page', async () => {
+    const user = renderPaged()
     await screen.findByTestId('outcome')
 
-    for (const page of PAGES.slice(1)) {
-      expect(press('PageDown')).toBe(true)
-      expect(screen.getByRole('tab', { name: page })).toHaveAttribute('aria-selected', 'true')
-    }
+    expect(press('PageDown')).toBe(false)
+    await user.click(screen.getByRole('tab', { name: 'AUC' }))
     expect(press('ArrowRight')).toBe(false)
-    expect(press('ArrowLeft')).toBe(true)
-    expect(screen.getByRole('tab', { name: 'Users by outcome' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    )
+    expect(screen.getByRole('tab', { name: 'AUC' })).toHaveAttribute('aria-selected', 'true')
   })
 
   it('leaves the previous key for the deck on the first page', async () => {

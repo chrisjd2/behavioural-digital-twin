@@ -40,14 +40,14 @@
   margin-top: 4px;
 }
 
-/* The primary outcome: the rule, then its outcome, nothing else. */
+/* The primary outcome: the verdict, the two arms it compares, their difference, then the rule. */
 .primary-outcome {
-  border-left: 10px solid var(--arm-d);
+  border-left: 10px solid var(--ink);
   padding: 4px 0 4px 24px;
 }
 
 .rule {
-  margin: 8px 0 12px;
+  margin: 12px 0 4px;
   max-width: 75ch;
   color: var(--muted);
   font-size: 0.95rem;
@@ -59,6 +59,88 @@
   line-height: 1.15;
   letter-spacing: -0.01em;
   margin-bottom: 12px;
+}
+
+.primary-compare {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 48px;
+  margin: 0 0 4px;
+}
+
+.primary-compare > div {
+  border-left: 6px solid var(--arm);
+  padding-left: 14px;
+}
+
+.primary-compare dt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.primary-compare .arm-letter {
+  width: 1.5em;
+  height: 1.5em;
+  font-size: 1rem;
+  border-radius: 6px;
+}
+
+.primary-compare dd {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 800;
+}
+
+.primary-difference {
+  margin: 16px 0 8px;
+}
+
+/* Presenter: each plain stat as a row of arms, the twin's number largest. */
+.plain-outcome {
+  display: grid;
+  gap: 24px;
+  margin: 8px 0 16px;
+}
+
+.plain-outcome > div {
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
+  gap: 4px 48px;
+  align-items: end;
+}
+
+.plain-outcome dt {
+  grid-column: 1 / -1;
+  font-weight: 700;
+}
+
+.plain-outcome dd {
+  margin: 0;
+  border-left: 6px solid var(--arm);
+  padding-left: 12px;
+  color: var(--muted);
+}
+
+.plain-value {
+  display: block;
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.plain-outcome dd.arm-d {
+  border-left-color: var(--ink);
+}
+
+.plain-outcome dd.arm-d .plain-value {
+  font-size: 3.2rem;
+}
+
+.plain-outcome dd.baseline .plain-value {
+  color: var(--muted);
 }
 
 /* Bar charts: HTML labels | SVG track | HTML values. */

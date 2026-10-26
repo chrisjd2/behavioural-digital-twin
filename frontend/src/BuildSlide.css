@@ -1,9 +1,9 @@
-/* Screen 10, How I built it: sized for a 1920×1080 shared screen. */
+/* Screens 8-10, What I built, Testing framework and Plan met reality: sized for a 1920×1080 shared screen. */
 .build-strip {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px;
 }
 
 .build-stage {
@@ -24,31 +24,6 @@
   color: var(--muted);
 }
 
-/* Two columns, read down: with every part revealed, one column ran below 1080px. */
-.build-arms {
-  list-style: none;
-  margin: 0;
-  font-size: 1.3rem;
-  display: grid;
-  grid-template-rows: repeat(4, auto);
-  grid-auto-flow: column;
-  gap: 4px 24px;
-}
-
-.build-arm {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-left: 6px solid var(--arm);
-  padding-left: 10px;
-}
-
-.build-arm .arm-letter {
-  width: 1.5em;
-  height: 1.5em;
-  border-radius: 6px;
-}
-
 .build-part h3 {
   font-size: 1.8rem;
   margin-bottom: 8px;
@@ -59,29 +34,175 @@
   padding-left: 1.2em;
 }
 
-.build-who dl {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 8px 24px;
-  margin: 0;
+/* Plain bullets, not the revealed items' bar. */
+.build-part li {
+  border-left: 0;
+  padding: 0;
 }
 
-.build-who dt {
+/* The worked example: the ranking on the left, its pairs scored on the right. */
+.reveal-items:has(.build-test) {
+  display: grid;
+  grid-template-columns: minmax(0, 11fr) minmax(0, 9fr);
+  align-items: start;
+  gap: 18px 40px;
+}
+/* The arms: one row per arm, its colour down the left edge. */
+.arms-table {
+  border-collapse: collapse;
+  font-size: 1.3rem;
+  line-height: 1.35;
+}
+
+.arms-table :is(th, td) {
+  text-align: left;
+  vertical-align: top;
+  padding: 7px 24px 7px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.arms-table thead th {
+  font-size: 1rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.arms-table tbody th[scope='row'] {
+  white-space: nowrap;
+  border-left: 6px solid var(--arm);
+  padding-left: 14px;
+}
+
+.arms-table .arm-letter {
+  display: inline-grid;
+  vertical-align: middle;
+  font-size: 1.1rem;
+  width: 1.5em;
+  height: 1.5em;
+  border-radius: 6px;
+  margin-right: 10px;
+}
+
+.arms-table .control-tag {
+  margin-left: 10px;
+}
+
+.arms-table .arms-group {
+  padding-top: 16px;
+  color: var(--muted);
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Testing framework: one reader's headlines ranked by the agent, the clicked two in ink. */
+.build-note {
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.test-ranking .build-note {
+  margin-bottom: 12px;
+}
+
+.auc-ranking {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: max-content minmax(6rem, 1fr) 3.5ch 5.5em;
+  align-items: center;
+  gap: 6px 14px;
+  --arm: var(--ink);
+}
+
+.auc-ranking > li {
+  display: contents;
+  color: var(--muted);
+}
+
+.auc-ranking > li.clicked {
+  color: var(--ink);
   font-weight: 800;
 }
 
-.build-who dd {
-  margin: 0;
+.auc-bar {
+  height: 18px;
+  border-radius: 4px;
+  background: var(--wash);
+  overflow: hidden;
 }
 
-/* The diagram across the top, the two plan-met-reality parts side by side, then who did what. */
-.reveal-items:has(.build-strip) {
+.auc-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--baseline);
+  opacity: 0.5;
+}
+
+.auc-ranking > li.clicked .auc-bar > span {
+  background: var(--arm);
+  opacity: 1;
+}
+
+.auc-chance {
+  text-align: right;
+}
+
+.auc-ranking > li.clicked .auc-mark {
+  justify-self: start;
+  font-size: 0.85rem;
+  color: #fff;
+  background: var(--arm);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+/* Each clicked headline's six pairs as dots, filled where it ranks above the skipped one. */
+.build-part .auc-tally {
+  list-style: none;
+  margin: 10px 0 16px;
+  padding: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px 32px;
+  grid-template-columns: max-content max-content 1fr;
+  align-items: center;
+  gap: 6px 14px;
 }
 
-.reveal-items > li:has(.build-strip),
-.reveal-items > li:has(.build-who) {
-  grid-column: 1 / -1;
+.auc-tally > li {
+  display: contents;
+}
+
+.tally-name {
+  font-weight: 800;
+}
+
+.tally-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.tally-dots > span {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  box-sizing: border-box;
+}
+
+.tally-dots > span.win {
+  background: var(--ink);
+}
+
+.auc-result {
+  font-size: 1.5rem;
+}
+
+.test-pairs .nowrap {
+  white-space: nowrap;
+}
+
+.auc-result .build-note {
+  margin-left: 12px;
 }
